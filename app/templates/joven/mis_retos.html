@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block titulo %}Mis retos{% endblock %}
+
+{% block contenido %}
+<h1>Mis retos</h1>
+<p class="sub">Todo lo que fuiste haciendo. No hay puntaje personal: lo que sumás va a tu patrulla.</p>
+
+{% if not entregas %}
+  <p class="vacio">Todavía no entregaste ningún reto. Empezá por el de <a href="/hoy">hoy</a>.</p>
+{% else %}
+  {% for e in entregas %}
+  <article class="tarjeta">
+    <h3>{{ e.asignacion.reto.titulo }}</h3>
+    <p class="meta">
+      <span>{{ e.asignacion.fecha.strftime('%d/%m/%Y') }}</span>
+      {% if e.asignacion.reto.area %}<span>{{ e.asignacion.reto.area.nombre }}</span>{% endif %}
+      <span class="etiqueta {{ e.estado }}">
+        {% if e.estado == 'aprobada' %}Validado
+        {% elif e.estado == 'requiere_revision' %}En revisión
+        {% elif e.estado == 'rechazada' %}Sin validar
+        {% else %}Enviado{% endif %}
+      </span>
+    </p>
+    {% if e.texto %}<p>{{ e.texto }}</p>{% endif %}
+    {% if e.devolucion %}<p class="meta">Devolución: {{ e.devolucion }}</p>{% endif %}
+    <p><a href="/reto/{{ e.asignacion_id }}">Ver</a></p>
+  </article>
+  {% endfor %}
+{% endif %}
+{% endblock %}

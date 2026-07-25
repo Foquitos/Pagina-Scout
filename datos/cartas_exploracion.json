@@ -1,0 +1,2292 @@
+{
+  "fuente": "Cartas de Exploración - Rama Scouts (Scouts de Argentina). 53 competencias en 4 áreas de desarrollo.",
+  "nota_tipo_desafio": "Cada desafio esta clasificado segun las Cartas de Exploracion impresas: 'requerido' (los minimos indispensables para lograr la competencia), 'opcional' (enriquecen, y pueden reemplazar a un requerido conversandolo con el equipo de educadores) y 'especialidad' (especialidades, insignias e iniciativas, y roles de patrulla, que la guia cuenta dentro de los opcionales).",
+  "areas": [
+    {
+      "codigo": "salud_bienestar",
+      "nombre": "Salud y bienestar",
+      "color": "#D64550",
+      "icono": "🫀",
+      "descripcion": "Cuidate por dentro y por fuera: alimentación, emociones, cuerpo, seguridad y vínculos de apoyo."
+    },
+    {
+      "codigo": "paz_desarrollo",
+      "nombre": "Paz y Desarrollo",
+      "color": "#2E86AB",
+      "icono": "🕊️",
+      "descripcion": "Ayudá a construir un mundo mejor: resolución pacífica de conflictos, derechos, cultura, participación y espiritualidad."
+    },
+    {
+      "codigo": "ambiente",
+      "nombre": "Ambiente",
+      "color": "#3E8E5A",
+      "icono": "🌱",
+      "descripcion": "Convertite en defensora o defensor de la naturaleza: sostenibilidad, vida al aire libre, campismo y contemplación."
+    },
+    {
+      "codigo": "habilidades_vida",
+      "nombre": "Habilidades para la vida",
+      "color": "#E0A526",
+      "icono": "🧭",
+      "descripcion": "Dominá las habilidades del día a día: técnicas, liderazgo, comunicación, organización y expresión."
+    }
+  ],
+  "competencias": [
+    {
+      "numero": 1,
+      "area": "salud_bienestar",
+      "titulo": "Incorporo hábitos de higiene",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Tengo una rutina de higiene personal saludable y responsable (por ejemplo: higiene dental, aseo de manos).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Colaboro con el orden y la limpieza de mi habitación, de mi casa y de los lugares en los que vivo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Cuido, limpio y ordeno los lugares en los que realizo actividades, acampo y realizo excursiones.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Realizo construcciones en campamentos que ayudan a mejorar la comodidad y la higiene del lugar (mesas, sillas, toldos, percheros, lavabo, etc.).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Organizo correctamente mi mochila para un campamento de 3 días.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Uso correctamente mi indumentaria scout y la mantengo en buen estado.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Cuando sea necesario lavo y mantengo mi ropa en buen estado durante los campamentos.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Desarrollo una especialidad referida a la higiene o la salud.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 2,
+      "area": "salud_bienestar",
+      "titulo": "Entiendo la importancia de alimentarme de forma saludable",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Sé qué alimentos me ayudan a crecer y practico una alimentación saludable.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Planifico un menú saludable para un campamento de Patrulla acorde a las actividades a desarrollar y la época del año.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Preparo comidas sencillas y saludables en mi casa y para mi Patrulla en actividades de campamento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Conozco las técnicas de manipulación y conservación de alimentos y las aplico en la cocina.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Realizo un tutorial, junto a mi Patrulla, sobre cómo preparar nuestra comida favorita y la comparto con los demás.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Realizo algunas recetas tradicionales de cocina rústica o sin utensilios.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Preparo un menú para una excursión o campamento de 3 días.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Me encargo de hacer las compras de alimentos para una actividad o campamento de Patrulla.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Pruebo, junto a mi Patrulla, nuevas recetas y técnicas de cocina con la ayuda de una persona experta.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Desempeño el rol de cocinera o cocinero de mi Patrulla al menos por un ciclo de programa.",
+          "tipo": "especialidad"
+        },
+        {
+          "orden": 11,
+          "texto": "Desarrollo la especialidad de cocina.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 3,
+      "area": "salud_bienestar",
+      "titulo": "Reconozco y expreso mis emociones, entendiendo cómo me afectan a mí y a las demás personas",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Identifico y reflexiono sobre mis emociones en las diferentes situaciones en las que me encuentro y las comparto con los demás.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Escucho a los demás con atención y empatía para comprender cómo se sienten y cómo mis palabras y acciones pueden influir en ellos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Aprendo técnicas de relajación como la respiración profunda o la meditación para manejar las emociones intensas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Expreso mis emociones de diversas maneras a través de diferentes formas (ya sean lúdicas, expresivas, artísticas, etc.).",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 5,
+          "texto": "Dialogo con personas de mi confianza sobre cómo me siento y lo que sucede a diario en mi vida.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Aprendo a reconocer las señales físicas que acompañan mis emociones, como palpitaciones, sudoración o tensión muscular.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 4,
+      "area": "salud_bienestar",
+      "titulo": "Soy crítica/o con las imágenes y mensajes que los medios de comunicación y las redes sociales nos presentan sobre los modelos corporales y las modas",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Investigo sobre lo que significa el estereotipo de belleza y discuto sobre el tema con mis compañeras y compañeros de Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Exploro en los medios de comunicación, en películas y series las imágenes de personas que aparecen usualmente y reflexiono con mi Patrulla sobre los mensajes que transmiten las redes y los medios sobre los modelos corporales.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "En nuestras relaciones y actividades de Patrulla promuevo el respeto hacia mi propio cuerpo y el de los demás.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Entiendo por qué no se debe hablar del cuerpo de las demás personas.",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 5,
+      "area": "salud_bienestar",
+      "titulo": "Busco información y tomo decisiones conscientes para cuidar mi salud y sentirme bien conmigo misma/o",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Busco información confiable sobre cuidados de la salud en la adolescencia.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Incorporo hábitos de cuidado de mi salud para sentirme bien conmigo mismo/a (por ejemplo: realizar ejercicio de forma regular, comer saludable, realizar deportes o actividad física, disfrutar del aire libre).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Defino al menos 3 acciones para cuidar mi salud y sentirme bien, y las pongo en práctica al menos por 4 meses.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Me informo sobre qué sustancias pueden dañar mi cuerpo y lo comparto con las demás personas en alguna actividad de la Unidad.",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 6,
+      "area": "salud_bienestar",
+      "titulo": "Acepto y valoro mi cuerpo y el de los demás, evitando comparaciones",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Realizo actividades, junto a mi Patrulla, de autocuidado que promuevan el bienestar emocional y físico.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Entiendo por qué debemos evitar hacer comparaciones con el cuerpo de las demás personas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Me informo de los cambios que se están produciendo en mi cuerpo y en mis pensamientos, gustos y sentimientos en esta etapa de mi vida.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Sé cuál es mi peso ideal, cómo se produce el sobrepeso y qué hacer para que mi peso sea el adecuado.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 5,
+          "texto": "Me informo sobre los problemas que causan el alcohol y el tabaco.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 7,
+      "area": "salud_bienestar",
+      "titulo": "Reconozco e identifico las particularidades, diferencias y cambios de mi cuerpo a medida que voy creciendo",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Investigo sobre los cambios progresivos que se están produciendo en mi cuerpo buscando información confiable.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Reconozco los cambios que se están produciendo en mi cuerpo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Comparto información y experiencias con amigas o amigos que también están pasando por cambios en sus cuerpos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Identifico las diferencias anatómicas y fisiológicas de mujeres y varones en las distintas etapas de la vida.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Conozco las medidas de mi cuerpo y las aplico en mediciones y estimaciones (paso doble, brazos extendidos, altura, etc.).",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Reviso las medidas de mi cuerpo cada 5 o 6 meses para mantener actualizadas mis técnicas de medición.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 8,
+      "area": "salud_bienestar",
+      "titulo": "Identifico y respeto mis emociones y sentimientos vinculados a la sexualidad y sus cambios",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Consulto con personas adultas de confianza (familiares, educadores, médicos) sobre temas relacionados con la sexualidad y el crecimiento biológico para aclarar dudas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Participo, junto a mi Patrulla, en charlas y talleres sobre educación sexual.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Aprendo y utilizo un vocabulario apropiado para hablar sobre la sexualidad y los cambios corporales.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Escucho y apoyo a mis amigas y amigos cercanos sobre sus inquietudes, preguntas y experiencias en un ambiente seguro y de confianza vinculado a la sexualidad.",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 9,
+      "area": "salud_bienestar",
+      "titulo": "Valoro el diálogo y el respeto mutuo en mis relaciones, expresando mi opinión de manera segura y respetuosa",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Expreso mis pensamientos y sentimientos de manera empática y considerada, teniendo en cuenta cómo podrían sentirse los demás.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Tomo parte activa en los Consejos de Patrulla y Asambleas, escuchando atentamente las ideas de los demás y exponiendo mis ideas de forma clara, sin agresividad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Practico el diálogo respetuoso y una comunicación abierta en todos los ámbitos en los que me desenvuelvo (familia, escuela, scouts…).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Participo en la evaluación de la progresión personal de mis amigas y amigos de la Patrulla y también soy evaluado en mi progresión.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Construyo relaciones basadas en la confianza, manteniendo mi palabra y siendo honesto en mis relaciones.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Desarrollo una especialidad relacionada con la comunicación.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 10,
+      "area": "salud_bienestar",
+      "titulo": "Conozco los recursos y lugares donde puedo obtener información y apoyo para proteger mis derechos sexuales",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Me informo sobre mis derechos relacionados a mi salud sexual.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Conozco y sé a dónde acudir para defender mis derechos relacionados al desarrollo sano de mi sexualidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Participo, junto a mi Patrulla, en charlas educativas sobre derechos y salud sexual.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Conozco mis derechos y expreso mi disconformidad cuando entiendo que mis derechos, opiniones y necesidades personales están siendo violentadas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Entiendo que no estoy obligada/o a hacer lo que me provoque temor o incomodidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Desarrollo una especialidad vinculada al tema.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 11,
+      "area": "salud_bienestar",
+      "titulo": "Descubro los beneficios que tiene la actividad física y los deportes para mi bienestar físico y emocional",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Indago sobre los beneficios que tiene la actividad física y los deportes para mi bienestar físico y emocional.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Participo en diversas actividades de mi interés que me desafíen físicamente y que me permitan superarme y mejorar.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Invento juegos y desafíos físicos junto a mi Patrulla, promoviendo la creatividad y la diversión.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Practico una actividad deportiva y me esfuerzo por mejorar mi rendimiento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Busco y propongo juegos y actividades físicas para hacer con mi Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Realizo actividades de senderismo junto a mi Patrulla y Unidad Scout (aplicando técnicas de marcha, alimentación e hidratación adecuada, tiempos de descanso, etc.).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Participo junto a mi Patrulla de paseos en bicicleta, en bote o en kayak.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Desarrollo una especialidad vinculada al deporte y la actividad física.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 12,
+      "area": "salud_bienestar",
+      "titulo": "Trabajo en equipo y disfruto de las actividades físicas y deportivas, fomentando el desarrollo social y emocional",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Junto a mi Patrulla, construyo un circuito de obstáculos para jugar junto a mi Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Trazo y sigo señales de pista en un recorrido de por lo menos un kilómetro en el campo y de 2 kilómetros en área urbana.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Realizo con mi Patrulla una actividad de navegación terrestre, utilizando mapa y brújula.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Con mi Patrulla invento un juego o deporte para jugar juntos y con otras amigas y amigos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Organizo con mi Patrulla un campeonato de un deporte o juego para realizar con la Unidad Scout.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Participo en juegos y actividades que requieran cooperación y coordinación con otros jóvenes.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Desarrollo una especialidad vinculada al deporte y la actividad física.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 13,
+      "area": "salud_bienestar",
+      "titulo": "Identifico situaciones de riesgo y adopto prácticas seguras",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Identifico situaciones que pueden dañar mi salud y la de mis pares en las actividades que realizo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Utilizo los elementos de seguridad adecuados para participar en actividades físicas o deportes.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Sé cómo actuar en casos de insolación, deshidratación, pequeñas heridas, picaduras de insectos y hemorragias.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Aplico el orden de prioridades en caso de accidentes.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Conozco y aplico las técnicas de traslado de heridos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Respeto y aplico las normas de seguridad en las actividades que realizo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Conozco el Plan de Contingencia.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 8,
+          "texto": "Aprendo sobre la seguridad en línea, especialmente en las redes sociales (no compartir información personal, revisar que las configuraciones de privacidad sean adecuadas y seguras, y comunicar cualquier problema a un adulto de confianza).",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Participo de simulacros de emergencias y accidentes.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Desarrollo una especialidad vinculada a la seguridad.",
+          "tipo": "especialidad"
+        },
+        {
+          "orden": 11,
+          "texto": "Desarrollo una especialidad vinculada a la salud y los primeros auxilios.",
+          "tipo": "especialidad"
+        },
+        {
+          "orden": 12,
+          "texto": "Me desempeño como enfermero/a de Patrulla durante un ciclo de programa.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 14,
+      "area": "salud_bienestar",
+      "titulo": "Conozco y construyo redes de apoyo y ayuda mutua",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Identifico a las personas a quienes puedo pedir ayuda y apoyo en distintos ámbitos (familia, escuela, grupo scout, club, amigas y amigos…).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Apoyo a una compañera o compañero de Patrulla en su progresión personal, en el logro de alguna especialidad o en otros temas de su interés.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Conversamos en la Patrulla sobre aquellos temas que nos preocupan e interesan.",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 15,
+      "area": "paz_desarrollo",
+      "titulo": "Colaboro en la resolución de situaciones de conflicto a través del diálogo, evitando situaciones de violencia, en los espacios donde me desenvuelvo",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Participo de los órganos de toma de decisiones de la Patrulla y de la Unidad, expresando mis opiniones e ideas con respeto y escuchando las opiniones y decisiones de los demás en todo momento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Colaboro en resolver problemas o conflictos entre mis compañeras y compañeros de Patrulla de manera pacífica.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Identifico distintas formas de expresiones de violencia, intolerancia y exclusión en mi escuela u otros lugares que frecuento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Actúo como mediador/a en conflictos entre mis amigas, amigos y compañeros/as de escuela, alentando a escucharse y buscar soluciones pacíficas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Sé cómo actuar en situaciones de bullying y de ciberacoso.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Coordino un Consejo de Patrulla en el que se discuten diferentes temas.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Participo de un proyecto de unidad, enmarcado en las dimensiones de la paz que reconoce el Movimiento Scout (personal, comunidad y global).",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Sé diferenciar entre una broma y una situación de acoso o bullying.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 16,
+      "area": "paz_desarrollo",
+      "titulo": "Exploro y me identifico con la cultura de mi comunidad y de mi país proponiendo actividades y proyectos con esta temática",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Investigo juegos tradicionales de mi región y/o país y propongo hacerlos con mi Patrulla y Unidad Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Investigo relatos, narraciones, leyendas, música y danzas de mi región y mi país y las comparto en una velada de mi Patrulla o un fogón de la Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Propongo actividades a mi Patrulla y a mi Unidad vinculadas a la cultura de mi comunidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Participo junto a mi Patrulla, Unidad o en forma individual de festividades típicas de la región donde vivo, o en una en la que se celebre la cultura de mi comunidad y/o país.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Participo de visitas a museos, monumentos históricos o sitios culturales para aprender sobre la historia local, provincial o nacional.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Investigo y recreo junto a mi Patrulla o Unidad algunas tradiciones culinarias, vestimenta o prácticas culturales de mi región y/o país.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Entrevisto a personas mayores de la comunidad para obtener historias y recuerdos de cómo era la vida en tiempos pasados y organizo charlas o presentaciones en las que estas personas puedan compartir sus experiencias.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Realizo videos cortos que exploren diferentes aspectos de la cultura local, como la música, la danza, la comida, etc.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Investigo sobre la historia del Movimiento Scout a nivel mundial y en nuestro país.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Conozco el significado de los colores del pañuelo de mi grupo scout y de su nombre.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 11,
+          "texto": "Participo en proyectos que involucren la restauración, limpieza o conservación de sitios históricos y culturales de la comunidad.",
+          "tipo": "especialidad"
+        },
+        {
+          "orden": 12,
+          "texto": "Desarrollo una especialidad vinculada a la cultura.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 17,
+      "area": "paz_desarrollo",
+      "titulo": "Valoro mi historia e identidad, la de mi país, y respeto sus símbolos patrios",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Aprendo sobre la historia de mi propia familia y antepasados, y comprendo cómo esto se relaciona con la historia del país.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Conozco la historia y el sentido de los principales símbolos patrios.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Conozco y realizo correctamente los procedimientos de izado y arriado de la bandera nacional.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Exploro la vida y los logros de figuras históricas nacionales que hayan influido en la historia de la región donde vivo y/o del país.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Creo materiales visuales que destaquen aspectos importantes de la historia, la cultura y la identidad de la región donde vivo y/o del país.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Recopilo fotos y recuerdos familiares para crear un álbum o video que muestre la historia y las experiencias de la familia.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Exploro diversas canciones que hablen de los símbolos patrios para cantar en nuestros actos y conmemoraciones.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 18,
+      "area": "paz_desarrollo",
+      "titulo": "Valoro y respeto la importancia de los Derechos Humanos en la sociedad e identifico situaciones de vulneración de estos, buscando activamente ayuda en mi entorno",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Aprendo sobre los derechos de niños, niñas y adolescentes utilizando diferentes fuentes confiables.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Tomo decisiones justas y equitativas en juegos y situaciones cotidianas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Identifico y denuncio cualquier forma de discriminación y/o vulneración de derechos que presencie o conozca.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Conozco los números de teléfono de emergencia, líneas de ayuda y organizaciones que trabajan en la protección de los derechos de las niñas y los niños.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Con mi Patrulla o Unidad realizo una descubierta sobre los Derechos Humanos en la comunidad en donde vivo o en mi escuela.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Participo en proyectos, tanto fuera como dentro del Movimiento Scout, que promueven la igualdad, la justicia y el respeto a los Derechos Humanos en la comunidad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Participo en eventos, colectas o actividades de voluntariado para apoyar a organizaciones que trabajan en defensa de los Derechos Humanos.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Mantengo diálogos abiertos con personas de confianza para conocer experiencias y preocupaciones sobre situaciones de vulneración de los DD.HH.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 19,
+      "area": "paz_desarrollo",
+      "titulo": "Ejercito y promuevo prácticas que fomenten la participación democrática en los diferentes contextos en donde me desenvuelvo",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Investigo cómo funciona la democracia en mi país y cómo se toman decisiones en los diferentes niveles de gobierno.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Realizo una visita al Concejo Deliberante/Municipal de mi ciudad y me interiorizo sobre su funcionamiento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Me informo sobre cómo se toman las decisiones en mi Grupo Scout y sobre mis deberes y derechos como miembro de Scouts de Argentina.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Respeto las decisiones tomadas en forma democrática en mi Patrulla y Unidad Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Practico la escucha activa y el respeto hacia opiniones diferentes, incluso si no estoy de acuerdo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Realizo propuestas de actividades y proyectos teniendo en cuenta los intereses de mi Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Conozco y participo en espacios de participación ciudadana en mi barrio y de mi escuela, como por ejemplo el Centro de Estudiantes.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 8,
+          "texto": "Dialogo con los representantes juveniles de mi Grupo Scout para conocer los temas que se tratan en el Consejo de Grupo.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Fomento la participación de todas las personas, asegurando que se escuchen las voces de diferentes grupos y que las decisiones sean justas.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Propongo reuniones para discutir temas importantes y asegurarme de que todas las personas tengan la oportunidad de hablar.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 11,
+          "texto": "Participo en debates constructivos con los demás para analizar las diferentes propuestas y llegar a un entendimiento común.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 20,
+      "area": "paz_desarrollo",
+      "titulo": "Respeto los acuerdos de convivencia y las decisiones tomadas por los demás, expresando mis propias ideas y posturas de manera empática y respetuosa",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Conozco el funcionamiento de los órganos de gobierno de la Patrulla y la Unidad y participo de los ámbitos que me corresponden.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Participo en la elaboración de los acuerdos de convivencia de mi Unidad Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Opino sobre lo que me gusta o no de los acuerdos de convivencia en distintos ámbitos en los que actúo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Conozco y respeto los acuerdos de convivencia de los distintos ámbitos en los que actúo, aunque no siempre esté de acuerdo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Participo en la elaboración de reglas en actividades de grupo, como juegos, deportes o proyectos.",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 21,
+      "area": "paz_desarrollo",
+      "titulo": "Promuevo que se garanticen los derechos de todas las personas en los ámbitos en los que participo",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Conozco cuáles son mis derechos y responsabilidades.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Hablo con mis educadoras y educadores cuando me doy cuenta de situaciones que vulneran los derechos de algún compañero o compañera.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Investigo sobre problemas de desigualdad y discriminación de géneros en mi comunidad y propongo alguna actividad al respecto.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Contribuyo al clima de respeto y tolerancia en los espacios en los que participo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Participo en iniciativas y proyectos de Unidad que buscan crear conciencia sobre los Derechos Humanos y trabajar para su protección y promoción.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Propongo una actividad de Patrulla o de Unidad relacionada con la defensa de los derechos de las personas.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 22,
+      "area": "paz_desarrollo",
+      "titulo": "Fomento el respeto a la diversidad en todas sus formas, cuestionando estereotipos y prejuicios en mis interacciones diarias",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Respeto a mis compañeras y compañeros y los reconozco como iguales.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Ofrezco ayuda y apoyo a compañeras y compañeros que puedan estar enfrentando desafíos debido a sus diferencias.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Aprendo sobre qué son los estereotipos y cómo pueden afectar a las personas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Soy consciente de cómo las palabras pueden herir a las demás personas y evito comentarios ofensivos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Realizo acciones en favor de la inclusión en los lugares en los que me desenvuelvo, y me manifiesto en contra de comentarios o actitudes prejuiciosas y estereotipadas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Trato a todas las personas con amabilidad y respeto, independientemente de su apariencia, origen o creencias.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Practico la empatía imaginándome cómo se siente la otra persona en su situación.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 8,
+          "texto": "Mantengo contacto con scouts de otros países y me intereso por saber cómo viven, cómo es su cultura, etc.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Propongo charlas, talleres, proyectos y actividades que promuevan la inclusión y la diversidad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Participo, junto con mi Patrulla, en charlas y talleres de sensibilización sobre temas de diversidad, inclusión y respeto.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 11,
+          "texto": "Reflexiono regularmente sobre mis creencias y actitudes hacia diferentes grupos de personas.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 12,
+          "texto": "Cuestiono cualquier suposición que puedan hacer sobre alguien basada en su apariencia o identidad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 13,
+          "texto": "Promuevo espacios de diálogo para reflexionar sobre situaciones de discriminación y prejuicios tanto en mi Patrulla como en la Unidad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 14,
+          "texto": "Desarrollo la Insignia del Cono Sur.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 23,
+      "area": "paz_desarrollo",
+      "titulo": "Promuevo la participación e inclusión de todas las personas, sin discriminación alguna",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Ayudo a alguien que se incorpora a mi Patrulla a comprender y avanzar en su progresión personal.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Propongo a mi Patrulla y a la Unidad Scout juegos y actividades diferentes pensando en la participación e inclusión de todas las personas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Propongo realizar actividades con Patrullas y Unidades de otros grupos scouts.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Participo de actividades y eventos con Patrullas y Unidades de mi distrito o zona.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Reconozco y respeto las decisiones y preferencias de las demás personas, incluso si son diferentes a las mías.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Practico el respeto y la inclusión al jugar y compartir con amigas y amigos, asegurándome de que todas las personas se sientan incluidas.",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 24,
+      "area": "paz_desarrollo",
+      "titulo": "Identifico oportunidades para ayudar a alguien de manera individual y/o colectiva, sin esperar nada a cambio",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Siempre que tengo oportunidad, realizo buenas acciones personales en los lugares en los que me desenvuelvo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Participo de actividades solidarias y buenas acciones colectivas con mi Patrulla y mi Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Realizo una descubierta en la que identifico las principales organizaciones y servicios públicos de mi comunidad, conozco a qué se dedican y las ubico en un mapa.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Colaboro con las tareas en mi hogar.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Propongo buenas acciones y actividades solidarias para hacer junto a mi Patrulla y colaboro en su organización.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Participo en al menos un proyecto solidario junto a mi Unidad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Desarrollo una especialidad vinculada al tema.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 25,
+      "area": "paz_desarrollo",
+      "titulo": "Me comprometo y animo a otras personas a trabajar en conjunto para lograr un cambio positivo en el mundo",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Realizo una descubierta junto a mi Patrulla o Unidad Scout en la que tomamos conocimiento de algunos problemas de la comunidad. A partir de esa descubierta, identifico un problema y propongo posibles acciones a realizar con mi Patrulla o Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Identifico en mi comunidad a otros grupos de personas (además del Movimiento Scout) con quienes puedo trabajar en conjunto para lograr cambios positivos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Ante algunos problemas detectados en mi escuela o comunidad propongo algunas soluciones y animo a algunos compañeros/as a trabajar en conjunto para solucionarlos.",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 26,
+      "area": "paz_desarrollo",
+      "titulo": "Observo lo que pasa a mi alrededor y trato de entender las razones detrás de las desigualdades que veo, actuando de manera responsable en situaciones que afectan a la sociedad",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Realizo descubiertas con mi Patrulla o Unidad con el propósito de conocer de cerca las realidades y necesidades de mi entorno.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "A partir de los resultados de la descubierta reflexiono desde una mirada crítica, junto a mi Patrulla, sobre las razones o causas del problema detectado y busco algunas respuestas posibles.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Propongo una actividad o Proyecto de Unidad que aborde alguna problemática de mi comunidad, dentro del campo prioritario solidaridad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Exploro en los Objetivos de Desarrollo Sostenible aquellos objetivos vinculados a las desigualdades y analizo qué cosas puedo hacer.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 5,
+          "texto": "Desarrollo una especialidad vinculada a la solidaridad.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 27,
+      "area": "paz_desarrollo",
+      "titulo": "Me pregunto sobre el origen, la grandeza, belleza y misterios de todo lo que soy, somos y nos rodea",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Realizo dos marchas en silencio, una de día y otra de noche, intentando captar los sonidos, los olores, colores y formas, y reflexiono sobre esto.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Participo de una actividad de observación del cielo nocturno y orientación por las estrellas, me pregunto sobre el origen del universo y lo converso con mi Patrulla y/o Unidad Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Realizo y participo de reflexiones y de meditaciones junto a mi Patrulla o Unidad en las excursiones o campamentos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Participo en la construcción de espacios de reflexión y de meditación en un campamento de mi Unidad Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Formulo preguntas sobre el origen, la grandeza, belleza y misterios de todo lo que soy, somos y nos rodea, y busco respuestas en distintos ámbitos, como por ejemplo en mis creencias espirituales o en la ciencia.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Participo en la construcción de espacios de reflexión y de meditación en un campamento de mi Unidad Scout.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 28,
+      "area": "paz_desarrollo",
+      "titulo": "Dialogo con los demás sobre lo que creo y busco conocer lo que los otros creen, demostrando respeto e interés",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Exploro religiones u opciones espirituales diferentes a la mía.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Con mi Patrulla o Unidad compartimos un día de actividades y juegos y/o una actividad solidaria con un grupo de jóvenes de alguna iglesia, mezquita, sinagoga o templo de nuestra comunidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Con mi Patrulla o Unidad realizo descubiertas sobre las religiones y opciones espirituales presentes en mi comunidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Confecciono un calendario en el que registro las celebraciones y festividades religiosas de las confesiones de los scouts que integran mi Patrulla o Unidad Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Invito a mi Patrulla a cooperar en acciones organizadas por mi comunidad religiosa en favor de las personas vulneradas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Elijo un texto de mi confesión religiosa y lo comparto con mis amigas y amigos de la Patrulla, comentando por qué lo elegí.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Visito los templos o lugares sagrados de las religiones presentes en la comunidad donde vivo.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 29,
+      "area": "paz_desarrollo",
+      "titulo": "Adhiero a los valores expresados en la Ley y la Promesa Scout comprendiendo su importancia para mi vida",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Conozco y comprendo la Ley y la Promesa Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "He prometido esforzarme por vivir la Ley y la Promesa Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Conozco el significado de la flor de lis como emblema del Movimiento Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Identifico situaciones en las que aplico la Ley y la Promesa Scout en otros ámbitos diferentes a mi Unidad (casa, escuela, la calle, etc.).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Reviso los acontecimientos vividos por la Patrulla y la Unidad a la luz de la Ley Scout, participando de momentos de reflexión y evaluación en el Consejo de Patrulla y la Asamblea.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Ayudo a un/a compañero/a de Patrulla a comprender el significado de la Ley y la Promesa Scout.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Colaboro en la organización de actividades como el Fuego de la Ley y en celebraciones donde se realice o renueve la Promesa Scout.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 30,
+      "area": "paz_desarrollo",
+      "titulo": "Me pregunto sobre mis creencias, prioridades y valores, y cómo se manifiestan en mi actuar cotidiano",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Reflexiono sobre mis creencias, valores y prioridades y trato de identificarlas en mis acciones.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Confecciono una lista de acciones en las que se manifiesten aquellas cosas que enseña mi confesión religiosa o espiritualidad y me comprometo a realizarlas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Selecciono el relato de un personaje real que haya demostrado ser coherente con sus creencias espirituales y valores y lo comparto con mi Patrulla y/o Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Evalúo mis acciones en el Consejo de Patrulla, entendiendo que es importante actuar de acuerdo con lo que se piensa y cree.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Exploro la herencia espiritual de mi familia y comunidad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Participo de celebraciones (misas, cultos, servicios religiosos, etc.) y festividades vinculadas a mi confesión religiosa o espiritualidad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Busco y selecciono un texto de confesión religiosa o creencia que sea significativo para mí y lo utilizo en mi celebración de Promesa u otra ocasión especial.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Apelo a mi religión o creencias para expresar gratitud, una necesidad, alegría o tristeza de forma personal o comunitaria.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Desarrollo una especialidad vinculada a la espiritualidad.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 31,
+      "area": "ambiente",
+      "titulo": "Reconozco mi impacto en el ambiente y en la sociedad, adoptando un estilo de vida responsable y sostenible",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Indago sobre hábitos responsables y sostenibles para aplicarlos en mi vida diaria (por ejemplo: separación de residuos, tomar duchas cortas, desenchufar cargadores de celular u otros electrodomésticos si no los usás).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Me informo sobre la huella de carbono y propongo actividades para aprender a reducirla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Realizo actividades de concientización para mi Patrulla, familia, escuela y lugares que frecuento sobre los hábitos responsables y sostenibles.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Realizo acciones para reutilizar y reciclar materiales de manera creativa con mi Patrulla; por ejemplo, creo juegos y juguetes con materiales reutilizables.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Planifico un menú variado y nutritivo para mi campamento de Patrulla o Unidad que contenga frutas o verduras de estación y productos locales.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Construyo, junto a mi Patrulla o Unidad, un huerto y aprendo sobre la importancia de la agricultura sostenible y el cuidado del suelo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Sé cómo tratar los residuos en campamento; por ejemplo, construyo un pozo de aguas grasas para el tratamiento correcto.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 8,
+          "texto": "Indago sobre actividades que fomenten la reducción de residuos y se las propongo a mi Patrulla y Unidad Scout.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Realizo cultivos de plantas nativas.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Reutilizo los desechos orgánicos como abono.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 11,
+          "texto": "Investigo de dónde provienen los alimentos que consumo.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 12,
+          "texto": "Desarrollo una especialidad o iniciativa regional o global vinculada a la sostenibilidad.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 32,
+      "area": "ambiente",
+      "titulo": "Utilizo los recursos naturales de forma consciente y busco alternativas que promuevan la conservación del ambiente",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Me informo sobre qué son los recursos naturales e indago en los efectos que generan si no se usan correctamente.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Investigo sobre los agentes contaminantes presentes en mi barrio y realizo acciones para su reducción.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Reflexiono sobre el impacto en la naturaleza que tienen las actividades al aire libre que realizo e intento reducirlo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Separo los residuos (orgánicos y no orgánicos), reparo y reciclo aquello que ya no utilizo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Utilizo los desechos orgánicos de mi casa para crear abono.",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 33,
+      "area": "ambiente",
+      "titulo": "Participo de iniciativas para construir una sociedad más respetuosa con el planeta",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Propongo al menos una actividad y/o proyecto ambiental.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Participo de jornadas o campañas de limpieza de espacios naturales (lagunas, lagos, ríos, mares, sierras, etc.) y espacios verdes (plazas, parques, etc.).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Me sumo a iniciativas de otras organizaciones que trabajan por el ambiente.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Investigo, junto con mi Patrulla, sobre las energías renovables y propongo actividades sobre cómo utilizarlas.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 5,
+          "texto": "Construyo y aprendo a utilizar una cocina u horno solar.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Promuevo con mi Patrulla acciones que reduzcan el cambio climático dentro de mi comunidad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Participo en una de las iniciativas o desafíos ambientales que propone Scouts de Argentina o la Organización Mundial del Movimiento Scout.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 34,
+      "area": "ambiente",
+      "titulo": "Comprendo las causas y consecuencias del impacto ambiental y realizo acciones para preservar y proteger el ambiente",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Conozco las causas del cambio climático y las consecuencias en mi país y en el mundo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Realizo una descubierta ambiental con mi Patrulla o Unidad en la que exploramos los problemas ambientales de mi comunidad o región y sus causas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Con mi Patrulla o Unidad realizo un safari fotográfico en el que capto en imágenes los principales problemas ambientales de mi comunidad o región y organizo una muestra de fotos en un lugar público.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Calculo mi huella de carbono y busco maneras de disminuirla.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 35,
+      "area": "ambiente",
+      "titulo": "Comprendo que todo lo que le hacemos a los seres vivos y al ambiente nos afecta recíprocamente",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Me intereso por conocer la relación de los pueblos originarios con la naturaleza (saberes ancestrales) e identifico algunas prácticas que puedan ser aplicadas en mi comunidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Me informo sobre las especies de flora y fauna en peligro de extinción en mi región y en el país.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Aprendo sobre la importancia de reducir el consumo de plásticos de un solo uso y cómo afecta esto a la fauna y flora de mi región.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Realizo la separación de los residuos en reciclables y no reciclables.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Investigo sobre cómo los agroquímicos afectan nuestra vida y promuevo el uso de productos ecológicos y amigables para el ambiente en mi hogar y en los espacios donde participo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Aprendo sobre abonos y fertilizantes naturales y los utilizo para mis plantas, huerta, macetas, etc.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 36,
+      "area": "ambiente",
+      "titulo": "Entiendo que la Tierra es un lugar precioso y único en el universo, y que todos tenemos la responsabilidad de protegerla y mantenerla saludable",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Participo en actividades de reforestación plantando árboles en áreas deforestadas o en peligro.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Organizo, junto a mi Patrulla, campañas de concientización sobre la importancia de reducir, reutilizar y reciclar los materiales para minimizar los desechos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Participo en actividades de limpieza comunitaria para recoger basura y promover un entorno más limpio y saludable.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Realizo una excursión en un curso de agua para analizar su calidad, posible contaminación y sus causas.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 5,
+          "texto": "Construyo y pruebo un filtro de agua.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Construyo y utilizo un catalejo y un telescopio.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Construyo hornos, cocinas y fogones conservacionistas.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 37,
+      "area": "ambiente",
+      "titulo": "Exploro oportunidades junto a mis amigas y amigos para conectarme con la naturaleza, cuidándola y protegiéndola",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Participo de al menos dos campamentos de Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Propongo y participo en la planificación de un campamento con mi Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Puedo identificar la fauna y flora de mi barrio, provincia, ecorregión y/o lugar de campamento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Llevo un registro de mis noches y lugares de campamentos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Puedo trazar y seguir una pista de al menos un kilómetro, en un medio natural, utilizando señales de pista.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Realizo levantamiento de huellas, identifico las especies y rotulo las muestras.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Participo de actividades donde deba utilizar mapas y croquis, y uso de signos topográficos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 8,
+          "texto": "Conozco y practico técnicas de acecho para juegos y observación de fauna.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 9,
+          "texto": "Realizo actividades acuáticas (nado, uso de embarcaciones, etc.) respetando las medidas de seguridad.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Realizo una colección de piedras y minerales, identificando y rotulando cada muestra.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 11,
+          "texto": "Construyo una estación meteorológica para la predicción del clima.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 12,
+          "texto": "Construyo un refugio para la observación de la fauna.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 38,
+      "area": "ambiente",
+      "titulo": "Desarrollo habilidades y técnicas que me permitan el disfrute de la vida en la naturaleza",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Aplico técnicas de senderismo (tipo de marcha, alimentación adecuada, tiempos de descanso) en las excursiones con mi Patrulla y/o la Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Realizo caminatas de diferentes niveles de dificultad para mejorar la resistencia física, la coordinación y la confianza en el entorno natural.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Participo en el diseño e instalación de las construcciones básicas de un campamento de Patrulla que nos permita disfrutar de la naturaleza: ubicación y armado de la carpa y del sector de Patrulla, preparación para situaciones de tormentas, cocina, mesa…",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Utilizo adecuadamente algunas herramientas útiles en la vida al aire libre (cortaplumas, hacha de mano, sierra, etc.) respetando las medidas de seguridad y los cuidados para su uso.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Conozco y utilizo distintos tipos de fuego, de acuerdo con mis necesidades (cocina, calor, iluminación) y circunstancias, respetando las reglas de seguridad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Organizo mi mochila para un campamento de Patrulla o de Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Aplico la técnica \"no dejar huellas\" en los lugares en los que acampo o realizo excursiones.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 8,
+          "texto": "Busco información y comparto con mi Patrulla sobre áreas naturales protegidas.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Mantengo actualizada la lista de materiales y elementos personales para un campamento de Patrulla.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Construyo un periscopio y un acuascopio para la observación de la naturaleza.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 11,
+          "texto": "Obtengo una especialidad vinculada al campismo y la vida al aire libre.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 39,
+      "area": "ambiente",
+      "titulo": "Exploro y contemplo la naturaleza como un espacio que me permite el bienestar, ayudándome a conectar con lo trascendente",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Participo de actividades de observación astronómica para aprender sobre las estrellas, planetas y otros cuerpos celestes, y apreciar la belleza del cielo nocturno en entornos naturales alejados de la contaminación lumínica.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Realizo, junto a mi Patrulla, paseos en la naturaleza de manera consciente, prestando atención a los detalles, los sonidos y los aromas del entorno.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Diseño y construyo un espacio de reflexión, meditación u oración para mi Patrulla o Unidad en un campamento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Participo de momentos de reflexión, meditación u oración en la naturaleza.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Busco textos religiosos o espirituales que hagan referencia a la naturaleza y los comparto en las reflexiones de mi Patrulla o Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Realizo una lista de las acciones que puedo realizar para cuidar nuestra \"Casa Común\".",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Me conecto con la naturaleza a través de actividades creativas como la pintura o la creación de objetos, juguetes, adornos, guirnaldas, etc. con elementos naturales.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Participo de una excursión nocturna con los ojos vendados intentando captar los sonidos, aromas y sensaciones del entorno.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Realizo actividades al aire libre que me permitan conectar con mi cuerpo, tales como excursiones, caminatas, juegos de Kim, etc.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 40,
+      "area": "habilidades_vida",
+      "titulo": "Exploro temas de mi interés con la intención de mejorar cada día",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Realizo un listado de los temas sobre los que me gustaría aprender.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Elijo al menos dos temas de mi lista y me propongo aprender sobre ellos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Propongo a mi Patrulla o Unidad una descubierta sobre un tema que me interese explorar.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Evalúo mi progresión personal y me planteo nuevas acciones para seguir avanzando.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Investigo y aplico técnicas de estudio en los temas que deseo y necesito aprender.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Desarrollo una especialidad que me interesa.",
+          "tipo": "especialidad"
+        },
+        {
+          "orden": 7,
+          "texto": "Desempeño un rol en mi Patrulla de acuerdo con mis intereses al menos por un ciclo de programa.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 41,
+      "area": "habilidades_vida",
+      "titulo": "Experimento diferentes medios y tecnologías que me ayuden a resolver problemas de la vida cotidiana",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Utilizo herramientas básicas (martillo, serrucho, destornillador, pinza, tenazas, etc.) para construir o reparar elementos de mi casa, de mi Patrulla, mi Unidad o Grupo Scout.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Conozco el funcionamiento de los electrodomésticos y los utilizo para resolver tareas de mi casa.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Utilizo tutoriales para resolver dudas sobre el arreglo o uso de elementos de la vida cotidiana.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Utilizo juegos en línea o aplicaciones educativas que involucren la resolución de problemas utilizando tecnología (por ejemplo, GPS, brújula digital, etc.).",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 5,
+          "texto": "Utilizo aplicaciones útiles para medir los pasos y las distancias, realizar pronóstico del clima, etc.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Conozco el uso de las estructuras, caballetes, poleas, anclajes y tensores, y las aplico en las construcciones de campamento.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Me desempeño como intendente/a de Patrulla al menos por un ciclo de programa.",
+          "tipo": "especialidad"
+        },
+        {
+          "orden": 8,
+          "texto": "Desarrollo una especialidad o insignia especial relacionada con la tecnología.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 42,
+      "area": "habilidades_vida",
+      "titulo": "Aplico mi conocimiento y habilidades para resolver los desafíos y oportunidades que se me presentan",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Soy capaz de hacer algunos arreglos en mi casa.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Colaboro en el mantenimiento y arreglo del local de la Unidad y de los materiales de mi Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Puedo orientarme utilizando una brújula y un mapa, por indicios y medios naturales (sol, estrellas, vegetación, etc.).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Utilizo mis especialidades para ayudar a otras personas o resolver problemas que se les presentan.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Aplico técnicas de estimación de alturas y de distancia en actividades de mi Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Realizo una previsión del tiempo por indicios naturales o por instrumentos.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Sé cómo realizar arreglos a nuestra carpa de Patrulla ante situaciones imprevistas.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 43,
+      "area": "habilidades_vida",
+      "titulo": "Comparto mis pasatiempos y especialidades con amigas y amigos, buscando intereses comunes que podamos desarrollar en conjunto",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Participo con mi Patrulla en actividades relacionadas con temas referidos a oficios, trabajos y profesiones.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Coordino con los integrantes de mi Patrulla para desarrollar actividades que nos permitan el logro de al menos una competencia.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Identifico pasatiempos o intereses personales que puedan convertirse en una especialidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Desarrollo, junto a mi Patrulla, una descubierta relacionada a un oficio o profesión que nos interese, reconociendo cuáles son las habilidades y competencias necesarias para poder desarrollarlos.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 5,
+          "texto": "Ayudo a un integrante de mi Patrulla a desarrollar una especialidad.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 44,
+      "area": "habilidades_vida",
+      "titulo": "Asumo un rol de manera responsable en los proyectos y/o actividades de mi Patrulla y/o Unidad",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Desempeño diversos roles en mi Patrulla y lo hago con responsabilidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Apoyo a los miembros de mi Patrulla que estén asumiendo nuevos roles o responsabilidades, compartiendo mis experiencias y conocimientos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Coordino una misión de Patrulla realizada en el contexto de un proyecto de la Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Colaboro en la organización de actividades y reuniones de mi Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Busco ideas de actividades y proyectos de Unidad y las propongo a mi Consejo de Patrulla (para ser presentadas en la Asamblea).",
+          "tipo": "requerido"
+        }
+      ]
+    },
+    {
+      "numero": 45,
+      "area": "habilidades_vida",
+      "titulo": "Lidero actividades y proyectos, acompañando y motivando a mis pares a sumarse",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Asumo la responsabilidad de coordinar a mi Patrulla en una misión o actividad que deba realizar: por ejemplo, una excursión o campamento de Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Propongo ideas de actividades, temas a tratar y soluciones a problemas en mi Consejo de Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Comparto habilidades específicas relacionadas con los roles en la Patrulla, ayudando a otros a mejorar sus habilidades y competencias.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Diseño y coordino una construcción de campamento con mi Patrulla o Unidad.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 46,
+      "area": "habilidades_vida",
+      "titulo": "Exploro y experimento con diferentes técnicas y tecnologías para resolver problemas, lograr mis objetivos y descubrir soluciones creativas",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Experimento con técnicas de supervivencia en la naturaleza, como encender fuego sin fósforos, cocina sin utensilios, potabilización de agua, refugios improvisados, etc.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Realizo, junto a mi Patrulla, actividades de orientación y/o exploración, utilizando mapas, croquis y/o brújulas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Exploro y utilizo distintas aplicaciones para resolver temas de mis excursiones, campamentos y salidas, así como de mi vida cotidiana.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Realizo, junto a mi Patrulla, una exploración por la ciudad utilizando GPS para orientarme por las calles y registro en esta herramienta los lugares más importantes de mi recorrido.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Propongo una solución creativa a un problema o tarea que enfrentamos con la Patrulla o la Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Construyo una cocina o una ducha solar, o alguna otra solución técnica creativa que mejore el bienestar en el campamento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Realizo el levantamiento de un croquis topográfico.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Utilizo mapas de transporte público o aplicaciones móviles para ayudarme a navegar por la ciudad y encontrar las rutas más convenientes y eficientes.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 47,
+      "area": "habilidades_vida",
+      "titulo": "Busco información en diversas fuentes y evalúo su veracidad y relevancia antes de aplicarla de manera crítica y creativa",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Realizo búsquedas de información, evaluando su veracidad, formalidad y credibilidad, y lo aplico en mis investigaciones.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Investigo temas de mi interés utilizando técnicas de búsqueda de la información.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Indago en diversas fuentes ideas de actividades para hacer con mi Patrulla y de proyectos para realizar con la Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Busco información sobre un tema del que necesitamos información para una actividad de Patrulla o de Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Desarrollo una especialidad vinculada a la informática y/o a la comunicación.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 48,
+      "area": "habilidades_vida",
+      "titulo": "Comprendo la importancia de ser responsable y ético en el uso de la tecnología y la información",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Me comunico de manera respetuosa y adecuada con mi Patrulla a través de diferentes medios digitales y analógicos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Participo, junto a mi Patrulla, de un taller sobre Huella e Identidad Digital.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Identifico y comprendo el daño que puede realizarse desde las redes sociales y el entorno digital.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Me informo sobre los riesgos existentes en las redes y cómo protegerme de ellos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Soy promotor/a de buenas prácticas en las redes.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 6,
+          "texto": "Soy consciente del tiempo que utilizo en el entorno digital y puedo limitarlo para que no me haga daño.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 7,
+          "texto": "Desarrollo una especialidad relacionada con el uso responsable de las redes sociales.",
+          "tipo": "especialidad"
+        }
+      ]
+    },
+    {
+      "numero": 49,
+      "area": "habilidades_vida",
+      "titulo": "Administro mis recursos y mi dinero de forma responsable",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Administro el dinero que me brindan, registrando mis gastos en una libreta o aplicación y estableciendo metas de ahorro.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Colaboro en la confección de un presupuesto para una actividad o misión de mi Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Realizo un presupuesto para una actividad personal o una compra que deseo realizar y obtengo los recursos necesarios.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Organizo una actividad con mi Patrulla para recaudar los fondos que necesitamos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Me propongo asumir el rol de tesorero/a en mi Patrulla al menos por un ciclo de programa.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 50,
+      "area": "habilidades_vida",
+      "titulo": "Organizo mi tiempo en forma adecuada diferenciando mis responsabilidades de mi tiempo libre",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Organizo mis diferentes tareas (estudio, tiempo libre, scouts, deportes, amigos/as, etc.) por medio de una agenda, calendario semanal o aplicación que me ayude a organizar mis tiempos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Organizo mis tareas otorgándole tiempo y prioridades a cada una.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Le dedico al estudio el tiempo necesario para aprender.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Organizo mi día para tener tiempo libre y de descanso, teniendo al menos 8 horas de sueño por la noche.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Investigo y aplico técnicas de estudio y de concentración.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 51,
+      "area": "habilidades_vida",
+      "titulo": "Enfrento y supero las dificultades que se me presentan y aprendo de la experiencia",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Reviso mi progresión personal, analizando aquellas cosas que hice bien y otras no tanto, y proponiéndome nuevos desafíos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Celebro mis logros y acepto cuando las cosas no me salen bien para poder mejorarlas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Afronto los desafíos de manera positiva y constructiva.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "En un Consejo de Patrulla evalúo mi desempeño y el de mis compañeras y compañeros en los roles de Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Pienso en al menos dos circunstancias en las que superé una situación adversa e identifico cómo lo hice, a quién le pedí ayuda y cómo me sentí.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Investigo y comparto la historia o testimonio de al menos tres personajes históricos que superaron dificultades y situaciones adversas.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Participo en la evaluación de las actividades de Patrulla y de Unidad identificando lo que hicimos bien y lo que debemos mejorar.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Participo de un campamento o excursión con los elementos mínimos, durmiendo en refugios improvisados y realizando cocina rústica.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 52,
+      "area": "habilidades_vida",
+      "titulo": "Desarrollo habilidades para comunicarme claramente con otros, escuchar y valorar sus ideas, trabajando juntos para lograr nuestras metas",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Me animo a hablar en público sobre temas de mi interés, compartiendo mis ideas y puntos de vista con respeto y claridad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Me intereso por el uso de diferentes tipos de medios de comunicación (radio, plataformas digitales, etc.).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Conozco las claves para lograr una buena comunicación y las aplico en mi Patrulla, familia, escuela y otros lugares que frecuento.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Utilizo adecuadamente las redes sociales para compartir nuestras aventuras, exploraciones, actividades de Patrulla y proyectos.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Aprendo claves y las utilizo para comunicarme en el desarrollo de actividades.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Puedo utilizar distintos códigos para comunicarme: morse, semáforo.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Participo de un JOTA o JOTI.",
+          "tipo": "opcional"
+        }
+      ]
+    },
+    {
+      "numero": 53,
+      "area": "habilidades_vida",
+      "titulo": "Participo de diferentes manifestaciones artísticas en las que expreso mis emociones y sentimientos",
+      "desafios": [
+        {
+          "orden": 1,
+          "texto": "Expreso mis emociones de diversas maneras a través de diferentes propuestas (escribo historias, canto, video, historietas, toco algún instrumento musical, pintura, teatro, danza, etc.).",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 2,
+          "texto": "Realizo canciones y danzas junto a mi Patrulla y Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 3,
+          "texto": "Participo de veladas y fogones junto a mi Patrulla y mi Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 4,
+          "texto": "Propongo ideas y ayudo a preparar representaciones artísticas con mi Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 5,
+          "texto": "Organizo con mi Patrulla una presentación (canción, sketch, danza…) para una velada o fogón de la Unidad.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 6,
+          "texto": "Expreso mis experiencias y sentimientos en el Libro de Oro de la Patrulla.",
+          "tipo": "requerido"
+        },
+        {
+          "orden": 7,
+          "texto": "Propongo a mi Patrulla una actividad artística que permita expresar emociones y sentimientos.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 8,
+          "texto": "Compongo, junto a mi Patrulla, canciones referidas al Movimiento Scout.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 9,
+          "texto": "Me propongo realizar alguna actividad personal relacionada con el arte; por ejemplo: aprender a tocar un instrumento musical, pintar, dibujar historietas, cantar, actuar, etc.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 10,
+          "texto": "Construyo un instrumento musical.",
+          "tipo": "opcional"
+        },
+        {
+          "orden": 11,
+          "texto": "Desarrollo una especialidad referida al arte.",
+          "tipo": "especialidad"
+        },
+        {
+          "orden": 12,
+          "texto": "Desempeño el rol de Responsable de Expresión en mi Patrulla al menos por un ciclo de programa.",
+          "tipo": "especialidad"
+        }
+      ]
+    }
+  ]
+}

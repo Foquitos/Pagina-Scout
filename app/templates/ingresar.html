@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titulo %}Ingresar{% endblock %}
+
+{% block contenido %}
+<h1>Retos de Unidad</h1>
+<p class="sub">Un reto por día para seguir explorando con tu patrulla.</p>
+
+{% if error %}<div class="aviso">{{ error }}</div>{% endif %}
+
+<form method="post" action="/ingresar" class="tarjeta" style="max-width: 26rem">
+  <label for="usuario">Usuario</label>
+  <input type="text" id="usuario" name="usuario" value="{{ usuario_ingresado or '' }}"
+         autocomplete="username" autocapitalize="none" required autofocus>
+
+  <label for="clave">Contraseña</label>
+  <input type="password" id="clave" name="clave" autocomplete="current-password" required>
+
+  <p style="margin-top:1rem"><button type="submit">Entrar</button></p>
+</form>
+{% endblock %}

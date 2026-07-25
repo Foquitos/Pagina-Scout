@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block titulo %}Hoy{% endblock %}
+
+{% block contenido %}
+<h1>Hola, {{ usuario.nombre.split()[0] }}</h1>
+<p class="sub">{{ fecha.strftime('%d/%m/%Y') }}{% if usuario.patrulla %} · Patrulla {{ usuario.patrulla.nombre }}{% endif %}</p>
+
+{% if fila_patrulla %}
+<div class="tarjeta" style="border-left: 5px solid {{ fila_patrulla.patrulla.color }}">
+  <h3>Patrulla {{ fila_patrulla.patrulla.nombre }}</h3>
+  <p class="meta">
+    <span>{{ fila_patrulla.puntos }} puntos</span>
+    <span>{{ fila_patrulla.acciones }} acciones validadas</span>
+    {% if fila_patrulla.racha %}<span>racha de {{ fila_patrulla.racha }} día{{ 's' if fila_patrulla.racha != 1 }}</span>{% endif %}
+  </p>
+</div>
+{% endif %}
+
+<h2>Retos de hoy</h2>
+
+{% if not usuario.unidad_id %}
+  <div class="aviso">Todavía no estás asignada/o a una Unidad. Avisale a tu educador/a.</div>
+{% elif not asignaciones %}
+  <p class="vacio">Hoy no hay retos cargados. Volvé más tarde.</p>
+{% else %}
+  {% for a in asignaciones %}
+    {% set entrega = entregas.get(a.id) %}
+    <article class="tarjeta acento">
+      <h3>{{ a.reto.titulo }}</h3>
+      <p class="meta">
+        {% if a.reto.area %}<span>{{ a.reto.area.icono }} {{ a.reto.area.nombre }}</span>{% endif %}
+        <span>{{ a.reto.puntaje }} puntos para la patrulla</span>
+        {% if a.alcance != 'unidad' %}<span>reto de {{ a.alcance }}</span>{% endif %}
+      </p>
+      <p>{{ a.reto.consigna }}</p>
+      {% if entrega %}
+        <p>
+          <span class="etiqueta {{ entrega.estado }}">
+            {% if entrega.estado == 'aprobada' %}Validado
+            {% elif entrega.estado == 'requiere_revision' %}Esperando al educador
+            {% elif entrega.estado == 'rechazada' %}Sin validar
+            {% else %}Enviado{% endif %}
+          </span>
+        </p>
+        {% if entrega.devolucion %}<p class="meta">{{ entrega.devolucion }}</p>{% endif %}
+        <p><a class="boton secundario" href="/reto/{{ a.id }}">Ver mi entrega</a></p>
+      {% else %}
+        <p><a class="boton" href="/reto/{{ a.id }}">Hacerlo</a></p>
+      {% endif %}
+    </article>
+  {% endfor %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block titulo %}Mis cartas{% endblock %}
+
+{% set cantidad = elegidas|length %}
+
+{% block contenido %}
+<h1>Mis Cartas de Exploración</h1>
+<p class="sub">Etapa {{ usuario.etapa_nombre }} · elegiste {{ cantidad }} de {{ min_cartas }} a {{ max_cartas }} cartas</p>
+
+<details class="tarjeta explicacion">
+  <summary>Qué son las Cartas de Exploración</summary>
+  <p>Son {{ total_cartas }} <strong>competencias</strong>: cosas que querés poder hacer, saber o
+  ser al final de la etapa. Cada una viene en una carta con sus desafíos, y están
+  repartidas en cuatro <strong>áreas de desarrollo</strong>.</p>
+
+  <p>En cada etapa elegís entre {{ min_cartas }} y {{ max_cartas }} cartas. <strong>La elección es tuya</strong>:
+  no las asigna el educador. Se conversan en el Consejo de Patrulla y con tu
+  educador/a, que te ayudan a que no queden todas en la misma área ni todas
+  fáciles.</p>
+
+  <p>Dentro de cada carta hay dos clases de desafío:</p>
+  <ul>
+    <li><strong>Requeridos</strong> — los mínimos para decir que lograste la competencia.</li>
+    <li><strong>Opcionales</strong> — enriquecen el recorrido. Uno puede reemplazar a un
+      requerido si lo conversás con el equipo de educadores. Acá entran también
+      las especialidades y los roles de patrulla, que llevan meses.</li>
+  </ul>
+
+  <p>Una carta no se aprueba ni se puntúa: se recorre. Vos marcás lo que fuiste
+  haciendo y contás cómo te fue; después lo miran tu patrulla y tu educador/a, y
+  entre los tres deciden si la competencia está lograda. Eso es la
+  autoevaluación, la coevaluación y la heteroevaluación de las que habla la guía.</p>
+
+  <p class="meta">Las cuatro etapas de la Rama son Pistas, Senda, Rumbo y Travesía.
+  Estás en {{ usuario.etapa_nombre }}.</p>
+</details>
+
+{% if cantidad < min_cartas %}
+  <div class="aviso">Te faltan {{ min_cartas - cantidad }} cartas para completar tu elección.
+    Elegí de las cuatro áreas, según lo que tengas ganas de explorar.</div>
+{% elif cantidad > max_cartas %}
+  <div class="aviso">Elegiste más de {{ max_cartas }}. Conversalo con tu educador/a antes de seguir.</div>
+{% else %}
+  <div class="aviso ok">Tu elección está completa. Compartila con tu patrulla en el Consejo.</div>
+{% endif %}
+
+<h2 id="elegidas">Las cartas que elegí</h2>
+{% if not avances %}
+  <p class="vacio">Todavía no elegiste ninguna. Buscala más abajo y tocá «Elegir esta carta».</p>
+{% else %}
+  <p class="sub">Entrá a cada una para ir marcando los desafíos y contar cómo te fue.</p>
+  {% for a in avances %}
+    <article class="tarjeta carta {{ 'elegida' if not a.elegida.lograda }} {{ 'lograda' if a.elegida.lograda }}">
+      <span class="numero">{{ a.competencia.numero }}</span>
+      <div style="flex:1">
+        <h3><a href="/mis-cartas/{{ a.competencia.id }}">{{ a.competencia.titulo }}</a></h3>
+        <p class="meta">
+          <span>{{ a.competencia.area.icono }} {{ a.competencia.area.nombre }}</span>
+          <span>{{ a.requeridos_hechos }} de {{ a.requeridos }} requeridos</span>
+          {% if a.opcionales_hechos %}<span>+{{ a.opcionales_hechos }} opcionales</span>{% endif %}
+          {% if a.comentarios %}<span>{{ a.comentarios }} comentario{{ 's' if a.comentarios != 1 }}</span>{% endif %}
+        </p>
+        <div class="avance" title="{{ a.porcentaje }}% de los requeridos">
+          <div style="width: {{ a.porcentaje }}%; background: {{ a.competencia.area.color }}"></div>
+        </div>
+        {% if a.elegida.lograda %}
+          <p><span class="etiqueta aprobada">Lograda</span></p>
+        {% elif a.completa %}
+          <p class="meta">Cumpliste todos los requeridos. Conversalo con tu educador/a para cerrarla.</p>
+        {% endif %}
+        <p style="margin-top:.5rem"><a class="boton secundario" href="/mis-cartas/{{ a.competencia.id }}">Trabajar en esta carta</a></p>
+      </div>
+    </article>
+  {% endfor %}
+{% endif %}
+
+<h2 id="catalogo">Todas las cartas</h2>
+<p class="sub">Las {{ total_cartas }} competencias, por área. Tocá una para elegirla.</p>
+
+{% for area in areas %}
+  {% set del_area = competencias|selectattr('area_id', 'equalto', area.id)|list %}
+  <h2 id="area-{{ area.codigo }}" style="color: {{ area.color }}">{{ area.icono }} {{ area.nombre }}</h2>
+  <p class="meta">{{ area.descripcion }}
+    <span>{{ del_area|length }} cartas</span>
+    <span>elegiste {{ del_area|selectattr('id', 'in', elegidas)|list|length }}</span>
+  </p>
+
+  {% for c in del_area %}
+    {% set elegida = elegidas.get(c.id) %}
+    <article class="tarjeta carta {{ 'elegida' if elegida }}" id="carta-{{ c.id }}">
+      <span class="numero">{{ c.numero }}</span>
+      <div style="flex:1">
+        <h3>{{ c.titulo }}</h3>
+        {% set requeridos = c.desafios|selectattr('tipo', 'equalto', 'requerido')|list %}
+        <details>
+          <summary>
+            {{ c.desafios|length }} desafíos{% if requeridos %} · {{ requeridos|length }} requeridos{% endif %}
+          </summary>
+          {% if requeridos %}
+            <p class="meta">Los requeridos son los mínimos para lograr la competencia.
+              Un requerido se puede cambiar por un opcional conversándolo con tu educador/a.</p>
+          {% endif %}
+          <ul>
+            {% for d in c.desafios %}
+              <li>
+                {{ d.texto }}
+                {% if d.tipo and d.tipo != 'requerido' %}
+                  <span class="chip {{ d.tipo }}">{{ d.tipo_nombre|lower }}</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </details>
+        <div class="acciones-carta">
+          <form method="post" action="/mis-cartas/{{ c.id }}">
+            {% if elegida and elegida.lograda %}
+              <span class="etiqueta aprobada">Lograda</span>
+            {% elif elegida %}
+              <button class="secundario" type="submit">Sacar de mi elección</button>
+            {% else %}
+              <button type="submit">Elegir esta carta</button>
+            {% endif %}
+          </form>
+          {% if elegida %}<a class="boton secundario" href="/mis-cartas/{{ c.id }}">Trabajar en esta carta</a>{% endif %}
+        </div>
+      </div>
+    </article>
+  {% endfor %}
+{% endfor %}
+{% endblock %}

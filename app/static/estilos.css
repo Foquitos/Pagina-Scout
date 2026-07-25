@@ -1,0 +1,170 @@
+:root {
+  --verde: #3E8E5A;
+  --verde-oscuro: #2c6a42;
+  --tinta: #1d2321;
+  --tinta-suave: #5b6660;
+  --papel: #f6f4ef;
+  --tarjeta: #ffffff;
+  --borde: #e2ddd2;
+  --alerta: #b4531f;
+  --ok: #2f7d4f;
+  --radio: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--papel);
+  color: var(--tinta);
+  line-height: 1.55;
+}
+
+a { color: var(--verde-oscuro); }
+
+.encabezado {
+  background: var(--verde);
+  color: #fff;
+  padding: .8rem 1rem;
+}
+.encabezado .interior {
+  max-width: 900px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .8rem;
+}
+.encabezado .marca { font-weight: 700; font-size: 1.05rem; }
+.encabezado nav { display: flex; flex-wrap: wrap; gap: .9rem; margin-left: auto; }
+.encabezado nav a { color: #fff; text-decoration: none; opacity: .9; font-size: .95rem; }
+.encabezado nav a:hover, .encabezado nav a.activo { opacity: 1; text-decoration: underline; }
+
+main { max-width: 900px; margin: 0 auto; padding: 1.2rem 1rem 4rem; }
+
+h1 { font-size: 1.5rem; margin: .2rem 0 .3rem; }
+h2 { font-size: 1.15rem; margin: 1.8rem 0 .6rem; }
+.sub { color: var(--tinta-suave); margin-top: 0; }
+
+.tarjeta {
+  background: var(--tarjeta);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 1rem;
+  margin-bottom: .9rem;
+}
+.tarjeta.acento { border-left: 5px solid var(--verde); }
+.tarjeta h3 { margin: 0 0 .35rem; font-size: 1.05rem; }
+.tarjeta p { margin: .35rem 0; }
+
+.meta { font-size: .85rem; color: var(--tinta-suave); }
+.meta span + span::before { content: " · "; }
+
+.etiqueta {
+  display: inline-block; padding: .12rem .55rem; border-radius: 999px;
+  font-size: .78rem; font-weight: 600; color: #fff; background: var(--tinta-suave);
+}
+.etiqueta.pendiente { background: #8a7f5c; }
+.etiqueta.requiere_revision { background: var(--alerta); }
+.etiqueta.aprobada { background: var(--ok); }
+.etiqueta.rechazada { background: #8c3b3b; }
+
+button, .boton {
+  font: inherit; cursor: pointer; border: 0; border-radius: 8px;
+  padding: .55rem 1rem; background: var(--verde); color: #fff;
+  text-decoration: none; display: inline-block;
+}
+button:hover, .boton:hover { background: var(--verde-oscuro); }
+button.secundario, .boton.secundario { background: #fff; color: var(--tinta); border: 1px solid var(--borde); }
+button.peligro { background: #8c3b3b; }
+
+label { display: block; font-weight: 600; font-size: .9rem; margin: .7rem 0 .2rem; }
+input[type=text], input[type=password], input[type=number], input[type=date],
+input[type=file], select, textarea {
+  width: 100%; font: inherit; padding: .5rem .6rem;
+  border: 1px solid var(--borde); border-radius: 8px; background: #fff;
+}
+textarea { min-height: 7rem; resize: vertical; }
+.fila { display: flex; flex-wrap: wrap; gap: .8rem; }
+.fila > * { flex: 1 1 12rem; }
+.casilla { display: flex; align-items: center; gap: .45rem; font-weight: 500; }
+.casilla input { width: auto; }
+
+table { width: 100%; border-collapse: collapse; background: #fff;
+  border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; }
+th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--borde); }
+th { background: #efeae0; font-size: .85rem; }
+tr:last-child td { border-bottom: 0; }
+
+.tablero .puesto { font-weight: 700; color: var(--tinta-suave); width: 2rem; }
+.tablero .barra { height: 8px; border-radius: 4px; background: var(--borde); overflow: hidden; }
+.tablero .barra > div { height: 100%; }
+
+.aviso { border-left: 4px solid var(--alerta); background: #fdf3ea;
+  padding: .7rem .9rem; border-radius: 8px; margin: .8rem 0; }
+.aviso.ok { border-color: var(--ok); background: #eef7f0; }
+
+.vacio { text-align: center; color: var(--tinta-suave); padding: 2rem 1rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0 0; }
+.chip { font-size: .8rem; padding: .15rem .6rem; border-radius: 999px;
+  border: 1px solid var(--borde); background: #fff; white-space: nowrap; }
+.chip.opcional { border-color: #c9bda0; background: #fbf6ea; color: #6b5c33; }
+.chip.especialidad { border-color: #b5c7d6; background: #eef4f9; color: #2f5570; }
+
+.carta { display: flex; gap: .8rem; align-items: flex-start; }
+.carta .numero { font-weight: 700; font-size: 1.1rem; color: var(--tinta-suave); min-width: 2rem; }
+.carta.elegida { border-left: 5px solid var(--verde); }
+.carta.lograda { border-left: 5px solid var(--ok); background: #f7fbf8; }
+.carta h3 a { text-decoration: none; }
+.carta h3 a:hover { text-decoration: underline; }
+
+/* El destino de un ancla no queda pegado al borde de arriba. */
+[id] { scroll-margin-top: 1rem; }
+
+.acciones-carta { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .6rem; }
+
+.avance { height: 8px; border-radius: 4px; background: var(--borde); overflow: hidden; margin: .4rem 0; }
+.avance > div { height: 100%; transition: width .2s; }
+
+.explicacion { background: #fbfaf6; }
+.explicacion summary { font-size: 1rem; }
+.explicacion p:first-of-type { margin-top: .7rem; }
+.explicacion ul { padding-left: 1.2rem; }
+
+.miga { margin: 0 0 .6rem; font-size: .9rem; }
+
+.desafio .texto-desafio { margin: 0 0 .5rem; font-weight: 600; }
+.desafio.hecho { border-left: 5px solid var(--ok); }
+.desafio.hecho .texto-desafio::before { content: "✔ "; color: var(--ok); }
+.desafio textarea { min-height: 3.5rem; }
+.desafio label[for] { font-weight: 500; font-size: .85rem; color: var(--tinta-suave); }
+
+.lista-desafios { list-style: none; padding-left: 0; }
+.lista-desafios li { display: flex; gap: .5rem; margin: .5rem 0; }
+.lista-desafios li.hecho { color: var(--tinta); }
+.lista-desafios .tilde { color: var(--ok); font-weight: 700; min-width: 1rem; }
+.lista-desafios li:not(.hecho) { color: var(--tinta-suave); }
+.lista-desafios li:not(.hecho) .tilde { color: var(--borde); }
+
+.comentario { margin: .4rem 0 .2rem; padding: .5rem .8rem; border-left: 3px solid var(--borde);
+  background: #faf9f5; border-radius: 0 8px 8px 0; font-style: italic; }
+.comentario footer { font-style: normal; margin-top: .2rem; }
+
+/* Libro de Oro */
+.pagina-libro { border-left: 5px solid #c8a951; }
+.pagina-libro h3 { font-size: 1.15rem; }
+.foto-libro { display: block; width: 100%; height: auto; border-radius: 8px; margin: .7rem 0; }
+.video-libro { position: relative; width: 100%; aspect-ratio: 16 / 9;
+  margin: .7rem 0; border-radius: 8px; overflow: hidden; background: #000; }
+.video-libro iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.texto-libro { white-space: pre-wrap; }
+
+details summary { cursor: pointer; font-weight: 600; margin-top: .4rem; }
+details ul { margin: .4rem 0; padding-left: 1.2rem; }
+details li { margin: .2rem 0; }
+
+.pie { max-width: 900px; margin: 0 auto; padding: 0 1rem 2rem;
+  color: var(--tinta-suave); font-size: .85rem; }
+
+@media (max-width: 560px) {
+  .encabezado .interior { flex-direction: column; align-items: flex-start; }
+  .encabezado nav { margin-left: 0; }
+}

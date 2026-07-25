@@ -1,0 +1,4 @@
+-r requirements.txt
+
+# Solo para scripts/probar_circuito.py
+httpx>=0.28

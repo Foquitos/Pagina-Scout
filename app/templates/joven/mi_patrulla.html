@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Mi patrulla{% endblock %}
+
+{% block contenido %}
+<h1>{% if usuario.patrulla %}Patrulla {{ usuario.patrulla.nombre }}{% else %}Mi patrulla{% endif %}</h1>
+{% if usuario.patrulla and usuario.patrulla.lema %}
+  <p class="sub">«{{ usuario.patrulla.lema }}»</p>
+{% endif %}
+
+{% if not integrantes %}
+  <p class="vacio">Todavía no estás en una patrulla. Pedile a tu educador/a que te sume a una.</p>
+{% else %}
+  <p class="sub">En qué anda cada quien con sus Cartas de Exploración. Están por
+    nombre: no es una competencia, cada recorrido es propio.</p>
+
+  {% for joven, avances in integrantes %}
+    {% set logradas = avances|selectattr('elegida.lograda')|list|length %}
+    <article class="tarjeta">
+      <h3>{{ joven.nombre }}{% if joven.id == usuario.id %} <span class="chip">vos</span>{% endif %}</h3>
+      <p class="meta">
+        <span>Etapa {{ joven.etapa_nombre }}</span>
+        <span>{{ avances|length }} cartas elegidas</span>
+        {% if logradas %}<span>{{ logradas }} lograda{{ 's' if logradas != 1 }}</span>{% endif %}
+      </p>
+      {% if avances %}
+        <div class="chips">
+          {% for a in avances %}
+            <span class="chip" title="{{ a.competencia.titulo }}"
+              style="border-color: {{ a.competencia.area.color }}">
+              {{ a.competencia.area.icono }} {{ a.competencia.numero }} ·
+              {{ a.requeridos_hechos }}/{{ a.requeridos }}
+            </span>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="meta">Todavía no eligió cartas para esta etapa.</p>
+      {% endif %}
+      <p style="margin-top:.7rem">
+        <a class="boton secundario" href="/cartas-de/{{ joven.id }}">Ver su recorrido</a>
+      </p>
+    </article>
+  {% endfor %}
+{% endif %}
+{% endblock %}

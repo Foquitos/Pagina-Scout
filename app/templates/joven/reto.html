@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block titulo %}{{ asignacion.reto.titulo }}{% endblock %}
+
+{% block contenido %}
+<p class="meta"><a href="/hoy">← Volver</a></p>
+<h1>{{ asignacion.reto.titulo }}</h1>
+<p class="meta">
+  {% if asignacion.reto.area %}<span>{{ asignacion.reto.area.icono }} {{ asignacion.reto.area.nombre }}</span>{% endif %}
+  <span>{{ asignacion.fecha.strftime('%d/%m/%Y') }}</span>
+  <span>{{ asignacion.reto.puntaje }} puntos para la patrulla</span>
+</p>
+
+<div class="tarjeta acento">
+  <p>{{ asignacion.reto.consigna }}</p>
+  {% if asignacion.reto.desafio %}
+  <details>
+    <summary>De qué carta viene</summary>
+    <p class="meta">Carta {{ asignacion.reto.desafio.competencia.numero }} —
+      {{ asignacion.reto.desafio.competencia.titulo }}</p>
+    <p>{{ asignacion.reto.desafio.texto }}</p>
+  </details>
+  {% endif %}
+</div>
+
+{% if entrega and entrega.estado == 'aprobada' %}
+  <div class="aviso ok">
+    <strong>Validado.</strong> {{ entrega.devolucion }}
+  </div>
+{% elif entrega %}
+  <div class="aviso">
+    <span class="etiqueta {{ entrega.estado }}">
+      {% if entrega.estado == 'requiere_revision' %}Esperando al educador
+      {% elif entrega.estado == 'rechazada' %}Sin validar
+      {% else %}Enviado{% endif %}
+    </span>
+    {% if entrega.devolucion %}<p>{{ entrega.devolucion }}</p>{% endif %}
+  </div>
+{% endif %}
+
+{% if entrega and entrega.archivo_foto %}
+  <p><img src="/fotos/{{ entrega.archivo_foto }}" alt="Foto de la entrega"
+          style="max-width:100%; border-radius:12px"></p>
+{% endif %}
+
+{% if not entrega or entrega.estado != 'aprobada' %}
+<form method="post" action="/reto/{{ asignacion.id }}" enctype="multipart/form-data" class="tarjeta">
+  <h3>{% if entrega %}Corregir mi entrega{% else %}Contá qué hiciste{% endif %}</h3>
+
+  {% if asignacion.reto.pide_texto %}
+  <label for="texto">Tu relato</label>
+  <textarea id="texto" name="texto" placeholder="Qué hiciste, cómo te salió y para qué sirve."
+            required>{{ entrega.texto if entrega else '' }}</textarea>
+  {% endif %}
+
+  <label for="foto">Foto {% if not asignacion.reto.pide_foto %}(opcional){% endif %}</label>
+  <input type="file" id="foto" name="foto" accept="image/*"
+         {% if asignacion.reto.pide_foto and not (entrega and entrega.archivo_foto) %}required{% endif %}>
+
+  <p style="margin-top:1rem"><button type="submit">Enviar</button></p>
+</form>
+{% endif %}
+{% endblock %}

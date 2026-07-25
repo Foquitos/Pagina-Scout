@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block titulo %}Carta {{ competencia.numero }}{% endblock %}
+
+{% block contenido %}
+<p class="miga"><a href="/mis-cartas">← Mis cartas</a></p>
+
+<h1>{{ competencia.titulo }}</h1>
+<p class="sub">
+  Carta {{ competencia.numero }} · {{ competencia.area.icono }} {{ competencia.area.nombre }}
+  · etapa {{ usuario.etapa_nombre }}
+</p>
+
+{% if not elegida %}
+  <div class="aviso">Esta carta no está en tu elección de esta etapa. Elegila para
+    poder ir marcando sus desafíos.</div>
+  <form method="post" action="/mis-cartas/{{ competencia.id }}">
+    <button type="submit">Elegir esta carta</button>
+  </form>
+{% else %}
+  <div class="tarjeta">
+    <p class="meta">
+      <span>{{ avance.requeridos_hechos }} de {{ avance.requeridos }} requeridos</span>
+      {% if avance.opcionales_hechos %}<span>+{{ avance.opcionales_hechos }} opcionales</span>{% endif %}
+    </p>
+    <div class="avance">
+      <div style="width: {{ avance.porcentaje }}%; background: {{ competencia.area.color }}"></div>
+    </div>
+    {% if elegida.lograda %}
+      <p><span class="etiqueta aprobada">Lograda</span></p>
+    {% elif avance.completa %}
+      <p class="meta">Ya cumpliste todos los requeridos. El cierre de la carta se
+        conversa: contale a tu educador/a y a tu patrulla.</p>
+    {% endif %}
+  </div>
+
+  <h2>Los desafíos</h2>
+  <p class="sub">Marcá lo que hiciste y contá cómo te fue. Lo pueden leer tu
+    patrulla y el equipo de educadores.</p>
+
+  {% for d in desafios %}
+    {% set marca = marcas.get(d.id) %}
+    <article class="tarjeta desafio {{ 'hecho' if marca and marca.hecho }}" id="desafio-{{ d.id }}">
+      <p class="texto-desafio">
+        {{ d.texto }}
+        {% if d.tipo and d.tipo != 'requerido' %}
+          <span class="chip {{ d.tipo }}">{{ d.tipo_nombre|lower }}</span>
+        {% endif %}
+      </p>
+      <form method="post" action="/mis-cartas/{{ competencia.id }}/desafios/{{ d.id }}">
+        <label class="casilla">
+          <input type="checkbox" name="hecho" value="true" {{ 'checked' if marca and marca.hecho }}>
+          Lo hice
+        </label>
+        <label for="comentario-{{ d.id }}">Cómo me fue (opcional)</label>
+        <textarea id="comentario-{{ d.id }}" name="comentario" rows="2"
+          placeholder="Qué hiciste, con quién, qué aprendiste o qué te costó.">{{ marca.comentario if marca }}</textarea>
+        <p style="margin-top:.5rem">
+          <button type="submit" class="secundario">Guardar</button>
+          {% if marca %}<span class="meta">guardado el {{ marca.actualizado_en.strftime('%d/%m/%Y') }}</span>{% endif %}
+        </p>
+      </form>
+    </article>
+  {% endfor %}
+{% endif %}
+{% endblock %}

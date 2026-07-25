@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titulo %}Panel{% endblock %}
+
+{% block contenido %}
+<h1>Panel de la Unidad</h1>
+<p class="sub">{{ fecha.strftime('%d/%m/%Y') }}{% if usuario.unidad %} · {{ usuario.unidad.nombre }}{% endif %}</p>
+
+<div class="fila">
+  <div class="tarjeta">
+    <h3>{{ pendientes }}</h3>
+    <p class="meta">entregas esperando tu mirada</p>
+    <p><a class="boton {{ 'secundario' if not pendientes }}" href="/validaciones">Revisar</a></p>
+  </div>
+  <div class="tarjeta">
+    <h3>{{ asignaciones_hoy|length }}</h3>
+    <p class="meta">retos activos hoy</p>
+    <p><a class="boton secundario" href="/asignar">Asignar otro</a></p>
+  </div>
+  <div class="tarjeta">
+    <h3>{{ jovenes_sin_patrulla }}</h3>
+    <p class="meta">jóvenes sin patrulla</p>
+    <p><a class="boton secundario" href="/jovenes">Ver</a></p>
+  </div>
+  <div class="tarjeta">
+    <h3>{{ megas_usados }} MB</h3>
+    <p class="meta">{{ fotos_guardadas }} fotos guardadas. Cada una se comprime al
+      subirla; los videos no ocupan lugar porque van por enlace.</p>
+  </div>
+</div>
+
+<h2>Retos de hoy</h2>
+{% if not asignaciones_hoy %}
+  <p class="vacio">No cargaste retos para hoy. La aplicación propone uno de las cartas
+    automáticamente hasta que asignes el tuyo.</p>
+{% else %}
+  {% for a in asignaciones_hoy %}
+  <article class="tarjeta">
+    <h3>{{ a.reto.titulo }}</h3>
+    <p class="meta">
+      <span>{{ a.alcance }}{% if a.patrulla %}: {{ a.patrulla.nombre }}{% elif a.joven %}: {{ a.joven.nombre }}{% endif %}</span>
+      <span>{{ a.reto.puntaje }} puntos</span>
+      {% if a.automatica %}<span>propuesto automáticamente</span>{% endif %}
+      <span>{{ a.entregas|length }} entregas</span>
+    </p>
+  </article>
+  {% endfor %}
+{% endif %}
+
+<h2>Tablero</h2>
+{% if not filas %}
+  <p class="vacio">Creá las patrullas para empezar. <a href="/patrullas">Ir a patrullas</a></p>
+{% else %}
+<table>
+  <thead><tr><th>Patrulla</th><th>Integrantes</th><th>Puntos</th><th>Acciones</th><th>Racha</th></tr></thead>
+  <tbody>
+    {% for f in filas %}
+    <tr>
+      <td>{{ f.patrulla.nombre }}</td>
+      <td>{{ f.integrantes }}</td>
+      <td>{{ f.puntos }}</td>
+      <td>{{ f.acciones }}</td>
+      <td>{{ f.racha }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

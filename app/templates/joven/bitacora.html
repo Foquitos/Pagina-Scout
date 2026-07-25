@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Bitácora de Aventura{% endblock %}
+
+{% block contenido %}
+<h1>Bitácora de Aventura</h1>
+<p class="sub">Tu registro personal: qué aprendiste, qué te costó, quién te ayudó y cómo te sentiste.
+Esto es tuyo, no se puntúa.</p>
+
+<form method="post" action="/bitacora" class="tarjeta">
+  <label for="titulo">Título</label>
+  <input type="text" id="titulo" name="titulo" placeholder="Campamento de patrulla, nudo margarita…">
+
+  <label for="texto">Qué querés registrar</label>
+  <textarea id="texto" name="texto" required
+    placeholder="¿Qué cosas aprendí? ¿Qué desafíos superé? ¿Qué ayuda recibí? ¿Cómo me siento?"></textarea>
+
+  <p style="margin-top:1rem"><button type="submit">Guardar</button></p>
+</form>
+
+{% if entradas %}
+  {% for e in entradas %}
+  <article class="tarjeta">
+    {% if e.titulo %}<h3>{{ e.titulo }}</h3>{% endif %}
+    <p class="meta">{{ e.creada_en.strftime('%d/%m/%Y') }}</p>
+    <p>{{ e.texto }}</p>
+  </article>
+  {% endfor %}
+{% else %}
+  <p class="vacio">Tu bitácora está vacía. La primera entrada puede ser hoy.</p>
+{% endif %}
+{% endblock %}

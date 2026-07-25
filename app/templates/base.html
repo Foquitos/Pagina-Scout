@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Retos de Unidad{% endblock %}</title>
+  <link rel="stylesheet" href="/estaticos/estilos.css">
+</head>
+<body>
+<header class="encabezado">
+  <div class="interior">
+    <span class="marca">⚜ Retos de Unidad</span>
+    {% if usuario %}
+    <nav>
+      {% if usuario.es_educador %}
+        <a href="/panel">Panel</a>
+        <a href="/validaciones">Validaciones</a>
+        <a href="/retos">Retos</a>
+        <a href="/asignar">Asignar</a>
+        <a href="/patrullas">Patrullas</a>
+        <a href="/jovenes">Jóvenes</a>
+      {% else %}
+        <a href="/hoy">Hoy</a>
+        <a href="/mis-retos">Mis retos</a>
+        <a href="/mis-cartas">Mis cartas</a>
+        <a href="/mi-patrulla">Mi patrulla</a>
+        <a href="/libro-de-oro">Libro de Oro</a>
+        <a href="/bitacora">Bitácora</a>
+      {% endif %}
+      <a href="/tablero">Tablero</a>
+      <a href="/salir">Salir</a>
+    </nav>
+    {% endif %}
+  </div>
+</header>
+
+<main>
+  {% block contenido %}{% endblock %}
+</main>
+
+<footer class="pie">
+  {% if usuario %}<p>{{ usuario.nombre }}{% if usuario.patrulla %} · Patrulla {{ usuario.patrulla.nombre }}{% endif %}{% if not usuario.es_educador %} · Etapa {{ usuario.etapa_nombre }}{% endif %}</p>{% endif %}
+</footer>
+</body>
+</html>

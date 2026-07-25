@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block titulo %}Tablero de patrullas{% endblock %}
+
+{% block contenido %}
+<h1>Tablero de patrullas</h1>
+<p class="sub">El puntaje es siempre de la patrulla. No hay marcador individual.</p>
+
+{% if not filas %}
+  <p class="vacio">Todavía no hay patrullas cargadas.</p>
+{% else %}
+  {% set maximo = filas[0].puntos if filas[0].puntos > 0 else 1 %}
+  <table class="tablero">
+    <thead>
+      <tr><th></th><th>Patrulla</th><th>Puntos</th><th>Acciones</th><th>Racha</th></tr>
+    </thead>
+    <tbody>
+      {% for f in filas %}
+      <tr>
+        <td class="puesto">{{ loop.index }}</td>
+        <td>
+          <strong>{{ f.patrulla.nombre }}</strong>
+          {% if f.patrulla.lema %}<div class="meta">{{ f.patrulla.lema }}</div>{% endif %}
+          <div class="barra"><div style="width: {{ (f.puntos / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div></div>
+        </td>
+        <td>{{ f.puntos }}</td>
+        <td>{{ f.acciones }}</td>
+        <td>{{ f.racha }} día{{ 's' if f.racha != 1 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+{% endblock %}

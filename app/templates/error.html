@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }}{% endblock %}
+
+{% block contenido %}
+<h1>{{ titulo }}</h1>
+{% if detalle %}<p class="sub">{{ detalle }}</p>{% endif %}
+<p><a class="boton secundario" href="/">Volver al inicio</a></p>
+{% endblock %}

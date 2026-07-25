@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}Asignar retos{% endblock %}
+
+{% block contenido %}
+<h1>Asignar un reto</h1>
+<p class="sub">Elegí para qué día y para quiénes. Si no asignás nada, la aplicación propone
+un desafío de las cartas para toda la Unidad.</p>
+
+{% if not retos %}
+  <div class="aviso">Primero creá al menos un reto en <a href="/retos">Retos</a>.</div>
+{% else %}
+<form method="post" action="/asignar" class="tarjeta">
+  <label for="reto_id">Reto</label>
+  <select id="reto_id" name="reto_id" required>
+    {% for r in retos %}<option value="{{ r.id }}">{{ r.titulo }} ({{ r.puntaje }} pts)</option>{% endfor %}
+  </select>
+
+  <div class="fila">
+    <div>
+      <label for="fecha">Fecha</label>
+      <input type="date" id="fecha" name="fecha" value="{{ hoy.isoformat() }}" required>
+    </div>
+    <div>
+      <label for="alcance">Para quién</label>
+      <select id="alcance" name="alcance">
+        <option value="unidad">Toda la Unidad</option>
+        <option value="patrulla">Una patrulla</option>
+        <option value="joven">Una persona</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="fila">
+    <div>
+      <label for="patrulla_id">Patrulla (si corresponde)</label>
+      <select id="patrulla_id" name="patrulla_id">
+        <option value="">—</option>
+        {% for p in patrullas %}<option value="{{ p.id }}">{{ p.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="joven_id">Persona (si corresponde)</label>
+      <select id="joven_id" name="joven_id">
+        <option value="">—</option>
+        {% for j in jovenes %}<option value="{{ j.id }}">{{ j.nombre }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <p style="margin-top:1rem"><button type="submit">Asignar</button></p>
+</form>
+{% endif %}
+
+<h2>Asignaciones de hoy en adelante</h2>
+{% if not proximas %}
+  <p class="vacio">No hay nada agendado.</p>
+{% else %}
+<table>
+  <thead><tr><th>Fecha</th><th>Reto</th><th>Para</th><th>Entregas</th></tr></thead>
+  <tbody>
+    {% for a in proximas %}
+    <tr>
+      <td>{{ a.fecha.strftime('%d/%m') }}</td>
+      <td>{{ a.reto.titulo }}</td>
+      <td>{% if a.patrulla %}{{ a.patrulla.nombre }}{% elif a.joven %}{{ a.joven.nombre }}{% else %}Unidad{% endif %}</td>
+      <td>{{ a.entregas|length }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

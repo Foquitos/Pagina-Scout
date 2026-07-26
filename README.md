@@ -394,6 +394,37 @@ a partir de un formulario es una puerta abierta.
 
 El panel del educador muestra cuánto disco llevan usado las fotos.
 
+## Sacar un reto de la agenda
+
+Arrepentirse tiene que ser barato. En `/asignar`, cada fila de la agenda tiene
+su **Quitar**, y si nadie entregó nada el reto se saca derecho, con una
+pregunta y listo.
+
+Con entregas adentro es otra cosa, y la app no la trata igual: ahí hay lo que
+escribió un chico y puntos que ya están en el tablero de una patrulla. Sigue el
+mismo criterio que el cierre de cartas —no bloquea, avisa—: vuelve a la agenda
+con la cuenta exacta de lo que se estaría borrando (cuántas entregas, cuántas
+validadas, cuántos puntos y a qué patrullas se les sacan) y hace falta marcar
+una casilla. La pantalla además ofrece la salida obvia: **dejarlo donde está**,
+porque un reto viejo en la agenda no molesta a nadie.
+
+Dos cosas que el borrado respeta:
+
+- **La Bitácora de Aventura no se toca.** Es el registro personal del joven
+  —"esto es tuyo y no se puntúa"— y no es de nadie más: que el educador se
+  arrepienta de un reto no puede borrarle a un chico lo que escribió. Si una
+  entrada apuntaba a una entrega que se va, queda la entrada y se suelta el
+  vínculo.
+- **Las fotos de las entregas se borran del disco**, igual que al borrar una
+  página del Libro de Oro. Un archivo huérfano ocupa lo mismo que uno en uso.
+
+Del reto **propuesto por la aplicación** (🤖) se borra también el `Reto` que
+inventó para ese día: nació para esa asignación y para nada más. Los que
+escribió el educador quedan en `/retos`, que para eso los escribió. Ojo con
+esto: si sacás el propuesto y ese día se queda sin ningún reto, la aplicación
+vuelve a proponer **el mismo** —la elección es determinista por (unidad,
+fecha)—. Para que no vuelva, asigná uno propio.
+
 ## La validación con IA
 
 La interfaz está lista y el resto del sistema ya trabaja contra ella; falta

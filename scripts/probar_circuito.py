@@ -15,7 +15,7 @@ import os
 import re
 import sys
 import tempfile
-from datetime import date
+from datetime import date, timedelta
 from io import BytesIO
 from pathlib import Path
 
@@ -37,11 +37,15 @@ from app.models import (  # noqa: E402
     DESAFIO_ESPECIALIDAD,
     DESAFIO_REQUERIDO,
     Area,
+    Asignacion,
     AvanceDesafio,
     CambioEtapa,
     CompetenciaElegida,
     Desafio,
+    EntradaBitacora,
+    Entrega,
     Patrulla,
+    Reto,
     Usuario,
 )
 from app.servicios import medios  # noqa: E402
@@ -732,6 +736,98 @@ def main() -> int:
         recuerdo not in joven.get(f"/libro-de-oro/{halcones_id}").text,
     )
     check("borrar la página borra su foto", not list(SUBIDAS.glob("*.jpg")))
+
+    # --- sacar un reto de la agenda -------------------------------------------
+    # Arrepentirse de un reto que nadie entregó tiene que ser barato. Borrar uno
+    # que ya tiene entregas adentro, no: ahí hay trabajo de un chico y puntos de
+    # una patrulla.
+
+    manana = (date.today() + timedelta(days=1)).isoformat()
+    r = edu.post("/asignar", data={"reto_id": str(reto_id), "fecha": manana, "alcance": "unidad"})
+    agendado = int(re.findall(r"/asignar/(\d+)/borrar", r.text)[-1])
+    check("el reto de mañana queda agendado", f"/asignar/{agendado}/borrar" in r.text)
+    check("la agenda tiene su columna para quitar", "<th>Quitar</th>" in r.text)
+
+    # Un `confirmar` que no lleva a ningún lado no puede voltear la página.
+    check(
+        "un confirmar inventado no rompe la agenda",
+        edu.get("/asignar?confirmar=999999").status_code == 200
+        and edu.get("/asignar?confirmar=abc").status_code == 200,
+    )
+
+    check(
+        "un joven no saca retos de la agenda",
+        joven.post(f"/asignar/{agendado}/borrar").status_code == 403,
+    )
+    check(
+        "una asignación de otra Unidad no existe",
+        edu.post("/asignar/999999/borrar").status_code == 404,
+    )
+
+    r = edu.post(f"/asignar/{agendado}/borrar", follow_redirects=False)
+    check("sin entregas se saca derecho", r.headers["location"] == "/asignar", r.headers["location"])
+    with SesionLocal() as s:
+        check("y desaparece de la base", s.get(Asignacion, agendado) is None)
+
+    # La de «Nudo margarita» tiene una entrega validada de 15 puntos.
+    con_entregas = nuevo["asignacion_id"]
+    with SesionLocal() as s:
+        entrega = s.scalar(select(Entrega).where(Entrega.asignacion_id == con_entregas))
+        # Una entrada de bitácora colgada de esa entrega: es lo personal del
+        # joven y no puede irse con el reto del que se arrepintió el educador.
+        s.add(EntradaBitacora(joven_id=ana_id, entrega_id=entrega.id,
+                              titulo="El nudo", texto="Me salió a la tercera."))
+        s.commit()
+
+    r = edu.post(f"/asignar/{con_entregas}/borrar", follow_redirects=False)
+    check(
+        "con entregas adentro pide confirmación",
+        f"confirmar={con_entregas}" in r.headers["location"],
+        r.headers["location"],
+    )
+    with SesionLocal() as s:
+        check("y mientras tanto no lo saca", s.get(Asignacion, con_entregas) is not None)
+
+    pagina = edu.get(f"/asignar?confirmar={con_entregas}").text
+    check("la página dice cuántos puntos se llevaría", "15 puntos" in pagina)
+    check("y a qué patrulla", "Halcones" in pagina)
+
+    edu.post(f"/asignar/{con_entregas}/borrar", data={"confirmado": "true"})
+    with SesionLocal() as s:
+        check("confirmando se saca igual", s.get(Asignacion, con_entregas) is None)
+        check(
+            "y se lleva sus entregas",
+            s.scalar(select(func.count(Entrega.id)).where(
+                Entrega.asignacion_id == con_entregas)) == 0,
+        )
+        suelta = s.scalar(select(EntradaBitacora).where(EntradaBitacora.titulo == "El nudo"))
+        check("la bitácora del joven sobrevive", suelta is not None)
+        check("y queda sin el vínculo a la entrega borrada", suelta.entrega_id is None)
+
+    halcones = next(f for f in joven.get("/api/tablero").json() if f["patrulla"] == "Halcones")
+    check("los puntos vuelven a donde estaban", halcones["puntos"] == 10, halcones["puntos"])
+
+    # Una entrega con foto: el archivo tampoco puede quedar dando vueltas.
+    edu.post("/asignar", data={"reto_id": str(reto_id), "fecha": date.today().isoformat(),
+                               "alcance": "unidad"})
+    with SesionLocal() as s:
+        con_foto = s.scalar(select(func.max(Asignacion.id)))
+    joven.post(f"/reto/{con_foto}", data={"texto": "corto"},
+               files={"foto": ("entrega.jpg", original, "image/jpeg")})
+    check("la entrega deja su foto en disco", len(list(SUBIDAS.glob("*.jpg"))) == 1)
+    edu.post(f"/asignar/{con_foto}/borrar", data={"confirmado": "true"})
+    check("sacar el reto borra las fotos de sus entregas", not list(SUBIDAS.glob("*.jpg")))
+
+    # El reto que inventó la aplicación no sobrevive a su asignación.
+    with SesionLocal() as s:
+        automatica = s.scalar(select(Asignacion).where(Asignacion.automatica.is_(True)))
+        auto_id, auto_reto = automatica.id, automatica.reto_id
+    edu.post(f"/asignar/{auto_id}/borrar", data={"confirmado": "true"})
+    with SesionLocal() as s:
+        check("sacar el reto propuesto se lleva el reto que inventó la app",
+              s.get(Asignacion, auto_id) is None and s.get(Reto, auto_reto) is None)
+        check("el reto que escribió el educador sigue en su lista",
+              s.get(Reto, reto_id) is not None)
 
     print()
     if fallos:

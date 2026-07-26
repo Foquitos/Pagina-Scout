@@ -244,15 +244,21 @@ def archivar_reto(
 @router.get("/asignar")
 def form_asignar(
     request: Request,
+    confirmar: str = "",
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
     unidad_id = _unidad_de(usuario)
+    # `confirmar` trae el reto que se quiso sacar y tenía entregas adentro,
+    # para volver a mostrar el aviso con lo que se estaría llevando puesto.
+    a_confirmar = _agendado(sesion, confirmar, usuario) if confirmar else None
     return render(
         request,
         "educador/asignar.html",
         usuario=usuario,
         hoy=retos.hoy(),
+        a_confirmar=a_confirmar,
+        se_lleva=retos.lo_que_se_lleva(a_confirmar) if a_confirmar else None,
         retos=list(
             sesion.scalars(
                 select(Reto)
@@ -321,6 +327,43 @@ def asignar(
             asignado_por_id=usuario.id,
         )
     )
+    sesion.commit()
+    return redirigir("/asignar")
+
+
+def _agendado(sesion: Session, asignacion_id: str | int, educador: Usuario) -> Asignacion | None:
+    """Una asignación de la Unidad de quien pregunta, o nada."""
+    try:
+        asignacion = sesion.get(Asignacion, int(asignacion_id))
+    except (TypeError, ValueError):
+        return None
+    if asignacion is None or asignacion.unidad_id != _unidad_de(educador):
+        return None
+    return asignacion
+
+
+@router.post("/asignar/{asignacion_id}/borrar")
+def borrar_agendado(
+    asignacion_id: int,
+    confirmado: bool = Form(False),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Saca un reto de la agenda. Arrepentirse tiene que poder ser barato.
+
+    Sin entregas se saca derecho. Con entregas no, y no por trámite: adentro
+    hay lo que escribió un chico y puntos que ya están en el tablero de una
+    patrulla. Se puede igual —la decisión es del educador— pero recién después
+    de leer qué se lleva puesto.
+    """
+    asignacion = _agendado(sesion, asignacion_id, usuario)
+    if asignacion is None:
+        raise HTTPException(404, "Ese reto agendado no existe.")
+
+    if retos.lo_que_se_lleva(asignacion).hay_trabajo_ajeno and not confirmado:
+        return redirigir(f"/asignar?confirmar={asignacion.id}#confirmar")
+
+    retos.borrar_asignacion(sesion, asignacion)
     sesion.commit()
     return redirigir("/asignar")
 

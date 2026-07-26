@@ -56,6 +56,43 @@
 {% endif %}
 
 <h2>Agenda de hoy en adelante</h2>
+
+{% if a_confirmar %}
+  {# Se quiso sacar un reto que ya tiene entregas. No se bloquea: se cuenta
+     exactamente qué se estaría borrando y lo decide el educador. #}
+  <div class="aviso alerta" id="confirmar" data-aviso="El reto sigue en la agenda: falta confirmar.">
+    <span class="icono" aria-hidden="true">✋</span>
+    <div>
+      <strong>«{{ a_confirmar.reto.titulo }}» ya tiene
+        {{ se_lleva.entregas }} entrega{{ 's' if se_lleva.entregas != 1 }}.</strong>
+      <p>Si lo sacás de la agenda se borra{{ 'n' if se_lleva.entregas != 1 }} también,
+        con lo que escribieron y las fotos que subieron.
+        {% if se_lleva.validadas %}
+          {{ se_lleva.validadas }} estaba{{ 'n' if se_lleva.validadas != 1 }} validada{{ 's' if se_lleva.validadas != 1 }}:
+          {{ se_lleva.puntos }} punto{{ 's' if se_lleva.puntos != 1 }}
+          {{ 'salen' if se_lleva.puntos != 1 else 'sale' }} del tablero
+          {% if se_lleva.patrullas %}de {{ se_lleva.patrullas|join(' y ') }}{% endif %}.
+        {% endif %}
+      </p>
+      <p class="meta">Si lo que querés es que no siga contando pero sin borrar lo
+        que hicieron, dejalo donde está: un reto viejo en la agenda no molesta a nadie.</p>
+
+      <form method="post" action="/asignar/{{ a_confirmar.id }}/borrar"
+            data-sin-recarga="Reto sacado de la agenda.">
+        <label class="casilla">
+          <input type="checkbox" name="confirmado" value="true">
+          Sé que se borra{{ 'n' if se_lleva.entregas != 1 }} {{ se_lleva.entregas }}
+          entrega{{ 's' if se_lleva.entregas != 1 }} y lo saco igual.
+        </label>
+        <div class="acciones">
+          <button type="submit" class="peligro">Sacarlo de la agenda</button>
+          <a class="boton secundario" href="/asignar">Dejarlo como está</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
 {% if not proximas %}
   <div class="vacio">
     <img src="/estaticos/img/vacio/mapa.svg" alt="">
@@ -65,18 +102,32 @@
 {% else %}
 <div class="tabla-envoltura">
   <table>
-    <thead><tr><th>Fecha</th><th>Reto</th><th>Para</th><th>Entregas</th></tr></thead>
+    <thead><tr><th>Fecha</th><th>Reto</th><th>Para</th><th>Entregas</th><th>Quitar</th></tr></thead>
     <tbody>
       {% for a in proximas %}
       <tr>
         <td><strong>{{ a.fecha.strftime('%d/%m') }}</strong></td>
-        <td>{{ a.reto.titulo }}</td>
+        <td>{{ a.reto.titulo }}
+          {% if a.automatica %}<span class="chip">🤖 propuesto</span>{% endif %}</td>
         <td>{% if a.patrulla %}{{ a.patrulla.nombre }}{% elif a.joven %}{{ a.joven.nombre }}{% else %}Unidad{% endif %}</td>
         <td>{{ a.entregas|length }}</td>
+        <td>
+          {# Sin entregas la pregunta la hace el navegador ahí mismo. Con
+             entregas no: esa la contesta la pantalla de arriba, con los
+             números de lo que se estaría borrando a la vista. #}
+          <form method="post" action="/asignar/{{ a.id }}/borrar"
+                data-sin-recarga="Reto sacado de la agenda."
+                {% if not a.entregas %}data-confirmar="¿Sacar «{{ a.reto.titulo[:70] }}» de la agenda?"{% endif %}>
+            <button type="submit" class="secundario">Quitar</button>
+          </form>
+        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 </div>
+<p class="meta" style="margin-top:.8rem">Los 🤖 los propuso la aplicación para que
+  el día no quedara vacío. Si sacás uno y ese día se queda sin ningún reto, vuelve
+  a proponer el mismo: asigná el tuyo y no vuelve más.</p>
 {% endif %}
 {% endblock %}

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.config import PUNTAJE_POR_DEFECTO, ZONA_HORARIA
@@ -14,14 +15,17 @@ from app.models import (
     ALCANCE_PATRULLA,
     ALCANCE_UNIDAD,
     DESAFIO_ESPECIALIDAD,
+    ESTADO_APROBADA,
     TIPO_CARTA,
     Asignacion,
     Competencia,
     Desafio,
+    EntradaBitacora,
     Entrega,
     Reto,
     Usuario,
 )
+from app.servicios import medios
 
 
 def hoy() -> date:
@@ -141,3 +145,72 @@ def asegurar_reto_del_dia(sesion: Session, unidad_id: int, fecha: date) -> Asign
     sesion.add(asignacion)
     sesion.commit()
     return asignacion
+
+
+# --- Sacar un reto de la agenda ----------------------------------------------
+
+
+@dataclass
+class LoQueSeLleva:
+    """Qué se pierde al sacar un reto agendado.
+
+    Un reto que todavía nadie entregó es un plan y nada más: se saca y listo,
+    que es para lo que existe poder arrepentirse. Pero en cuanto alguien
+    entregó, ahí adentro hay el trabajo de un chico y puntos que ya están en el
+    tablero de una patrulla. Eso no puede desaparecer sin que alguien lo mire.
+    """
+
+    entregas: int = 0
+    validadas: int = 0
+    puntos: int = 0
+    patrullas: list[str] = field(default_factory=list)
+
+    @property
+    def hay_trabajo_ajeno(self) -> bool:
+        return self.entregas > 0
+
+
+def lo_que_se_lleva(asignacion: Asignacion) -> LoQueSeLleva:
+    entregas = list(asignacion.entregas)
+    validadas = [e for e in entregas if e.estado == ESTADO_APROBADA]
+    return LoQueSeLleva(
+        entregas=len(entregas),
+        validadas=len(validadas),
+        puntos=sum(e.puntaje_otorgado for e in validadas),
+        patrullas=sorted({e.patrulla.nombre for e in validadas if e.patrulla}),
+    )
+
+
+def borrar_asignacion(sesion: Session, asignacion: Asignacion) -> None:
+    """Saca un reto de la agenda con todo lo que colgaba de él.
+
+    La Bitácora de Aventura no se toca. Es el registro personal del joven —"esto
+    es tuyo y no se puntúa"— y no es de nadie más: que el educador se arrepienta
+    de un reto no puede borrarle a un chico lo que escribió. Si alguna entrada
+    apuntaba a una entrega que se va, queda la entrada y se suelta el vínculo.
+    """
+    entregas = list(asignacion.entregas)
+    if entregas:
+        sesion.execute(
+            update(EntradaBitacora)
+            .where(EntradaBitacora.entrega_id.in_([e.id for e in entregas]))
+            .values(entrega_id=None)
+        )
+    for entrega in entregas:
+        medios.borrar_foto(entrega.archivo_foto)
+        sesion.delete(entrega)
+
+    reto = asignacion.reto
+    era_automatica = asignacion.automatica
+    sesion.delete(asignacion)
+    sesion.flush()
+
+    # El reto que se inventó la aplicación no le sirve a nadie sin su
+    # asignación: nació para ese día y para nada más. Los que escribió el
+    # educador quedan en /retos, que para eso los escribió.
+    if era_automatica and reto is not None:
+        sigue_en_uso = sesion.scalar(
+            select(Asignacion.id).where(Asignacion.reto_id == reto.id)
+        )
+        if sigue_en_uso is None:
+            sesion.delete(reto)

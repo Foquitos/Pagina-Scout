@@ -44,10 +44,78 @@ from app.models import (
     Desafio,
     Usuario,
 )
+from app.servicios import agenda
+from app.servicios import patrulla as vida_de_patrulla
 
 # Cuántas cartas elige cada joven para su etapa (cap. 9).
 MIN_CARTAS = 12
 MAX_CARTAS = 14
+
+
+@dataclass(frozen=True)
+class ExigenciaEtapa:
+    """Lo que el capítulo 9 pide para dar una etapa por recorrida, además de las cartas.
+
+    Son acumulativas: la etapa Senda pide «un rol de patrulla **diferente** al
+    que ha desempeñado en etapas anteriores», así que a esa altura son dos
+    cargos distintos, no uno más suelto.
+
+    `conversadas` son las exigencias que ninguna base de datos puede medir
+    —«apoye al menos a una scout o a un scout que está comenzando su progresión
+    personal»— y que por eso se muestran como recordatorio y no como casillero.
+    """
+
+    cargos: int = 0
+    descubiertas: int = 0
+    proyectos_unidad: int = 0
+    proyectos_patrulla: int = 0
+    conversadas: tuple[str, ...] = ()
+
+
+REQUISITOS_ETAPA: dict[str, ExigenciaEtapa] = {
+    # «Desempeñe un rol o cargo de patrulla al menos por un Ciclo de Programa a
+    # satisfacción del Consejo de Patrulla.»
+    "pistas": ExigenciaEtapa(cargos=1),
+    # «Desempeñe un rol de patrulla diferente (…) Haya participado al menos en
+    # una descubierta de patrulla o de Unidad.»
+    "senda": ExigenciaEtapa(cargos=2, descubiertas=1),
+    # «Haya participado al menos en un Proyecto de Unidad y un Proyecto de Patrulla.»
+    "rumbo": ExigenciaEtapa(
+        cargos=2, descubiertas=1, proyectos_unidad=1, proyectos_patrulla=1
+    ),
+    # «Haya desempeñado al menos tres o más roles de patrulla (…) Apoye al menos
+    # a una scout o a un scout que está comenzando su progresión personal (…)
+    # Realice su Exploración de Travesía.»
+    "travesia": ExigenciaEtapa(
+        cargos=3,
+        descubiertas=1,
+        proyectos_unidad=1,
+        proyectos_patrulla=1,
+        conversadas=(
+            "Apoyar a alguien que recién empieza su progresión",
+            "La Exploración de Travesía",
+        ),
+    ),
+}
+
+
+@dataclass
+class Requisito:
+    """Una línea de la lista de lo que pide la etapa, ya contada."""
+
+    texto: str
+    tiene: int = 0
+    pide: int = 0
+    # Lo que la aplicación no puede saber sola: se muestra, no se cuenta.
+    medible: bool = True
+
+    @property
+    def cumple(self) -> bool:
+        return not self.medible or self.tiene >= self.pide
+
+    @property
+    def faltan(self) -> int:
+        return max(0, self.pide - self.tiene) if self.medible else 0
 
 
 class NecesitaConfirmacion(Exception):
@@ -331,10 +399,19 @@ def historial_de_cartas(sesion: Session, joven: Usuario) -> list[EtapaCumplida]:
 
 @dataclass
 class AvanceEtapa:
-    """La etapa de un joven vista entera: es lo que se mira para cambiarla."""
+    """La etapa de un joven vista entera: es lo que se mira para cambiarla.
+
+    Las cartas son la mitad. La otra mitad son los cargos de patrulla, las
+    descubiertas y los proyectos que el capítulo 9 pide para cada etapa, y que
+    hasta que existieron los cargos en la aplicación no se podían ni contar.
+    """
 
     joven: Usuario
     avances: list[AvanceCarta]
+    cargos_cumplidos: int = 0
+    descubiertas: int = 0
+    proyectos_unidad: int = 0
+    proyectos_patrulla: int = 0
 
     @property
     def elegidas(self) -> int:
@@ -363,8 +440,44 @@ class AvanceEtapa:
         return max(0, MIN_CARTAS - self.logradas)
 
     @property
+    def exigencia(self) -> ExigenciaEtapa:
+        return REQUISITOS_ETAPA.get(self.joven.etapa, ExigenciaEtapa())
+
+    @property
+    def requisitos(self) -> list[Requisito]:
+        """La lista de la etapa, con lo que ya tiene puesto al lado.
+
+        Las cartas van primero porque son el corazón de la progresión; lo demás
+        es lo que la guía suma a cada etapa.
+        """
+        pedido = self.exigencia
+        lista = [Requisito("Cartas logradas de la etapa", self.logradas, MIN_CARTAS)]
+        if pedido.cargos:
+            lista.append(
+                Requisito("Cargos de patrulla distintos, cumplidos", self.cargos_cumplidos, pedido.cargos)
+            )
+        if pedido.descubiertas:
+            lista.append(Requisito("Descubiertas", self.descubiertas, pedido.descubiertas))
+        if pedido.proyectos_unidad:
+            lista.append(
+                Requisito("Proyectos de Unidad", self.proyectos_unidad, pedido.proyectos_unidad)
+            )
+        if pedido.proyectos_patrulla:
+            lista.append(
+                Requisito(
+                    "Proyectos de Patrulla", self.proyectos_patrulla, pedido.proyectos_patrulla
+                )
+            )
+        lista += [Requisito(texto, medible=False) for texto in pedido.conversadas]
+        return lista
+
+    @property
+    def requisitos_pendientes(self) -> list[Requisito]:
+        return [r for r in self.requisitos if not r.cumple]
+
+    @property
     def listo_para_avanzar(self) -> bool:
-        return self.faltan_para_avanzar == 0
+        return not self.requisitos_pendientes
 
     @property
     def etapa_nombre(self) -> str:
@@ -377,14 +490,25 @@ class AvanceEtapa:
             return ""
         if not self.elegidas:
             return f"Todavía no eligió ninguna carta para la etapa {self.etapa_nombre}."
+
+        partes = [
+            f"{r.texto.lower()}: {r.tiene} de {r.pide}" for r in self.requisitos_pendientes
+        ]
         return (
-            f"Lleva {self.logradas} de las {MIN_CARTAS} cartas logradas de la etapa "
-            f"{self.etapa_nombre}: le faltan {self.faltan_para_avanzar}."
+            f"Para cerrar la etapa {self.etapa_nombre} le falta — " + "; ".join(partes) + "."
         )
 
 
 def resumen_de_etapa(sesion: Session, joven: Usuario) -> AvanceEtapa:
-    return AvanceEtapa(joven=joven, avances=cartas_elegidas(sesion, joven))
+    hizo = agenda.lo_que_hizo(sesion, joven)
+    return AvanceEtapa(
+        joven=joven,
+        avances=cartas_elegidas(sesion, joven),
+        cargos_cumplidos=vida_de_patrulla.cumplidos_distintos(sesion, joven),
+        descubiertas=hizo.descubiertas,
+        proyectos_unidad=hizo.proyectos_unidad,
+        proyectos_patrulla=hizo.proyectos_patrulla,
+    )
 
 
 def conteo_por_joven(sesion: Session, jovenes: list[Usuario]) -> dict[int, tuple[int, int]]:
@@ -414,6 +538,29 @@ def conteo_por_joven(sesion: Session, jovenes: list[Usuario]) -> dict[int, tuple
     return {j.id: conteos.get(j.id, (0, 0)) for j in jovenes}
 
 
+def cartas_sin_acordar(sesion: Session, unidad_id: int) -> list[CompetenciaElegida]:
+    """Las que un joven cerró y el equipo todavía no conversó con él.
+
+    No es una cola de aprobación: la carta ya está cerrada y ya cuenta. Es la
+    lista de conversaciones pendientes, que es lo que la guía sí le pide al
+    equipo de educadores —«acompañar a cada joven a tomar conciencia de sus
+    aprendizajes»— y lo único que sin esta lista se olvidaría.
+    """
+    return list(
+        sesion.scalars(
+            select(CompetenciaElegida)
+            .join(Usuario, Usuario.id == CompetenciaElegida.joven_id)
+            .where(
+                Usuario.unidad_id == unidad_id,
+                Usuario.activo.is_(True),
+                CompetenciaElegida.lograda.is_(True),
+                CompetenciaElegida.acordada.is_(False),
+            )
+            .order_by(CompetenciaElegida.lograda_en)
+        )
+    )
+
+
 def historial_de_etapas(sesion: Session, joven: Usuario) -> list[CambioEtapa]:
     return list(
         sesion.scalars(
@@ -424,7 +571,66 @@ def historial_de_etapas(sesion: Session, joven: Usuario) -> list[CambioEtapa]:
     )
 
 
-# --- Lo que decide el educador -----------------------------------------------
+# --- El cierre de una carta ---------------------------------------------------
+#
+# Quien cierra una carta es su dueño. El capítulo 9 lo dice dos veces y de dos
+# maneras: «la joven o el joven son los principales protagonistas de la
+# evaluación de la progresión personal» y, para cuando el equipo no coincide,
+# «siempre primará la autoevaluación. Es preferible que la o el joven se exceda
+# en la estimación de sus logros y no que se afecte su autoestima».
+#
+# De ahí que el acuerdo del educador (`acordar_carta`) no habilite nada: la
+# carta ya está cerrada y contada. Lo que deja es constancia de que la
+# conversación existió, que es lo que la guía sí les pide a los adultos.
+
+# Las preguntas de la autoevaluación son textuales del capítulo 9.
+PREGUNTAS_AUTOEVALUACION = (
+    "¿Qué aprendiste?",
+    "¿Qué hiciste para aprenderlo?",
+    "¿Qué se te hizo difícil y cómo lo resolviste?",
+    "¿Quién te ayudó?",
+    "¿Cómo te sentiste?",
+    "¿Qué te quedaron ganas de aprender ahora?",
+)
+
+
+def cerrar_carta_el_joven(
+    elegida: CompetenciaElegida,
+    avance: AvanceCarta,
+    joven: Usuario,
+    autoevaluacion: str,
+    confirmado: bool = False,
+) -> None:
+    """El joven cierra su propia carta contando cómo le fue.
+
+    La autoevaluación no es un trámite para destrabar el botón: es la carta. Sin
+    ella no hay nada que conversar después, así que se pide escrita.
+    """
+    if not autoevaluacion.strip():
+        raise ValueError(
+            "Contá cómo te fue con esta carta: eso es la autoevaluación."
+        )
+    if not avance.completa and not confirmado:
+        raise NecesitaConfirmacion(_faltan_requeridos(avance))
+
+    elegida.lograda = True
+    elegida.lograda_en = _ahora()
+    elegida.lograda_por_id = joven.id
+    elegida.con_pendientes = not avance.completa
+    elegida.autoevaluacion = autoevaluacion.strip()
+    # El acuerdo llega después, si llega. La carta ya cuenta.
+    elegida.acordada = False
+    elegida.acordada_en = None
+    elegida.acordada_por_id = None
+
+
+def acordar_carta(elegida: CompetenciaElegida, educador: Usuario, nota: str = "") -> None:
+    """El equipo coincide con la autoevaluación. Deja firmada la conversación."""
+    elegida.acordada = True
+    elegida.acordada_en = _ahora()
+    elegida.acordada_por_id = educador.id
+    if nota.strip():
+        elegida.nota_cierre = nota.strip()
 
 
 def cerrar_carta(
@@ -434,7 +640,12 @@ def cerrar_carta(
     nota: str = "",
     confirmado: bool = False,
 ) -> None:
-    """Da una carta por lograda. Sin todos los requeridos, pide confirmar.
+    """Un educador cierra la carta. Sin todos los requeridos, pide confirmar.
+
+    Sigue existiendo porque hay chicos que no van a escribir la autoevaluación
+    solos, y porque cerrar una carta en la conversación cara a cara —que es como
+    la guía describe el momento— y anotarla después es legítimo. Cuando la cierra
+    el educador, la conversación ya pasó: queda acordada de entrada.
 
     Que falten requeridos no la vuelve imposible: un desafío opcional puede
     reemplazar a uno requerido si se conversó, y hay chicos que hicieron la
@@ -449,15 +660,23 @@ def cerrar_carta(
     elegida.lograda_por_id = educador.id
     elegida.con_pendientes = not avance.completa
     elegida.nota_cierre = nota.strip()
+    acordar_carta(elegida, educador, nota)
 
 
 def reabrir_carta(elegida: CompetenciaElegida) -> None:
-    """Vuelve atrás un cierre. Lo marcado adentro de la carta no se toca."""
+    """Vuelve atrás un cierre. Lo marcado adentro de la carta no se toca.
+
+    La autoevaluación tampoco se borra: la escribió el joven y es suya, igual que
+    los comentarios de los desafíos. Si vuelve a cerrar la carta, sigue ahí.
+    """
     elegida.lograda = False
     elegida.lograda_en = None
     elegida.lograda_por_id = None
     elegida.con_pendientes = False
     elegida.nota_cierre = ""
+    elegida.acordada = False
+    elegida.acordada_en = None
+    elegida.acordada_por_id = None
 
 
 def _faltan_requeridos(avance: AvanceCarta) -> str:

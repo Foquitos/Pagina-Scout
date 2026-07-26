@@ -70,12 +70,79 @@
   {% endfor %}
 {% endif %}
 
+{# --- Lo que me comprometí a hacer --- #}
+{% if acuerdos %}
+  <h2 id="acuerdos">🤝 Te comprometiste a esto</h2>
+  <p class="sub-titulo">Salió del Consejo de tu patrulla. Marcalo cuando esté hecho.</p>
+  <ul class="lista-acuerdos">
+    {% for a in acuerdos %}
+      <li>
+        <form method="post" action="/acuerdos/{{ a.id }}" data-autoguardar>
+          <input type="hidden" name="volver" value="hoy">
+          <label class="casilla">
+            <input type="checkbox" name="cumplido" value="true">
+            <span>
+              {{ a.texto }}
+              {% if a.para_cuando %}
+                <span class="meta"><span>para el {{ a.para_cuando.strftime('%d/%m') }}</span></span>
+              {% endif %}
+            </span>
+          </label>
+          <button type="submit" class="secundario boton-guardar">Guardar</button>
+          <span class="estado-guardado" data-estado=""></span>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{# --- Qué viene --- #}
+{% if proximas %}
+  <h2>📆 Lo que viene</h2>
+  <div class="rejilla angosta">
+    {% for a in proximas %}
+      <a class="tarjeta enlazada" href="/calendario#actividad-{{ a.id }}"
+         style="text-decoration:none; color:inherit">
+        <span class="burbuja" aria-hidden="true">{{ a.clase_icono }}</span>
+        <h3 style="margin-top:.6rem">{{ a.titulo }}</h3>
+        <p class="meta">
+          <span>{{ a.fecha.strftime('%d/%m') }}{% if a.hasta %} al {{ a.hasta.strftime('%d/%m') }}{% endif %}</span>
+          {% set faltan = (a.fecha - fecha).days %}
+          {% if faltan == 0 %}<span>¡es hoy!</span>
+          {% elif faltan == 1 %}<span>mañana</span>
+          {% elif faltan > 1 %}<span>en {{ faltan }} días</span>{% endif %}
+        </p>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <h2>🚀 Seguir explorando</h2>
 <div class="rejilla angosta">
   <a class="tarjeta enlazada" href="/mis-cartas" style="text-decoration:none; color:inherit">
     <span class="burbuja" aria-hidden="true" style="--tono: rgba(224,165,38,.18)">🧭</span>
     <h3 style="margin-top:.6rem">Mis cartas</h3>
     <p class="meta">Elegí qué querés aprender esta etapa.</p>
+  </a>
+  <a class="tarjeta enlazada" href="/muro" style="text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(226,103,58,.18)">📣</span>
+    <h3 style="margin-top:.6rem">El muro</h3>
+    <p class="meta">Lo que hicieron los demás.</p>
+  </a>
+  <a class="tarjeta enlazada" href="/ideas" style="text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(62,142,90,.18)">💡</span>
+    <h3 style="margin-top:.6rem">Ideas</h3>
+    <p class="meta">Proponé qué quiere hacer la Unidad.</p>
+  </a>
+  <a class="tarjeta enlazada" href="/especialidades" style="text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(214,69,80,.18)">⭐</span>
+    <h3 style="margin-top:.6rem">Especialidades</h3>
+    <p class="meta">Algo tuyo, que te interese en serio.</p>
+  </a>
+  <a class="tarjeta enlazada" href="/calendario" style="text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(125,91,166,.18)">📆</span>
+    <h3 style="margin-top:.6rem">Calendario</h3>
+    <p class="meta">Campamentos, salidas, celebraciones.</p>
   </a>
   <a class="tarjeta enlazada" href="/bitacora" style="text-decoration:none; color:inherit">
     <span class="burbuja" aria-hidden="true" style="--tono: rgba(46,134,171,.18)">📓</span>

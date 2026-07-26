@@ -54,9 +54,13 @@ app/
   dependencias.py    usuario de sesión y guardas por rol
   routers/
     auth.py          ingreso, salida y la contraseña propia
-    joven.py         hoy, reto, mis retos, mis cartas, bitácora
+    joven.py         hoy, reto, mis retos, el muro, mis cartas, bitácora
+    patrulla.py      la patrulla por dentro: identidad, cargos, Consejo, acuerdos
+    participacion.py las ideas para el ciclo
+    agenda.py        el calendario del ciclo y el «estuve»
+    especialidades.py  lo que pide el joven y lo que prepara el equipo
     educador.py      panel, validaciones, retos, asignar, patrullas, jóvenes,
-                     progresión, equipo de educadores
+                     progresión, cargos, equipo de educadores
     api.py           la misma lógica en JSON
   servicios/
     cuentas.py       altas, contraseñas iniciales y blanqueos
@@ -64,6 +68,11 @@ app/
     validacion.py    contrato de validación de evidencias
     puntajes.py      tablero de patrullas y rachas
     progresion.py    cartas elegidas, avance, cierre de cartas y paso de etapa
+    patrulla.py      cargos, Consejo de Patrulla y acuerdos
+    participacion.py ideas, apoyos y en qué anda cada una
+    agenda.py        actividades del calendario y participación
+    especialidades.py  pedir, preparar y las tres fases
+    muro.py          lo que cada uno quiso mostrar de lo que hizo
     medios.py        compresión de fotos y enlaces de video
   static/
     estilos.css      la hoja de estilos, sin framework ni build
@@ -87,8 +96,24 @@ expone como número comparable. La guía de la Rama es explícita en que la
 progresión personal no es una carrera por insignias y que la evaluación es
 personalizada; un marcador individual empuja justo para el otro lado.
 
-**Un validador automático nunca rechaza.** Puede aprobar o derivar a un
-educador, nada más. Rechazar es siempre decisión de una persona. La guía dice
+**Y el tablero ordena por promedio, no por total.** El capítulo 4 avisa que las
+patrullas son desparejas y que eso está bien —«es frecuente que en una Unidad
+Scout haya patrullas desparejas en número (…) Esta heterogeneidad nos muestra que
+estamos en buen camino»— y hasta pide no repartir a los que llegan para
+emparejarlas. Si el marcador sumara nomás, la aplicación estaría premiando
+exactamente lo que la guía dice que no hay que hacer: una patrulla de ocho le
+gana siempre a una de cuatro sin que nadie se haya esforzado más. Así que la
+cifra grande es **puntos por integrante**; el total sigue a la vista, pero no
+decide quién va arriba. Los educadores no cuentan para el promedio: no entregan
+retos.
+
+**Un validador automático nunca rechaza, y la sección del educador no es una
+cola de aprobación.** Una entrega completa se da por buena sola y suma en el
+momento: un chico que hizo lo que le pidieron no tiene por qué esperar al sábado
+para que alguien le diga que sí. `/validaciones` muestra todo lo entregado, y lo
+que el equipo hace ahí es mirar y —si algo no pasó— darlo de baja. Un validador
+automático puede aprobar o derivar a un educador, nada más: rechazar es siempre
+decisión de una persona. La guía dice
 que ante discrepancias entre la evaluación del educador y la autoevaluación del
 joven prima la segunda, "es preferible que se exceda en la estimación de sus
 logros y no que se afecte su autoestima"; un "no" automático a un chico de 12
@@ -168,6 +193,14 @@ teléfono no había forma de tocarlos.
 El menú es un `<details>` y no un botón con JavaScript: abre y cierra igual sin
 JS, que es la regla de toda la aplicación. Lo único que agrega `app.js` es que se
 cierre al tocar afuera o con Escape, que es comodidad y no funcionamiento.
+
+**Siete y no ocho.** Cada sección que se suma tiene que sacar a otra o entrar
+adentro de una. Las que hay para un joven son Hoy, Muro, Cartas, Patrulla, Ideas,
+Bitácora y Tablero; el resto se llega desde su lugar natural, que además es el
+que le corresponde en el método: el **Libro de Oro** desde la patrulla —porque es
+de la patrulla—, el **calendario** desde «Hoy», las **especialidades** desde las
+cartas, y **mis retos** desde el muro. Del lado del educador, `/calendario`,
+`/ideas` y `/cargos` cuelgan del Panel, y `/especialidades` de «Jóvenes».
 
 **El encabezado va de borde a borde de la pantalla; el contenido no.** La barra
 de arriba no se limita a nada, así la marca queda pegada a la izquierda del todo
@@ -359,6 +392,218 @@ de otra patrulla recibe 404.
 `/mi-patrulla` lista a la patrulla **por nombre, nunca por avance**, y sin
 puntos. Misma razón que el tablero: acompañarse no es competir.
 
+## Quién cierra una carta
+
+La cierra el joven, escribiendo su autoevaluación. No es una preferencia de
+diseño: el capítulo 9 dice que «la joven o el joven son los principales
+protagonistas de la evaluación de la progresión personal» y, para cuando el
+equipo no coincide, que «siempre primará la autoevaluación. Es preferible que la
+o el joven se exceda en la estimación de sus logros y no que se afecte su
+autoestima o se le desanime para seguir avanzando».
+
+En la práctica: al pie de cada carta hay un cuadro de texto con las seis
+preguntas de la guía —qué aprendiste, qué hiciste para aprenderlo, qué se te hizo
+difícil, quién te ayudó, cómo te sentiste, qué te quedaron ganas de aprender—.
+Sin texto no se cierra: la autoevaluación **es** el cierre, no el trámite para
+destrabarlo. Si quedan requeridos sin marcar, se avisa y se pide una casilla,
+igual que en todos lados; la página se vuelve a dibujar en vez de redirigir, para
+que nadie pierda lo que escribió.
+
+La carta queda `lograda` y cuenta desde ese momento. Lo que falta después no es
+un permiso: es la conversación. El educador la registra con **«Ya la
+conversamos»** (`acordada`), y el panel lista las que esperan esa charla. Un
+educador puede seguir cerrando cartas él mismo —hay chicos que no van a escribir
+solos, y cerrar una carta en la conversación cara a cara es legítimo—; cuando lo
+hace, queda acordada de entrada, porque la conversación ya pasó.
+
+Reabrir no borra la autoevaluación. La escribió el joven y es suya, igual que los
+comentarios de los desafíos.
+
+## Los cargos de patrulla
+
+«El propósito principal del sistema de patrullas es asignar verdadera
+responsabilidad al mayor número posible de jóvenes» (Baden-Powell, 1919, citado
+en el cap. 4). Cada Unidad tiene su catálogo en `/cargos` —arranca con los ocho
+de la guía y se le agregan los propios—, y **quién ocupa cada uno lo decide la
+patrulla**, desde `/patrulla/{id}`, no el educador.
+
+Un período nace abierto y lo cierra el Consejo diciendo si se cumplió. No hay
+duración fija, y es a propósito: la guía pide «dejar que la evaluación interna de
+la patrulla regule este aspecto». **Una misma persona puede tener varios cargos a
+la vez**: en una patrulla de cinco no hay uno por cabeza, y son responsabilidades,
+no puestos. Para la etapa se cuentan cargos **distintos** cumplidos, así que
+repetir el mismo tres ciclos no suma de nuevo. Un cargo dado de baja del catálogo deja de
+ofrecerse pero nunca se borra: los períodos ya cumplidos son parte de la
+progresión de alguien.
+
+### Esto cambia el paso de etapa
+
+Antes la aplicación miraba solo las cartas logradas, y por eso decía «listo para
+avanzar» antes de tiempo. El capítulo 9 pide, además:
+
+| etapa | además de las cartas |
+|---|---|
+| Pistas | un cargo cumplido |
+| Senda | dos cargos distintos + una descubierta |
+| Rumbo | lo anterior + un proyecto de Unidad y uno de Patrulla |
+| Travesía | tres cargos + apoyar a alguien que empieza + la Exploración de Travesía |
+
+Están en `REQUISITOS_ETAPA` (`servicios/progresion.py`) y salen en la página de
+progresión como una lista con lo que la persona ya tiene al lado. Las dos últimas
+de Travesía no se cuentan: ninguna base de datos puede saberlas, así que se
+muestran con otro ícono para que alguien se acuerde de conversarlas.
+
+Como siempre, **avisa y no bloquea**: el educador puede pasar a alguien de etapa
+igual, confirmando.
+
+## Voz y voto: las ideas del ciclo
+
+El capítulo 8 no deja lugar a dudas: «En nuestra organización, las y los jóvenes
+tienen voz y voto respecto de las actividades que desean realizar».
+
+**La Asamblea que decide no está en la aplicación, y es a propósito.** Se reúne
+en persona y así tiene que seguir: es donde se aprende a defender una idea, a
+escuchar la de otro y a bancarse perder una votación mirando a la cara al que la
+ganó. Una pantalla no enseña eso. Lo que la aplicación hace es lo que un papelito
+en el bolsillo hace mal: juntar las propuestas para que lleguen enteras a esa
+reunión, y anotar después lo que ahí se decidió.
+
+```
+alguien la propone  →  el equipo mira si se puede  →  la Asamblea decide (en persona)
+      /ideas                    /ideas                →  se anota y va al calendario
+```
+
+Los cuatro estados de una idea son los cuatro momentos reales de una propuesta:
+
+| estado | qué significa | quién lo pone |
+|---|---|---|
+| propuesta | alguien la escribió, nadie la miró | nace así |
+| se puede hacer | el equipo la miró y es viable: va a la Asamblea | el equipo |
+| elegida | la Asamblea la eligió, en persona | el equipo, después de la reunión |
+| guardada | no salió esta vez; vuelve el ciclo que viene | el equipo |
+
+Quién puede qué: **proponer**, cualquiera —a los educadores la guía se lo pide
+expresamente, «para introducir nuevas temáticas»—; **apoyar** («me sumo»), solo
+las y los jóvenes, y no decide nada: es un dato para llevar a la reunión;
+**mover el estado y agendar**, el equipo; **borrar**, el equipo, o quien la
+escribió mientras nadie la haya mirado —arrepentirse de lo propio es barato,
+borrar lo de otro no—.
+
+La `respuesta` importa sobre todo cuando algo se guarda. A un chico que propuso
+algo se le contesta: que su idea desaparezca sin una palabra es la forma más
+rápida de que no vuelva a proponer nada.
+
+## El Consejo de Patrulla y los acuerdos
+
+«La instancia formal de la toma de decisiones relevantes de la patrulla», y la
+guía dice dónde se anota: «Los acuerdos del Consejo pueden registrarse en el
+Libro de Oro o Libro de Patrulla».
+
+Un acta es fecha, quiénes estuvieron y de qué hablaron. La diferencia con un
+cuaderno es lo que pasa después: un acuerdo con responsable **aparece en el
+`/hoy` de esa persona** hasta que se da por hecho. Un acuerdo que se queda
+escrito en un acta es una anotación; uno que te espera al entrar es un
+compromiso.
+
+Los acuerdos sin responsable existen a propósito —hay cosas que son de toda la
+patrulla— y los puede marcar cualquiera del grupo, no solo quien se comprometió:
+el que lo hizo bien no siempre es el que se acuerda de venir a tildarlo.
+
+## El calendario del ciclo
+
+`/calendario`. Lo arma el equipo de educadores, porque la fase de organización es
+del Consejo de Unidad; adentro van tanto lo que se eligió como las fijas
+—campamentos, celebraciones, entregas de insignia—. Lo próximo también asoma en
+`/hoy`, con los días que faltan.
+
+Lo que hacen las y los jóvenes ahí es marcar **«estuve»**. No es una lista de
+asistencia que toma un adulto: es cada uno diciendo dónde estuvo, y es lo que
+alimenta los requisitos de descubiertas y proyectos de la etapa. Coherente con
+que la evaluación de la progresión sea suya.
+
+Una actividad de otra patrulla no se ve, igual que el Libro de Oro.
+
+## Las especialidades
+
+Dos cosas que parecen contradecirse y no:
+
+**La pide el joven, y pide la que quiere.** «Tanto la decisión de desarrollar una
+especialidad como la elección del tema específico son personales y voluntarias de
+cada joven», y el único requisito es que lo desee. Por eso el pedido es un campo
+de texto libre y no una lista: si a alguien le interesa la apicultura, escribe
+apicultura. Un catálogo cerrado convertiría en «no se puede» todo lo que a los
+adultos no se les ocurrió, que es lo contrario de lo que la guía busca acá. Los
+desafíos de tipo especialidad de las Cartas de Exploración se ofrecen como
+sugerencias —en un `datalist`, no en un `select`—, porque ayudan a quien no sabe
+por dónde empezar sin cerrarle la puerta a nadie.
+
+**Pero el recorrido lo prepara el equipo.** Pedirla no es empezarla. La guía les
+encarga a los educadores conocer el tema, contactar a la persona experta e
+informarle el sentido de las especialidades en el Programa de Jóvenes, y pensar
+qué se espera en cada fase. Hasta que eso pasa, la especialidad está pedida y el
+joven ve «tu educador/a la está preparando».
+
+```
+la pide el joven  →  el equipo la prepara  →  el joven la recorre  →  el equipo
+   (la que quiera)     (experto + fases)        (tres fases)           la concluye
+```
+
+Los requisitos se escriben **para esa persona**, no para todas: «son solo una
+referencia, pudiendo ser modificadas, teniendo en cuenta las particularidades de
+cada joven, así como las diferencias geográficas, culturales, económicas y
+sociales». Por eso se pueden ajustar en cualquier momento, también con la
+especialidad ya en marcha.
+
+Voluntaria, individual, de dos a seis meses, **sin puntaje ni validación**. Las
+tres fases son las de la guía, con su verbo:
+
+1. **Exploración (conocer)** — qué averiguaste, qué herramientas se usan.
+2. **Taller (hacer)** — la parte práctica.
+3. **Desafío (servir)** — a quién le sirvió lo que aprendiste.
+
+La tercera no es un examen: es lo que hace que una especialidad scout no sea un
+curso. La fase que muestra la pantalla es la más avanzada que tenga algo escrito
+—nadie tiene que apretar «siguiente»—.
+
+**La cierra un educador**, y es lo único de la progresión personal que la guía
+deja explícitamente del lado del equipo: la insignia «constituye un testimonio
+permanente de la actitud de servicio», y eso lo atestigua una persona.
+
+El panel del equipo cuenta las dos cosas que esperan respuesta: los **pedidos sin
+armar** y las que **llegaron a la fase de servicio**. Las dos mitades viven en un
+solo router (`routers/especialidades.py`) porque son la misma URL, y partirlas
+hizo que una le tapara las rutas a la otra.
+
+## La identidad de la patrulla
+
+Nombre, lema, grito, emblema, banderín, desde cuándo existe y su historia. No es
+adorno: en el momento de ambientación la guía describe la integración como «la
+suma de la relación social y de lo simbólico, identificándose con el nombre de la
+Patrulla, lema, colores y más elementos de pertenencia».
+
+Lo escribe la patrulla. El **nombre** no está ahí a propósito: cambiarlo es una
+decisión de la Unidad, no un campo de texto, y sigue en `/patrullas` del lado del
+educador. El banderín es una foto y pasa por la misma compresión que todas; hay
+uno por patrulla, y al reemplazarlo el anterior se borra del disco.
+
+## El muro de la Unidad
+
+Un reto entregado lo ven quien lo entregó y el equipo, y nadie más. Eso está bien
+para lo íntimo, pero desaprovecha lo que más empuja a un chico de doce años a
+hacer algo: ver que otro lo hizo. La guía lo llama educación entre pares.
+
+`/muro` muestra lo que cada uno **quiso** mostrar. Tres reglas, y las tres
+importan:
+
+- **Se comparte porque uno quiso.** El interruptor arranca apagado, está en el
+  formulario de entrega y también en la entrega ya hecha, y lo mueve solamente
+  quien la escribió, en cualquier momento y para los dos lados.
+- **Solo lo validado.** Al muro no llega algo que todavía se está mirando ni algo
+  que se dio de baja: dar de baja una entrega la saca del muro sola.
+- **No hay número al lado.** Se ve qué hizo cada uno, no cuánto sumó. Convertir
+  el muro en un ranking de personas es exactamente lo que evita que el puntaje
+  sea siempre de la patrulla.
+
 ## El Libro de Oro
 
 La memoria colectiva de cada patrulla, en `/libro-de-oro/{patrulla_id}`: título,
@@ -482,9 +727,23 @@ pip install -r requirements-dev.txt
 python scripts/probar_circuito.py
 ```
 
-Recorre lo que importa de punta a punta: un joven entra, ve el reto del día,
+Son **320 verificaciones** sobre una base de datos temporal: no toca `scout.db`.
+Recorre lo que importa de punta a punta —un joven entra, ve el reto del día,
 entrega, el validador decide, el educador confirma, los puntos aparecen en la
-patrulla. Usa una base de datos temporal, no toca `scout.db`.
+patrulla— y también lo que no se ve: que un educador no vote en la Asamblea, que
+una patrulla no lea la de al lado, que la carta la cierre su dueño, que sacar un
+reto no borre la Bitácora de nadie y que ninguna pantalla se rompa para quien
+todavía no tiene patrulla.
+
+El último bloque entra a **todas** las páginas con los dos roles: una plantilla
+rota no se nota hasta que alguien abre esa pantalla.
+
+Si el terminal de Windows corta la salida con un error de codificación, es la
+consola y no la prueba:
+
+```powershell
+$env:PYTHONIOENCODING = "utf-8"; python scripts/probar_circuito.py
+```
 
 ## Ponerlo en un servidor
 

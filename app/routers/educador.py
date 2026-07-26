@@ -25,14 +25,25 @@ from app.models import (
     TIPO_PERSONALIZADO,
     Area,
     Asignacion,
+    Cargo,
     Competencia,
     Desafio,
     Entrega,
     Patrulla,
+    PeriodoCargo,
     Reto,
     Usuario,
 )
-from app.servicios import cuentas, progresion, puntajes, retos
+from app.servicios import (
+    agenda,
+    cuentas,
+    especialidades,
+    participacion,
+    progresion,
+    puntajes,
+    retos,
+)
+from app.servicios import patrulla as vida_de_patrulla
 
 router = APIRouter()
 
@@ -90,6 +101,14 @@ def panel(
         jovenes_sin_patrulla=jovenes_sin_patrulla or 0,
         educadores=educadores or 0,
         filas=puntajes.tablero_de_unidad(sesion, unidad_id, fecha),
+        # Lo que pide una respuesta del equipo y no está en «Entregas»: cartas
+        # que un joven cerró y falta conversar, especialidades a un paso de la
+        # insignia, e ideas que nadie miró todavía.
+        cartas_a_conversar=progresion.cartas_sin_acordar(sesion, unidad_id),
+        especialidades_listas=especialidades.listas_para_cerrar(sesion, unidad_id),
+        especialidades_pedidas=especialidades.sin_preparar(sesion, unidad_id),
+        ideas_sin_mirar=participacion.sin_mirar(sesion, unidad_id),
+        proximas=agenda.proximas(sesion, usuario, fecha, tope=3),
     )
 
 
@@ -99,10 +118,21 @@ def panel(
 @router.get("/validaciones")
 def validaciones(
     request: Request,
-    estado: str = ESTADO_REVISION,
+    estado: str = "todas",
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
+    """Lo que entregaron. **No es una cola de aprobación.**
+
+    Una entrega completa se da por buena sola y suma en el momento: un chico que
+    hizo lo que le pidieron no tiene por qué esperar al sábado para que alguien
+    le diga que sí. Lo que el equipo hace acá es mirar y, si algo no pasó, darlo
+    de baja —«no lo hiciste» es una conversación de una persona, nunca de un
+    programa—. Por eso la lista arranca mostrando todo y no solo lo pendiente.
+
+    Queda lo que sí necesita una respuesta: las entregas incompletas, que el
+    validador automático nunca rechaza y deriva acá (ver `servicios/validacion`).
+    """
     unidad_id = _unidad_de(usuario)
     consulta = (
         select(Entrega)
@@ -113,12 +143,18 @@ def validaciones(
     if estado != "todas":
         consulta = consulta.where(Entrega.estado == estado)
 
+    esperando = sesion.scalar(
+        select(func.count(Entrega.id))
+        .join(Asignacion, Asignacion.id == Entrega.asignacion_id)
+        .where(Asignacion.unidad_id == unidad_id, Entrega.estado == ESTADO_REVISION)
+    )
     return render(
         request,
         "educador/validaciones.html",
         usuario=usuario,
-        entregas=list(sesion.scalars(consulta)),
+        entregas=list(sesion.scalars(consulta.limit(120))),
         estado=estado,
+        esperando=esperando or 0,
     )
 
 
@@ -130,6 +166,7 @@ def resolver_validacion(
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
+    """Dar por buena una entrega incompleta, o dar de baja una que no pasó."""
     entrega = sesion.get(Entrega, entrega_id)
     if entrega is None or entrega.asignacion.unidad_id != _unidad_de(usuario):
         raise HTTPException(404, "Esa entrega no existe.")
@@ -140,9 +177,13 @@ def resolver_validacion(
     elif decision == "rechazar":
         entrega.estado = ESTADO_RECHAZADA
         entrega.puntaje_otorgado = 0
+        # Lo que se da de baja sale del muro. No se borra la entrega —el joven
+        # la sigue viendo con la devolución— pero deja de estar publicada.
+        entrega.compartida = False
     elif decision == "devolver":
         entrega.estado = ESTADO_REVISION
         entrega.puntaje_otorgado = 0
+        entrega.compartida = False
     else:
         raise HTTPException(400, "Decisión desconocida.")
 
@@ -409,6 +450,89 @@ def crear_patrulla(
     return redirigir("/patrullas")
 
 
+# --- Catálogo de cargos de patrulla (cap. 4) ---------------------------------
+#
+# El catálogo lo cuida el equipo porque es de la Unidad entera; quién ocupa cada
+# cargo lo decide cada patrulla en su Consejo, y eso pasa en `/patrulla/{id}`.
+
+
+@router.get("/cargos")
+def listar_cargos(
+    request: Request,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    unidad_id = _unidad_de(usuario)
+    cargos = vida_de_patrulla.catalogo(sesion, unidad_id, incluir_bajas=True)
+    en_uso = {
+        cargo_id: cuenta
+        for cargo_id, cuenta in sesion.execute(
+            select(PeriodoCargo.cargo_id, func.count(PeriodoCargo.id))
+            .where(PeriodoCargo.cargo_id.in_([c.id for c in cargos] or [0]))
+            .group_by(PeriodoCargo.cargo_id)
+        )
+    }
+    return render(
+        request,
+        "educador/cargos.html",
+        usuario=usuario,
+        cargos=cargos,
+        en_uso=en_uso,
+    )
+
+
+@router.post("/cargos")
+def crear_cargo(
+    nombre: str = Form(...),
+    descripcion: str = Form(""),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Un cargo propio de la Unidad.
+
+    La guía dice que los cargos «pueden variar en cantidad y en denominación, de
+    acuerdo con las costumbres de las Unidades», y que además pueden aparecer
+    otros «producto de las necesidades de (…) las actividades y proyectos que
+    emprendan». Así que esto tiene que ser fácil.
+    """
+    unidad_id = _unidad_de(usuario)
+    if not nombre.strip():
+        raise HTTPException(400, "Ponele un nombre al cargo.")
+
+    ultimo = sesion.scalar(
+        select(func.max(Cargo.orden)).where(Cargo.unidad_id == unidad_id)
+    )
+    sesion.add(
+        Cargo(
+            unidad_id=unidad_id,
+            nombre=nombre.strip()[:80],
+            descripcion=descripcion.strip(),
+            orden=(ultimo or 0) + 1,
+        )
+    )
+    sesion.commit()
+    return redirigir("/cargos")
+
+
+@router.post("/cargos/{cargo_id}")
+def alternar_cargo(
+    cargo_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Da de baja un cargo del catálogo, o lo devuelve.
+
+    No se borra nunca: los períodos ya cumplidos cuelgan de él y son parte de la
+    progresión de alguien. Un cargo dado de baja deja de ofrecerse y nada más.
+    """
+    cargo = sesion.get(Cargo, cargo_id)
+    if cargo is None or cargo.unidad_id != _unidad_de(usuario):
+        raise HTTPException(404, "Ese cargo no existe.")
+    cargo.activo = not cargo.activo
+    sesion.commit()
+    return redirigir("/cargos")
+
+
 @router.get("/jovenes")
 def listar_jovenes(
     request: Request,
@@ -643,6 +767,9 @@ def ver_progresion(
         min_cartas=progresion.MIN_CARTAS,
         max_cartas=progresion.MAX_CARTAS,
         confirmar=confirmar,
+        # La otra mitad de la etapa: cargos, especialidades y en qué estuvo.
+        periodos=vida_de_patrulla.periodos_de(sesion, joven),
+        especialidades=especialidades.de(sesion, joven),
     )
 
 
@@ -665,6 +792,12 @@ def resolver_carta(
     destino = f"/progresion/{joven.id}#carta-{competencia_id}"
     if accion == "reabrir":
         progresion.reabrir_carta(elegida)
+    elif accion == "acordar":
+        # La carta ya está cerrada por su dueño y ya cuenta. Esto no la aprueba:
+        # deja escrito que la conversación del cap. 9 ocurrió.
+        if not elegida.lograda:
+            raise HTTPException(400, "Esa carta todavía no está cerrada.")
+        progresion.acordar_carta(elegida, usuario, nota)
     elif accion == "cerrar":
         avance = progresion.avance_de_carta(elegida, progresion.marcas_de(sesion, joven))
         try:

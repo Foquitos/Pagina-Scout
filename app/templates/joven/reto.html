@@ -37,6 +37,30 @@
     <div><strong>¡Validado!</strong> Sumaste {{ entrega.puntaje_otorgado }} puntos para tu patrulla.
       {% if entrega.devolucion %}<p>{{ entrega.devolucion }}</p>{% endif %}</div>
   </div>
+
+  {# Compartir lo decide quien lo hizo, en cualquier momento y para los dos
+     lados. Ver que otro lo hizo es lo que más ganas da de hacerlo. #}
+  <div class="tarjeta" id="compartir">
+    <form method="post" action="/reto/{{ asignacion.id }}/compartir"
+          data-sin-recarga="{{ 'Sacado del muro.' if entrega.compartida else 'Compartido con la Unidad.' }}">
+      {% if entrega.compartida %}
+        <p><strong>📣 Está en el muro de la Unidad.</strong>
+          <span class="meta" style="display:block">Lo pueden ver todos los de tu
+            Unidad. Podés sacarlo cuando quieras.</span></p>
+        <div class="acciones">
+          <button type="submit" class="secundario">Sacarlo del muro</button>
+          <a class="boton secundario" href="/muro">Ver el muro →</a>
+        </div>
+      {% else %}
+        <p><strong>¿Lo compartís con la Unidad?</strong>
+          <span class="meta" style="display:block">Aparece en el muro con tu nombre
+            y lo que escribiste. No se muestran los puntos.</span></p>
+        <div class="acciones">
+          <button type="submit">📣 Compartirlo</button>
+        </div>
+      {% endif %}
+    </form>
+  </div>
 {% elif entrega %}
   <div class="aviso">
     <span class="icono" aria-hidden="true">
@@ -69,6 +93,14 @@
   <label for="foto">📷 Foto {% if not asignacion.reto.pide_foto %}(opcional){% endif %}</label>
   <input type="file" id="foto" name="foto" accept="image/*"
          {% if asignacion.reto.pide_foto and not (entrega and entrega.archivo_foto) %}required{% endif %}>
+
+  <label class="casilla" style="margin-top:.9rem">
+    <input type="checkbox" name="compartir" value="true" {{ 'checked' if entrega and entrega.compartida }}>
+    <span>Compartirlo en el muro de la Unidad
+      <span class="meta" style="display:block">Para que los demás lo vean y se
+        enganchen. Se publica recién cuando quede validado, y lo podés sacar
+        cuando quieras.</span></span>
+  </label>
 
   <p style="margin-top:1.2rem"><button type="submit" class="grande bloque">Enviar mi entrega ✅</button></p>
 </form>

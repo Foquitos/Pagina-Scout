@@ -35,7 +35,15 @@ from app.models import (
     Patrulla,
     Usuario,
 )
-from app.servicios import medios, progresion, puntajes, retos
+from app.servicios import (
+    agenda,
+    medios,
+    muro,
+    progresion,
+    puntajes,
+    retos,
+)
+from app.servicios import patrulla as vida_de_patrulla
 from app.servicios.progresion import MAX_CARTAS, MIN_CARTAS
 from app.servicios.validacion import ContextoValidacion, obtener_validador
 
@@ -80,6 +88,10 @@ def hoy(
         asignaciones=asignaciones,
         entregas=entregas,
         fila_patrulla=fila_patrulla,
+        # Lo que viene y lo que se comprometió. Un acuerdo que se queda en un
+        # acta es una anotación; uno que te espera al entrar es un compromiso.
+        proximas=agenda.proximas(sesion, usuario, fecha, tope=3),
+        acuerdos=vida_de_patrulla.acuerdos_a_cargo_de(sesion, usuario),
     )
 
 
@@ -110,6 +122,7 @@ def entregar_reto(
     asignacion_id: int,
     request: Request,
     texto: str = Form(""),
+    compartir: bool = Form(False),
     foto: UploadFile | None = File(None),
     usuario: Usuario = Depends(solo_joven),
     sesion: Session = Depends(obtener_sesion),
@@ -162,6 +175,11 @@ def entregar_reto(
     entrega.validada_en = datetime.now(timezone.utc) if resultado.estado == ESTADO_APROBADA else None
     entrega.puntaje_otorgado = reto.puntaje if resultado.estado == ESTADO_APROBADA else 0
 
+    # Al muro solo va lo validado. Si pidió compartirlo y todavía se está
+    # mirando, la marca queda apagada y se puede prender después desde la
+    # entrega: no se publica algo que la Unidad no dio por hecho.
+    entrega.compartida = compartir and muro.puede_compartir(entrega)
+
     sesion.add(entrega)
     sesion.commit()
     return redirigir(f"/reto/{asignacion.id}")
@@ -181,6 +199,53 @@ def mis_retos(
         )
     )
     return render(request, "joven/mis_retos.html", usuario=usuario, entregas=entregas)
+
+
+@router.get("/muro")
+def ver_muro(
+    request: Request,
+    usuario: Usuario = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Lo que cada uno quiso mostrar de lo que hizo.
+
+    Ver que otro lo hizo es lo que más empuja a un chico de doce a hacerlo. Acá
+    no hay puntos al lado de ningún nombre: el muro muestra qué hizo cada uno,
+    nunca cuánto sumó.
+    """
+    if usuario.unidad_id is None:
+        return render(request, "muro.html", usuario=usuario, publicaciones=[])
+    return render(
+        request,
+        "muro.html",
+        usuario=usuario,
+        publicaciones=muro.publicaciones(sesion, usuario.unidad_id),
+    )
+
+
+@router.post("/reto/{asignacion_id}/compartir")
+def compartir_entrega(
+    asignacion_id: int,
+    usuario: Usuario = Depends(solo_joven),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Prende o apaga el compartir. Lo decide quien la escribió, y solo esa persona."""
+    asignacion = _asignacion_visible(sesion, asignacion_id, usuario)
+    entrega = sesion.scalar(
+        select(Entrega).where(
+            Entrega.asignacion_id == asignacion.id, Entrega.joven_id == usuario.id
+        )
+    )
+    if entrega is None:
+        raise HTTPException(404, "Todavía no entregaste este reto.")
+    if not muro.puede_compartir(entrega):
+        raise HTTPException(
+            400, "Se comparte cuando la entrega está validada."
+        )
+
+    muro.alternar(entrega, usuario)
+    sesion.commit()
+    return redirigir(f"/reto/{asignacion.id}#compartir")
 
 
 @router.get("/bitacora")
@@ -336,19 +401,14 @@ def _eleccion_al_dia(sesion: Session, joven: Usuario, competencia_id: int) -> di
     }
 
 
-@router.get("/mis-cartas/{competencia_id}")
-def trabajar_carta(
-    competencia_id: int,
+def _pagina_de_carta(
     request: Request,
-    usuario: Usuario = Depends(solo_joven),
-    sesion: Session = Depends(obtener_sesion),
+    sesion: Session,
+    usuario: Usuario,
+    competencia_id: int,
+    **extra,
 ):
-    """La página de trabajo de una carta: marcar desafíos y comentarlos.
-
-    Si la carta la logró en una etapa anterior, la misma página la muestra
-    cerrada y de solo lectura, con lo que había escrito entonces: no se puede
-    volver a elegir ni a marcar, pero tampoco desaparece.
-    """
+    """La página de una carta. La arman el GET y el cierre que pide confirmar."""
     competencia = sesion.get(Competencia, competencia_id)
     if competencia is None:
         raise HTTPException(404, "Esa carta no existe.")
@@ -365,17 +425,81 @@ def trabajar_carta(
         elegida = de_otra_etapa
     marcas = progresion.marcas_de(sesion, usuario, elegida.etapa if elegida else None)
 
-    return render(
-        request,
-        "joven/carta.html",
-        usuario=usuario,
-        competencia=competencia,
-        desafios=progresion.desafios_de(sesion, competencia_id),
-        elegida=elegida,
-        marcas=marcas,
-        avance=progresion.avance_de_carta(elegida, marcas) if elegida else None,
-        de_otra_etapa=de_otra_etapa,
-    )
+    contexto = {
+        "usuario": usuario,
+        "competencia": competencia,
+        "desafios": progresion.desafios_de(sesion, competencia_id),
+        "elegida": elegida,
+        "marcas": marcas,
+        "avance": progresion.avance_de_carta(elegida, marcas) if elegida else None,
+        "de_otra_etapa": de_otra_etapa,
+        "preguntas": progresion.PREGUNTAS_AUTOEVALUACION,
+        "confirmar": "",
+        "borrador": "",
+    }
+    contexto.update(extra)
+    return render(request, "joven/carta.html", **contexto)
+
+
+@router.get("/mis-cartas/{competencia_id}")
+def trabajar_carta(
+    competencia_id: int,
+    request: Request,
+    usuario: Usuario = Depends(solo_joven),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """La página de trabajo de una carta: marcar desafíos y comentarlos.
+
+    Si la carta la logró en una etapa anterior, la misma página la muestra
+    cerrada y de solo lectura, con lo que había escrito entonces: no se puede
+    volver a elegir ni a marcar, pero tampoco desaparece.
+    """
+    return _pagina_de_carta(request, sesion, usuario, competencia_id)
+
+
+@router.post("/mis-cartas/{competencia_id}/cerrar")
+def cerrar_mi_carta(
+    competencia_id: int,
+    request: Request,
+    autoevaluacion: str = Form(""),
+    confirmado: bool = Form(False),
+    usuario: Usuario = Depends(solo_joven),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """El joven cierra su propia carta (cap. 9).
+
+    «La joven o el joven son los principales protagonistas de la evaluación de la
+    progresión personal.» No pide permiso: cuando el equipo no coincide, la guía
+    dice que «siempre primará la autoevaluación». Lo que queda pendiente después
+    de esto no es una autorización, es una conversación.
+    """
+    elegida = progresion.carta_elegida(sesion, usuario, competencia_id)
+    if elegida is None:
+        raise HTTPException(404, "Esa carta no está en tu elección de esta etapa.")
+    if elegida.lograda:
+        return redirigir(f"/mis-cartas/{competencia_id}#cierre")
+
+    avance = progresion.avance_de_carta(elegida, progresion.marcas_de(sesion, usuario))
+    try:
+        progresion.cerrar_carta_el_joven(
+            elegida, avance, usuario, autoevaluacion, confirmado
+        )
+    except ValueError as error:
+        raise HTTPException(400, str(error)) from error
+    except progresion.NecesitaConfirmacion as falta:
+        # Faltan requeridos. Acá no se redirige, se vuelve a dibujar la página:
+        # lo que la persona escribió no se puede perder en el camino.
+        return _pagina_de_carta(
+            request,
+            sesion,
+            usuario,
+            competencia_id,
+            confirmar=falta.motivo,
+            borrador=autoevaluacion,
+        )
+
+    sesion.commit()
+    return redirigir(f"/mis-cartas/{competencia_id}#cierre")
 
 
 @router.post("/mis-cartas/{competencia_id}/desafios/{desafio_id}")
@@ -431,33 +555,12 @@ def marcar_desafio(
     return redirigir(f"/mis-cartas/{competencia_id}#desafio-{desafio_id}")
 
 
-@router.get("/mi-patrulla")
-def mi_patrulla(
-    request: Request,
-    usuario: Usuario = Depends(solo_joven),
-    sesion: Session = Depends(obtener_sesion),
-):
-    """Quiénes son y en qué andan. Por nombre, nunca ordenados por avance."""
-    if usuario.patrulla_id is None:
-        return render(request, "joven/mi_patrulla.html", usuario=usuario, integrantes=[])
+# `/mi-patrulla` y todo lo que pasa adentro de una patrulla —cargos, Consejo,
+# acuerdos, identidad— vive en `routers/patrulla.py`.
 
-    integrantes = list(
-        sesion.scalars(
-            select(Usuario)
-            .where(
-                Usuario.patrulla_id == usuario.patrulla_id,
-                Usuario.rol == ROL_JOVEN,
-                Usuario.activo.is_(True),
-            )
-            .order_by(Usuario.nombre)
-        )
-    )
-    return render(
-        request,
-        "joven/mi_patrulla.html",
-        usuario=usuario,
-        integrantes=[(j, progresion.cartas_elegidas(sesion, j)) for j in integrantes],
-    )
+
+# Las especialidades viven en `routers/especialidades.py`: el catálogo del
+# equipo y el recorrido de cada joven son la misma dirección.
 
 
 @router.get("/cartas-de/{joven_id}")

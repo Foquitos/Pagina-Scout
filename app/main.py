@@ -13,7 +13,16 @@ from app.config import CLAVE_SECRETA, COOKIES_SEGURAS, DIR_ESTATICOS, DIR_SUBIDA
 from app.db import SesionLocal
 from app.dependencias import Redireccion, plantillas, usuario_actual
 from app.models import Usuario
-from app.routers import api, auth, educador, joven
+from app.routers import (
+    agenda,
+    api,
+    auth,
+    educador,
+    especialidades,
+    joven,
+    participacion,
+    patrulla,
+)
 
 app = FastAPI(title="Método Scout — Retos de Unidad", docs_url="/api/docs")
 
@@ -42,6 +51,10 @@ def ver_foto(nombre: str, usuario: Usuario = Depends(usuario_actual)):
 
 app.include_router(auth.router)
 app.include_router(joven.router)
+app.include_router(patrulla.router)
+app.include_router(participacion.router)
+app.include_router(agenda.router)
+app.include_router(especialidades.router)
 app.include_router(educador.router)
 app.include_router(api.router)
 

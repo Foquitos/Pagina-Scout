@@ -12,9 +12,10 @@
   <div class="tarjeta">
     <span class="burbuja" aria-hidden="true" style="--tono: rgba(180,83,31,.14)">📥</span>
     <p class="numero-grande" style="margin:.5rem 0 0">{{ pendientes }}</p>
-    <p class="meta">entregas esperando tu mirada</p>
+    {# Lo completo se valida solo: esto son las que quedaron a medias. #}
+    <p class="meta">entregas incompletas esperando tu respuesta</p>
     <div class="acciones">
-      <a class="boton {{ 'secundario' if not pendientes }}" href="/validaciones">Revisar</a>
+      <a class="boton {{ 'secundario' if not pendientes }}" href="/validaciones">Ver las entregas</a>
     </div>
   </div>
   <div class="tarjeta">
@@ -35,6 +36,100 @@
     <p class="meta">educadores en el equipo</p>
     <div class="acciones"><a class="boton secundario" href="/educadores">Ver equipo</a></div>
   </div>
+</div>
+
+{# --- Lo que pide una respuesta del equipo y no es una entrega ------------- #}
+
+{% if cartas_a_conversar %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">💬</span>
+    <div>
+      <strong>{{ cartas_a_conversar|length }}
+        carta{{ 's' if cartas_a_conversar|length != 1 }}
+        cerrada{{ 's' if cartas_a_conversar|length != 1 }} esperan una conversación.</strong>
+      <p>Las cerraron ellos mismos con su autoevaluación. Ya cuentan: lo que falta
+        no es tu permiso, es que las miren juntos.</p>
+      <p class="chips">
+        {% for c in cartas_a_conversar[:8] %}
+          <a class="chip" href="/progresion/{{ c.joven_id }}#carta-{{ c.competencia_id }}">
+            {{ primer_nombre(c.joven.nombre) }} · carta {{ c.competencia.numero }}
+          </a>
+        {% endfor %}
+        {% if cartas_a_conversar|length > 8 %}<span class="chip">y {{ cartas_a_conversar|length - 8 }} más</span>{% endif %}
+      </p>
+    </div>
+  </div>
+{% endif %}
+
+{% if especialidades_pedidas %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">📨</span>
+    <div>
+      <strong>{{ especialidades_pedidas|length }}
+        especialidad{{ 'es' if especialidades_pedidas|length != 1 }}
+        {{ 'pedidas' if especialidades_pedidas|length != 1 else 'pedida' }} esperan que armes el recorrido.</strong>
+      <p>La eligieron ellos; lo que falta es tu parte: quién los acompaña y qué se
+        espera en cada fase. Hasta entonces no pueden empezar.</p>
+      <p class="chips">
+        {% for e in especialidades_pedidas %}
+          <a class="chip" href="/especialidades#especialidad-{{ e.id }}">
+            {{ primer_nombre(e.joven.nombre) }} · {{ e.nombre[:40] }}
+          </a>
+        {% endfor %}
+      </p>
+    </div>
+  </div>
+{% endif %}
+
+{% if especialidades_listas %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">⭐</span>
+    <div>
+      <strong>{{ especialidades_listas|length }}
+        especialidad{{ 'es' if especialidades_listas|length != 1 }}
+        {{ 'llegaron' if especialidades_listas|length != 1 else 'llegó' }} a la fase de servicio.</strong>
+      <p>Es el último paso: ya pusieron lo aprendido al servicio de alguien.
+        Conversalo y entregá la insignia.</p>
+      <p class="chips">
+        {% for e in especialidades_listas %}
+          <a class="chip" href="/especialidades#en-curso">
+            {{ primer_nombre(e.joven.nombre) }} · {{ e.nombre[:40] }}
+          </a>
+        {% endfor %}
+      </p>
+    </div>
+  </div>
+{% endif %}
+
+<h2>🗓️ El ciclo de programa</h2>
+<div class="rejilla angosta">
+  <a class="tarjeta enlazada" href="/ideas" style="text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(62,142,90,.18)">💡</span>
+    <h3 style="margin-top:.6rem">Ideas</h3>
+    <p class="meta">
+      {% if ideas_sin_mirar %}{{ ideas_sin_mirar }} propuesta{{ 's' if ideas_sin_mirar != 1 }}
+        sin mirar. La Asamblea las decide en persona.
+      {% else %}Lo que las patrullas quieren hacer.{% endif %}
+    </p>
+  </a>
+  <a class="tarjeta enlazada" href="/especialidades" style="text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(224,165,38,.18)">⭐</span>
+    <h3 style="margin-top:.6rem">Especialidades</h3>
+    <p class="meta">Lo que pidieron y en qué anda cada una.</p>
+  </a>
+  <a class="tarjeta enlazada" href="/calendario" style="text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(125,91,166,.18)">📆</span>
+    <h3 style="margin-top:.6rem">Calendario</h3>
+    <p class="meta">
+      {% if proximas %}Lo próximo: {{ proximas[0].titulo[:40] }}, el {{ proximas[0].fecha.strftime('%d/%m') }}.
+      {% else %}Todavía no hay nada agendado.{% endif %}
+    </p>
+  </a>
+  <a class="tarjeta enlazada" href="/cargos" style="text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(214,69,80,.18)">🎖️</span>
+    <h3 style="margin-top:.6rem">Cargos</h3>
+    <p class="meta">El catálogo de la Unidad. Los reparten las patrullas.</p>
+  </a>
 </div>
 
 <h2>🎯 Retos de hoy</h2>
@@ -78,22 +173,23 @@
     <a class="boton grande" href="/patrullas">Ir a patrullas</a>
   </div>
 {% else %}
-  {% set maximo = filas[0].puntos if filas[0].puntos > 0 else 1 %}
+  {# Contra el mejor promedio, que es lo que ordena: ver `servicios/puntajes`. #}
+  {% set maximo = filas[0].promedio if filas[0].promedio > 0 else 1 %}
   {% for f in filas %}
     <div class="fila-patrulla" style="--color: {{ f.patrulla.color }}">
       <span class="puesto">{{ loop.index }}º</span>
       <div class="cuerpo">
         <strong>{{ f.patrulla.nombre }}</strong>
         <div class="barra-avance">
-          <div style="width: {{ (f.puntos / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div>
+          <div style="width: {{ (f.promedio / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div>
         </div>
         <p class="meta" style="margin:0">
-          <span>{{ f.integrantes }} integrante{{ 's' if f.integrantes != 1 }}</span>
+          <span>{{ f.puntos }} punto{{ 's' if f.puntos != 1 }} entre {{ f.integrantes }}</span>
           <span>{{ f.acciones }} acci{{ 'ones' if f.acciones != 1 else 'ón' }}</span>
           <span>🔥 racha {{ f.racha }}</span>
         </p>
       </div>
-      <span class="cifra">{{ f.puntos }}</span>
+      <span class="cifra">{{ f.promedio_texto }}</span>
     </div>
   {% endfor %}
 {% endif %}

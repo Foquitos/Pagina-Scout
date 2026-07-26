@@ -26,23 +26,27 @@
    equipo de educadores, cerrar sesión— vive en el menú del usuario, arriba a la
    derecha, y por eso no está acá compitiendo por lugar. #}
 {% set ruta = request.url.path %}
+{# Siete y no ocho: en el celular la barra de abajo son siete botones y el
+   octavo no entra. Lo que no está acá se llega desde su sección: el Libro de Oro
+   desde la patrulla —que es de quien es—, el calendario y la Asamblea desde
+   «Hoy», las especialidades desde las cartas. #}
 {% if usuario and usuario.es_educador %}
   {% set enlaces = [
-    {'href': '/panel',        'icono': '🏕️', 'texto': 'Panel',     'prefijos': ['/panel']},
-    {'href': '/validaciones', 'icono': '✅',  'texto': 'Validar',   'prefijos': ['/validaciones']},
+    {'href': '/panel',        'icono': '🏕️', 'texto': 'Panel',     'prefijos': ['/panel', '/calendario', '/ideas', '/muro']},
+    {'href': '/validaciones', 'icono': '✅',  'texto': 'Entregas',  'prefijos': ['/validaciones']},
     {'href': '/retos',        'icono': '🎯',  'texto': 'Retos',     'prefijos': ['/retos']},
     {'href': '/asignar',      'icono': '📅',  'texto': 'Asignar',   'prefijos': ['/asignar']},
-    {'href': '/patrullas',    'icono': '🤝',  'texto': 'Patrullas', 'prefijos': ['/patrullas', '/libro-de-oro']},
-    {'href': '/jovenes',      'icono': '🧭',  'texto': 'Jóvenes',   'prefijos': ['/jovenes', '/cartas-de', '/progresion']},
+    {'href': '/patrullas',    'icono': '🤝',  'texto': 'Patrullas', 'prefijos': ['/patrullas', '/patrulla', '/libro-de-oro', '/cargos']},
+    {'href': '/jovenes',      'icono': '🧭',  'texto': 'Jóvenes',   'prefijos': ['/jovenes', '/cartas-de', '/progresion', '/especialidades']},
     {'href': '/tablero',      'icono': '🏆',  'texto': 'Tablero',   'prefijos': ['/tablero']}
   ] %}
 {% else %}
   {% set enlaces = [
-    {'href': '/hoy',         'icono': '🏕️', 'texto': 'Hoy',      'prefijos': ['/hoy', '/reto']},
-    {'href': '/mis-retos',   'icono': '✅',  'texto': 'Retos',    'prefijos': ['/mis-retos']},
-    {'href': '/mis-cartas',  'icono': '🧭',  'texto': 'Cartas',   'prefijos': ['/mis-cartas', '/cartas-de']},
-    {'href': '/mi-patrulla', 'icono': '🤝',  'texto': 'Patrulla', 'prefijos': ['/mi-patrulla']},
-    {'href': '/libro-de-oro','icono': '📖',  'texto': 'Libro',    'prefijos': ['/libro-de-oro']},
+    {'href': '/hoy',         'icono': '🏕️', 'texto': 'Hoy',      'prefijos': ['/hoy', '/reto', '/calendario']},
+    {'href': '/muro',        'icono': '📣',  'texto': 'Muro',     'prefijos': ['/muro', '/mis-retos']},
+    {'href': '/mis-cartas',  'icono': '🧭',  'texto': 'Cartas',   'prefijos': ['/mis-cartas', '/cartas-de', '/especialidades']},
+    {'href': '/mi-patrulla', 'icono': '🤝',  'texto': 'Patrulla', 'prefijos': ['/mi-patrulla', '/patrulla', '/libro-de-oro']},
+    {'href': '/ideas',       'icono': '💡',  'texto': 'Ideas',    'prefijos': ['/ideas']},
     {'href': '/bitacora',    'icono': '📓',  'texto': 'Bitácora', 'prefijos': ['/bitacora']},
     {'href': '/tablero',     'icono': '🏆',  'texto': 'Tablero',  'prefijos': ['/tablero']}
   ] %}

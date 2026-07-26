@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block titulo %}Consejo del {{ consejo.fecha.strftime('%d/%m/%Y') }}{% endblock %}
+
+{% block contenido %}
+<p class="miga"><a href="/patrulla/{{ patrulla.id }}#consejo">← Patrulla {{ patrulla.nombre }}</a></p>
+
+<h1>🗣️ Consejo de Patrulla</h1>
+<p class="sub">{{ consejo.fecha.strftime('%d/%m/%Y') }}
+  {% if consejo.escribio %} · lo anotó {{ primer_nombre(consejo.escribio.nombre) }}{% endif %}</p>
+
+<div class="tarjeta">
+  <h3>Quiénes estuvieron</h3>
+  {% set presentes = consejo.presentes|map(attribute='joven_id')|list %}
+  <p class="chips">
+    {% for j in integrantes %}
+      <span class="chip {{ 'activo' if j.id in presentes }}">
+        {{ '✓' if j.id in presentes else '·' }} {{ primer_nombre(j.nombre) }}
+      </span>
+    {% endfor %}
+  </p>
+
+  <h3>De qué hablaron</h3>
+  <p class="texto-largo">{{ consejo.temas }}</p>
+</div>
+
+<h2 id="acuerdos">🤝 Lo que se acordó</h2>
+
+{% if not acuerdos %}
+  <p class="sub-titulo">De este Consejo no salió ningún acuerdo anotado. Un Consejo
+    sin acuerdos es una charla: si decidieron algo, dejalo escrito acá.</p>
+{% else %}
+  <ul class="lista-acuerdos">
+    {% for a in acuerdos %}
+      <li class="{{ 'hecho' if a.cumplido }}">
+        <form method="post" action="/acuerdos/{{ a.id }}" data-autoguardar>
+          <label class="casilla">
+            <input type="checkbox" name="cumplido" value="true" {{ 'checked' if a.cumplido }}>
+            <span>
+              {{ a.texto }}
+              <span class="meta">
+                {% if a.responsable %}<span>{{ primer_nombre(a.responsable.nombre) }}</span>{% endif %}
+                {% if a.para_cuando %}<span>para el {{ a.para_cuando.strftime('%d/%m') }}</span>{% endif %}
+              </span>
+            </span>
+          </label>
+          <button type="submit" class="secundario boton-guardar">Guardar</button>
+          <span class="estado-guardado" data-estado=""></span>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<details class="tarjeta" {{ 'open' if not acuerdos }}>
+  <summary><strong>Sumar un acuerdo de este Consejo</strong></summary>
+  <form method="post" action="/patrulla/{{ patrulla.id }}/acuerdos" data-sin-recarga="Acuerdo anotado.">
+    <input type="hidden" name="consejo_id" value="{{ consejo.id }}">
+    <label for="texto-acuerdo">Qué se acordó</label>
+    <input type="text" id="texto-acuerdo" name="texto" required
+           placeholder="Preparar el menú del campamento antes del viernes">
+    <div class="fila">
+      <div>
+        <label for="responsable_id">Quién se hace cargo (opcional)</label>
+        <select id="responsable_id" name="responsable_id">
+          <option value="">Toda la patrulla</option>
+          {% for j in integrantes %}<option value="{{ j.id }}">{{ j.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="para_cuando">Para cuándo (opcional)</label>
+        <input type="date" id="para_cuando" name="para_cuando">
+      </div>
+    </div>
+    <div class="acciones"><button type="submit">Anotar</button></div>
+  </form>
+</details>
+
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">💡</span>
+  <div>
+    <strong>Lo que decidan acá puede ir más lejos.</strong>
+    <p>Si eligieron una actividad o un proyecto para proponerle a toda la Unidad,
+      cárguenlo en <a href="/ideas">ideas</a>: de ahí sale a la Asamblea.</p>
+  </div>
+</div>
+{% endblock %}

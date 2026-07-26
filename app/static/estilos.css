@@ -1034,6 +1034,82 @@ button.chip[aria-pressed="true"]:hover { background: var(--verde-oscuro); color:
   padding: 0 .35rem;
 }
 
+/* --- La vida de la patrulla ---------------------------------- */
+
+.identidad .fila-identidad { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
+.identidad .banderin {
+  width: 140px; height: auto; border-radius: 10px;
+  border: 1px solid var(--borde); cursor: zoom-in;
+}
+/* El grito va en grande y en mayúsculas porque es un grito. */
+.grito {
+  font-size: 1.15rem; font-weight: 800; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--verde-oscuro); margin: 0 0 .5rem;
+}
+
+.chip.cargo { background: rgba(224,165,38,.16); border-color: rgba(224,165,38,.5); }
+
+.lista-acuerdos { list-style: none; padding-left: 0; margin: .6rem 0 1rem; }
+.lista-acuerdos li {
+  border: 1px solid var(--borde); border-radius: 12px;
+  padding: .6rem .8rem; margin-bottom: .5rem; background: #fff;
+}
+.lista-acuerdos li.hecho { opacity: .62; }
+.lista-acuerdos li.hecho .casilla > span { text-decoration: line-through; }
+.lista-acuerdos form { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.lista-acuerdos .casilla { flex: 1 1 14rem; margin: 0; align-items: flex-start; }
+
+.presentes { border: 1px solid var(--borde); border-radius: 12px; padding: .7rem .9rem; margin: .8rem 0; }
+.presentes legend { padding: 0 .4rem; font-weight: 700; font-size: .9rem; }
+.presentes .casilla { margin: .25rem 0; }
+
+.texto-largo { white-space: pre-wrap; }
+
+/* --- Requisitos de la etapa ---------------------------------- */
+
+.requisitos { list-style: none; padding-left: 0; margin: .6rem 0 0; }
+.requisitos li { display: flex; gap: .6rem; margin: .5rem 0; align-items: flex-start; }
+.requisitos .tilde { font-weight: 800; min-width: 1.3rem; }
+.requisitos li.cumple .tilde { color: var(--ok); }
+.requisitos li.falta { color: var(--tinta-suave); }
+.requisitos li.falta .tilde { color: var(--borde-fuerte); }
+/* Lo que ninguna base de datos puede saber no se pinta como pendiente. */
+.requisitos li.se-conversa { color: inherit; }
+
+/* --- Especialidades ------------------------------------------ */
+
+.fases { list-style: none; padding-left: 0; display: flex; gap: .5rem; flex-wrap: wrap; margin: .4rem 0 1rem; }
+.fases li {
+  display: flex; align-items: center; gap: .45rem;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .25rem .7rem; font-size: .85rem; color: var(--tinta-suave);
+}
+.fases .paso {
+  display: inline-grid; place-items: center;
+  width: 1.35rem; height: 1.35rem; border-radius: 50%;
+  background: var(--borde); color: var(--tinta); font-weight: 800; font-size: .78rem;
+}
+.fases li.hecha { border-color: var(--ok); color: var(--tinta); }
+.fases li.hecha .paso { background: var(--ok); color: #fff; }
+.fases li.actual { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(62,142,90,.14); }
+
+/* --- Ideas y Asamblea ---------------------------------------- */
+
+.tarjeta.votada { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(62,142,90,.16); }
+.actividad.campamento { border-left-color: #7d5ba6; }
+.actividad.descubierta { border-left-color: #2E86AB; }
+.actividad.proyecto { border-left-color: #E2673A; }
+.actividad.celebracion { border-left-color: #E0A526; }
+
+/* La autoevaluación es la voz del joven: se distingue de la nota del educador. */
+.comentario.autoevaluacion {
+  border-left-color: var(--verde);
+  background: rgba(62,142,90,.07);
+  white-space: pre-wrap;
+}
+
+tr.apagada { opacity: .55; }
+
 /* --- Utilidades ---------------------------------------------- */
 
 .numero-grande { font-size: 2.2rem; font-weight: 800; line-height: 1.1; letter-spacing: -.03em; }

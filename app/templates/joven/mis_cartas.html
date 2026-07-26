@@ -58,6 +58,19 @@
   {% include "joven/_eleccion.html" %}
 </div>
 
+{# Las especialidades no son cartas, pero se eligen igual de solo y suman al
+   mismo recorrido: un desafío opcional de una carta puede ser justamente una
+   especialidad (cap. 9). Por eso el enlace vive acá. #}
+<a class="tarjeta enlazada" href="/especialidades"
+   style="display:flex; gap:.9rem; align-items:center; text-decoration:none; color:inherit">
+  <span class="burbuja" aria-hidden="true" style="--tono: rgba(214,69,80,.18)">⭐</span>
+  <span>
+    <strong>Mis especialidades</strong>
+    <span class="meta" style="display:block">Cocina, fotografía, primeros auxilios:
+      algo tuyo que quieras aprender en serio.</span>
+  </span>
+</a>
+
 {% if historial %}
   <h2 id="historial">📜 Mi recorrido anterior</h2>
   <p class="sub-titulo">Las cartas de tus etapas anteriores, con todo lo que

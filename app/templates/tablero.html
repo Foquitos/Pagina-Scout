@@ -8,7 +8,8 @@
 <div class="portada sol" data-refrescar="30">
   <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
   <h1>🏆 Tablero de patrullas</h1>
-  <p class="sub">El puntaje es siempre de la patrulla. No hay marcador individual.
+  <p class="sub">Puntos <strong>por integrante</strong>, para que una patrulla de
+    ocho no le gane siempre a una de cuatro. No hay marcador individual.
     <span class="solo-js">Se actualiza solo.</span></p>
 </div>
 
@@ -26,8 +27,9 @@
       <div class="lugar {{ 'primero' if loop.index == 1 }}" style="--color: {{ f.patrulla.color }}">
         <div class="medalla" aria-hidden="true">{{ medallas[loop.index0] }}</div>
         <div class="nombre">{{ f.patrulla.nombre }}</div>
-        <div class="puntos">{{ f.puntos }}</div>
-        <small>puntos · {{ f.acciones }} acci{{ 'ones' if f.acciones != 1 else 'ón' }}</small>
+        <div class="puntos">{{ f.promedio_texto }}</div>
+        <small>por integrante · {{ f.puntos }} en total
+          entre {{ f.integrantes }}</small>
         <div class="chips" style="justify-content:center">
           {% if f.racha %}<span class="chip">🔥 {{ f.racha }} día{{ 's' if f.racha != 1 }}</span>{% endif %}
           {% if usuario.patrulla_id == f.patrulla.id %}<span class="chip activo">tu patrulla</span>{% endif %}
@@ -36,32 +38,36 @@
     {% endfor %}
   </div>
 
-  {% set maximo = filas[0].puntos if filas[0].puntos > 0 else 1 %}
+  {# La barra se mide contra el mejor promedio, igual que el orden. #}
+  {% set maximo = filas[0].promedio if filas[0].promedio > 0 else 1 %}
   {% if filas|length > 3 %}
   <h2>Y también</h2>
   {% endif %}
   {% for f in filas[3:] %}
     <div class="fila-patrulla {{ 'propia' if usuario.patrulla_id == f.patrulla.id }}"
          style="--color: {{ f.patrulla.color }}">
-      <span class="puesto">{{ loop.index }}º</span>
+      <span class="puesto">{{ loop.index + 3 }}º</span>
       <div class="cuerpo">
         <strong>{{ f.patrulla.nombre }}</strong>
         {% if usuario.patrulla_id == f.patrulla.id %}<span class="chip activo">tu patrulla</span>{% endif %}
         {% if f.patrulla.lema %}<div class="meta">«{{ f.patrulla.lema }}»</div>{% endif %}
         <div class="barra-avance">
-          <div style="width: {{ (f.puntos / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div>
+          <div style="width: {{ (f.promedio / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div>
         </div>
         <p class="meta" style="margin:0">
+          <span>{{ f.puntos }} punto{{ 's' if f.puntos != 1 }} entre {{ f.integrantes }}</span>
           <span>{{ f.acciones }} acci{{ 'ones validadas' if f.acciones != 1 else 'ón validada' }}</span>
           <span>🔥 racha de {{ f.racha }} día{{ 's' if f.racha != 1 }}</span>
         </p>
       </div>
-      <span class="cifra">{{ f.puntos }}</span>
+      <span class="cifra">{{ f.promedio_texto }}</span>
     </div>
   {% endfor %}
 
   <p class="meta centrado" style="margin-top:1.4rem">
-    Los puntos quedan en la patrulla donde se ganaron. Acompañarse no es competir.
+    Las patrullas son desparejas y está bien que lo sean, así que la cifra grande
+    es el promedio por integrante: nadie gana por ser más. Los puntos quedan en la
+    patrulla donde se ganaron. Acompañarse no es competir.
   </p>
 {% endif %}
 {% endblock %}

@@ -1,16 +1,38 @@
 {% extends "base.html" %}
-{% block titulo %}Validaciones{% endblock %}
+{% block titulo %}Entregas{% endblock %}
 
 {% block contenido %}
-<h1>✅ Validaciones</h1>
-<p class="sub">Acá no evaluás un examen: acompañás. Ante la duda, prima lo que dice
-  el joven sobre su propio proceso.</p>
+<h1>✅ Lo que entregaron</h1>
+<p class="sub">Esto no es una cola de aprobación. Una entrega completa se da por
+  buena sola y suma en el momento: un chico que hizo lo que le pidieron no tiene
+  por qué esperar al sábado para que alguien le diga que sí.</p>
+
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">📖</span>
+  <div>
+    <strong>Lo que sí te toca es mirar y, si algo no pasó, darlo de baja.</strong>
+    <p>«No lo hiciste» es una conversación de una persona, nunca de un programa:
+      por eso ningún validador automático rechaza nada, solo aprueba o te lo
+      deriva. Acá acompañás; ante la duda, prima lo que dice el joven sobre su
+      propio proceso.</p>
+  </div>
+</div>
+
+{% if esperando %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">⏳</span>
+    <div><strong>{{ esperando }} entrega{{ 's' if esperando != 1 }}
+      {{ 'esperan' if esperando != 1 else 'espera' }} una respuesta tuya.</strong>
+      <p>Son las que quedaron incompletas —falta la foto que pedía el reto, o el
+        relato es de dos palabras—. <a href="/validaciones?estado=requiere_revision">Verlas</a>.</p></div>
+  </div>
+{% endif %}
 
 {% set filtros = [
-  ('requiere_revision', '⏳ Para revisar'),
+  ('todas', 'Todas'),
+  ('requiere_revision', '⏳ Esperando respuesta'),
   ('aprobada', '🎉 Validadas'),
-  ('rechazada', '↩️ Sin validar'),
-  ('todas', 'Todas')
+  ('rechazada', '↩️ Dadas de baja')
 ] %}
 <p class="chips">
   {% for valor, texto in filtros %}
@@ -51,10 +73,11 @@
       </div>
       <span class="etiqueta {{ e.estado }}">
         {% if e.estado == 'aprobada' %}🎉 Validada
-        {% elif e.estado == 'requiere_revision' %}⏳ Para revisar
-        {% elif e.estado == 'rechazada' %}↩️ Sin validar
+        {% elif e.estado == 'requiere_revision' %}⏳ Esperando respuesta
+        {% elif e.estado == 'rechazada' %}↩️ Dada de baja
         {% else %}📨 Enviada{% endif %}
       </span>
+      {% if e.compartida %}<span class="chip">📣 en el muro</span>{% endif %}
     </div>
 
     {% if e.asignacion.reto.desafio %}
@@ -75,10 +98,17 @@
       <textarea id="devolucion-{{ e.id }}" name="devolucion" style="min-height:4rem"
         placeholder="Qué reconocés de lo que hizo y qué le sugerís para seguir."></textarea>
       <div class="acciones">
-        <button type="submit" name="decision" value="aprobar">Validar ({{ e.asignacion.reto.puntaje }} pts)</button>
+        {% if e.estado != 'aprobada' %}
+          <button type="submit" name="decision" value="aprobar">Darla por buena ({{ e.asignacion.reto.puntaje }} pts)</button>
+        {% endif %}
         <button type="submit" name="decision" value="devolver" class="secundario">Pedir que amplíe</button>
-        <button type="submit" name="decision" value="rechazar" class="peligro">No validar</button>
+        <button type="submit" name="decision" value="rechazar" class="peligro">
+          {{ 'Darla de baja' if e.estado == 'aprobada' else 'No validar' }}
+        </button>
       </div>
+      {% if e.estado == 'aprobada' and e.compartida %}
+        <p class="meta">Darla de baja la saca también del muro.</p>
+      {% endif %}
     </form>
   </article>
   {% endfor %}

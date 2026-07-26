@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block titulo %}Especialidades{% endblock %}
+
+{% block contenido %}
+<div class="portada">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>⭐ Mis especialidades</h1>
+  <p class="sub">Algo que te interesa a vos y que vas a aprender en serio. Lleva
+    entre dos y seis meses, y no suma puntos: es tuyo.</p>
+</div>
+
+{% set en_curso = especialidades|rejectattr('lograda')|list %}
+{% set logradas = especialidades|selectattr('lograda')|list %}
+
+{# El pedido es libre a propósito: la especialidad la elige quien la va a hacer. #}
+<details class="tarjeta" id="pedir" {{ 'open' if not especialidades }}>
+  <summary><strong>⭐ Pedir una especialidad</strong></summary>
+  <form method="post" action="/especialidades" data-sin-recarga="Pedido enviado.">
+    <div class="fila">
+      <div>
+        <label for="nombre">¿Qué querés aprender?</label>
+        <input type="text" id="nombre" name="nombre" required maxlength="120"
+               list="ideas-especialidad"
+               placeholder="Cocina, apicultura, primeros auxilios, lo que sea…">
+        <datalist id="ideas-especialidad">
+          {% for texto, carta in sugerencias %}<option value="{{ texto[:100] }}"></option>{% endfor %}
+        </datalist>
+      </div>
+      <div>
+        <label for="icono">Un ícono (opcional)</label>
+        <input type="text" id="icono" name="icono" maxlength="10" placeholder="🐝">
+      </div>
+    </div>
+    <p class="meta">Poné la que quieras. No hay una lista de la que elegir: si te
+      interesa algo que a nadie se le ocurrió, ese es justamente el punto.</p>
+
+    <label for="motivo">¿Por qué esa? (opcional)</label>
+    <textarea id="motivo" name="motivo" rows="2"
+      placeholder="Qué te llama, si ya sabés algo del tema, si conocés a alguien que sepa."></textarea>
+    <p class="meta">Esto lo lee tu educador/a para poder armarte el recorrido y
+      buscar quién te acompañe.</p>
+
+    <div class="acciones"><button type="submit" class="grande">Pedirla</button></div>
+  </form>
+</details>
+
+{% if not especialidades %}
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/mapa.svg" alt="">
+    <strong>Todavía no pediste ninguna</strong>
+    <p>No hace falta permiso ni haber logrado una etapa. Alcanza con querer.</p>
+  </div>
+{% endif %}
+
+{% for e in en_curso %}
+  <article class="tarjeta acento especialidad" id="especialidad-{{ e.id }}">
+    <div class="encabezado-tarjeta">
+      <span class="burbuja" aria-hidden="true">{{ e.icono }}</span>
+      <div>
+        <h3>{{ e.nombre }}</h3>
+        <p class="meta">
+          <span>Pedida el {{ e.pedida_en.strftime('%d/%m/%Y') }}</span>
+          {% if e.experto %}<span>con {{ e.experto }}</span>{% endif %}
+        </p>
+      </div>
+    </div>
+    {% if e.motivo %}<p class="meta">«{{ e.motivo }}»</p>{% endif %}
+
+    {% if not e.preparada %}
+      {# Pedirla no es empezarla: el recorrido lo arma el equipo. #}
+      <div class="aviso">
+        <span class="icono" aria-hidden="true">⏳</span>
+        <div>
+          <strong>Tu educador/a la está preparando.</strong>
+          <p>Para armar una especialidad hay trabajo: entender el tema, ver quién
+            te puede acompañar y pensar qué vas a hacer en cada etapa. Cuando esté
+            lista te va a aparecer acá para empezar.</p>
+        </div>
+      </div>
+      <div class="acciones">
+        <form method="post" action="/especialidades/{{ e.id }}/borrar"
+              onsubmit="return confirm('¿Cancelar el pedido de «{{ e.nombre[:60] }}»?')"
+              data-sin-recarga="Pedido cancelado."
+              data-confirmar="¿Cancelar el pedido de «{{ e.nombre[:60] }}»?">
+          <button type="submit" class="secundario">Cancelar el pedido</button>
+        </form>
+      </div>
+
+    {% else %}
+      <ol class="fases">
+        {% for f in fases %}
+          {% set escrito = e.escrito[f] %}
+          <li class="{{ 'hecha' if escrito else '' }} {{ 'actual' if e.fase == f and not escrito }}">
+            <span class="paso" aria-hidden="true">{{ loop.index }}</span>
+            <span>{{ fases_nombre[f] }}</span>
+          </li>
+        {% endfor %}
+      </ol>
+
+      {% for f in fases %}
+        <form method="post" action="/especialidades/{{ e.id }}" data-autoguardar>
+          <input type="hidden" name="fase" value="{{ f }}">
+          <label for="{{ f }}-{{ e.id }}">{{ fases_nombre[f] }}</label>
+          {# Lo que se espera lo escribió tu educador/a para vos. Es una
+             referencia, no una lista de casilleros. #}
+          {% if e.pide[f] %}
+            <p class="meta pedido">{{ e.pide[f] }}</p>
+          {% else %}
+            <p class="meta">
+              {% if f == 'exploracion' %}Qué averiguaste, qué herramientas se usan, qué hay que saber.
+              {% elif f == 'taller' %}Qué hiciste con eso. Es la parte práctica.
+              {% else %}A quién le sirvió lo que aprendiste: tu patrulla, tu familia, el barrio.
+              {% endif %}
+            </p>
+          {% endif %}
+          <textarea id="{{ f }}-{{ e.id }}" name="texto" rows="3">{{ e.escrito[f] }}</textarea>
+          <div class="acciones">
+            <button type="submit" class="secundario boton-guardar">Guardar</button>
+            <span class="estado-guardado" data-estado=""></span>
+          </div>
+        </form>
+      {% endfor %}
+
+      <div class="acciones">
+        <form method="post" action="/especialidades/{{ e.id }}/borrar"
+              onsubmit="return confirm('¿Dejar «{{ e.nombre[:60] }}»? Se borra lo que escribiste.')"
+              data-sin-recarga="Especialidad dejada."
+              data-confirmar="¿Dejar «{{ e.nombre[:60] }}»? Se borra lo que escribiste.">
+          <button type="submit" class="secundario">Dejarla</button>
+        </form>
+      </div>
+
+      {% if e.fase == 'desafio' and e.desafio %}
+        <p class="meta">Ya está: la cierra tu educador/a cuando lo conversen.
+          Aparece en su panel desde que llegaste hasta acá.</p>
+      {% endif %}
+    {% endif %}
+  </article>
+{% endfor %}
+
+{% if logradas %}
+  <h2>🏅 Las que lograste</h2>
+  <div class="rejilla angosta">
+    {% for e in logradas %}
+      <article class="tarjeta" id="especialidad-{{ e.id }}">
+        <h3>{{ e.icono }} {{ e.nombre }}</h3>
+        <p class="meta">
+          <span>{{ e.lograda_en.strftime('%d/%m/%Y') }}</span>
+          {% if e.experto %}<span>con {{ e.experto }}</span>{% endif %}
+        </p>
+        {% if e.desafio %}<p>{{ e.desafio }}</p>{% endif %}
+        {% if e.nota_cierre %}
+          <blockquote class="comentario">{{ e.nota_cierre }}
+            <footer class="meta">{{ e.lograda_por.nombre if e.lograda_por else 'El equipo' }}</footer>
+          </blockquote>
+        {% endif %}
+      </article>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if sugerencias %}
+  <details>
+    <summary>¿No sabés cuál pedir?</summary>
+    <p class="sub-titulo">Estas salen de las propias Cartas de Exploración, así
+      que están pensadas para tu edad. Son ideas: podés pedir cualquier otra.</p>
+    <ul class="lista-desafios">
+      {% for texto, carta in sugerencias[:15] %}
+        <li><span class="tilde" aria-hidden="true">·</span>
+          <div>{{ texto }}<span class="meta" style="display:block">{{ carta }}</span></div>
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
+{% endif %}
+
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">💡</span>
+  <div>
+    <strong>Una especialidad puede valer por los desafíos de una carta.</strong>
+    <p>Si desarrollaste la de cocina, eso puede reemplazar los desafíos de una
+      competencia sobre alimentación. Se conversa con tu educador/a.</p>
+  </div>
+</div>
+{% endblock %}

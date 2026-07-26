@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block titulo %}Especialidades{% endblock %}
+
+{% block contenido %}
+<h1>⭐ Especialidades</h1>
+<p class="sub">Lo que pidieron y en qué anda cada una. La especialidad la elige
+  quien la va a hacer; el recorrido lo armás vos.</p>
+
+{% set pedidas = en_curso|rejectattr('preparada')|list %}
+{% set andando = en_curso|selectattr('preparada')|list %}
+
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">📖</span>
+  <div>
+    <strong>No hay catálogo, y es a propósito.</strong>
+    <p>«Tanto la decisión de desarrollar una especialidad como la elección del
+      tema específico son personales y voluntarias de cada joven.» Una lista
+      cerrada convertiría en «no se puede» todo lo que a nosotros no se nos
+      ocurrió. Lo que sí es trabajo del equipo es lo de después: entender el
+      tema, conseguir a la persona experta e informarle para qué sirve esto, y
+      escribir qué se espera en cada fase —para esa persona, no para todas—.</p>
+  </div>
+</div>
+
+{# --- Pedidos esperando respuesta ------------------------------------------ #}
+<h2 id="pedidas">📨 Pedidas
+  {% if pedidas %}<span class="chip">{{ pedidas|length }}</span>{% endif %}
+</h2>
+
+{% if not pedidas %}
+  <p class="sub-titulo">No hay pedidos sin contestar.</p>
+{% else %}
+  <p class="sub-titulo">Esperan que armes el recorrido. Hasta que lo hagas, quien
+    la pidió no puede empezar.</p>
+{% endif %}
+
+{% for e in pedidas %}
+  <article class="tarjeta acento" id="especialidad-{{ e.id }}">
+    <div class="encabezado-tarjeta">
+      <span class="avatar" style="--color: {{ color_de(e.joven.nombre) }}" aria-hidden="true">{{ iniciales(e.joven.nombre) }}</span>
+      <div>
+        <h3>{{ e.joven.nombre }} pidió {{ e.icono }} {{ e.nombre }}</h3>
+        <p class="meta">
+          <span>el {{ e.pedida_en.strftime('%d/%m/%Y') }}</span>
+          <span>Etapa {{ e.joven.etapa_nombre }}</span>
+          {% if e.joven.patrulla %}<span>{{ e.joven.patrulla.nombre }}</span>{% endif %}
+        </p>
+      </div>
+    </div>
+    {% if e.motivo %}
+      <blockquote class="comentario">{{ e.motivo }}
+        <footer class="meta">Por qué la pidió</footer>
+      </blockquote>
+    {% endif %}
+
+    {% include "educador/_preparar_especialidad.html" %}
+  </article>
+{% endfor %}
+
+{# --- En marcha ------------------------------------------------------------ #}
+<h2 id="en-curso">🔭 En marcha</h2>
+{% if not andando %}
+  <p class="sub-titulo">Todavía no hay ninguna en marcha.</p>
+{% endif %}
+
+{% for e in andando %}
+  <article class="tarjeta" id="especialidad-{{ e.id }}">
+    <div class="encabezado-tarjeta">
+      <span class="avatar" style="--color: {{ color_de(e.joven.nombre) }}" aria-hidden="true">{{ iniciales(e.joven.nombre) }}</span>
+      <div>
+        <h3>{{ e.joven.nombre }} · {{ e.icono }} {{ e.nombre }}</h3>
+        <p class="meta">
+          <span>{{ e.fase_nombre }}</span>
+          {% if e.experto %}<span>con {{ e.experto }}</span>{% endif %}
+          <span>desde el {{ e.preparada_en.strftime('%d/%m/%Y') }}</span>
+        </p>
+      </div>
+    </div>
+
+    {% for clave, texto in e.escrito.items() %}
+      {% if texto %}
+        <blockquote class="comentario">{{ texto }}
+          <footer class="meta">{{ FASES_NOMBRE[clave] }}</footer>
+        </blockquote>
+      {% endif %}
+    {% endfor %}
+
+    <details>
+      <summary>Ajustar el recorrido</summary>
+      <p class="meta">Los requisitos «son solo una referencia, pudiendo ser
+        modificadas, teniendo en cuenta las particularidades de cada joven». Si
+        algo no le sirve, cambialo.</p>
+      {% include "educador/_preparar_especialidad.html" %}
+    </details>
+
+    <details {{ 'open' if e.fase == 'desafio' }}>
+      <summary>{{ '🏅 Está lista: dar por concluida' if e.fase == 'desafio' else 'Dar por concluida' }}</summary>
+      {% if e.fase != 'desafio' %}
+        <div class="aviso alerta">
+          <span class="icono" aria-hidden="true">⚠️</span>
+          <div><strong>Todavía no llegó a la fase de servicio.</strong>
+            <p>La insignia se entrega al final del proceso, cuando puso lo
+              aprendido al servicio de alguien. Se puede cerrar igual si el
+              trabajo lo hizo por fuera de lo que escribió acá.</p></div>
+        </div>
+      {% endif %}
+      <form method="post" action="/especialidades/{{ e.id }}/entregar"
+            data-sin-recarga="Especialidad concluida.">
+        <input type="hidden" name="volver" value="listado">
+        <label for="nota-{{ e.id }}">Qué se conversó (opcional)</label>
+        <textarea id="nota-{{ e.id }}" name="nota" rows="2"
+          placeholder="Cocinó para el campamento de patrulla y le enseñó a los más nuevos."></textarea>
+        <div class="acciones">
+          <button type="submit">🏅 Dar la insignia</button>
+          <a class="boton secundario" href="/progresion/{{ e.joven_id }}#especialidades">Ver su progresión →</a>
+        </div>
+      </form>
+    </details>
+  </article>
+{% endfor %}
+
+{% if sugerencias %}
+  <details>
+    <summary>Las especialidades que nombran las Cartas de Exploración</summary>
+    <p class="sub-titulo">Los desafíos de las cartas marcados como especialidad.
+      Sirven para saber qué esperar de un tema cuando el pedido te agarra de
+      sorpresa; no son las únicas que se pueden pedir.</p>
+    <ul class="lista-desafios">
+      {% for texto, carta in sugerencias %}
+        <li><span class="tilde" aria-hidden="true">·</span>
+          <div>{{ texto }}<span class="meta" style="display:block">{{ carta }}</span></div>
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
+{% endif %}
+{% endblock %}

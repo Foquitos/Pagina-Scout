@@ -1,74 +1,327 @@
 {% extends "base.html" %}
-{% block titulo %}Mi patrulla{% endblock %}
+{% block titulo %}{{ 'Patrulla ' ~ patrulla.nombre if patrulla else 'Mi patrulla' }}{% endblock %}
 
 {% block contenido %}
-<div class="portada"
-     {% if usuario.patrulla %}style="background: linear-gradient(135deg, {{ usuario.patrulla.color }} 0%, {{ usuario.patrulla.color }}bb 100%)"{% endif %}>
-  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
-  <h1>🤝 {% if usuario.patrulla %}Patrulla {{ usuario.patrulla.nombre }}{% else %}Mi patrulla{% endif %}</h1>
-  {% if usuario.patrulla and usuario.patrulla.lema %}
-    <p class="sub">«{{ usuario.patrulla.lema }}»</p>
-  {% endif %}
-  {% if integrantes %}
-    <div class="pastillas">
-      <span class="pastilla"><span aria-hidden="true">👥</span> <span class="valor">{{ integrantes|length }}</span> <small>integrantes</small></span>
-    </div>
-  {% endif %}
-</div>
-
-{% if not integrantes %}
+{% if not patrulla %}
+  <h1>🤝 Mi patrulla</h1>
   <div class="vacio">
     <img src="/estaticos/img/vacio/patrulla.svg" alt="">
     <strong>Todavía no estás en una patrulla</strong>
     <p>Pedile a tu educador/a que te sume a una.</p>
   </div>
 {% else %}
-  <p class="sub-titulo">En qué anda cada quien con sus cartas. Están por nombre:
-    no es una competencia, cada recorrido es propio.</p>
+{% set propia = usuario.patrulla_id == patrulla.id %}
 
-  <div class="rejilla">
-    {% for joven, avances in integrantes %}
-      {% set logradas = avances|selectattr('elegida.lograda')|list|length %}
-      <article class="tarjeta">
-        <div class="encabezado-tarjeta">
-          <span class="avatar" style="--color: {{ color_de(joven.nombre) }}" aria-hidden="true">{{ iniciales(joven.nombre) }}</span>
-          <div>
-            <h3>{{ joven.nombre }}{% if joven.id == usuario.id %} <span class="chip activo">vos</span>{% endif %}</h3>
-            <p class="meta">
-              <span>Etapa {{ joven.etapa_nombre }}</span>
-              <span>{{ avances|length }} carta{{ 's' if avances|length != 1 }}</span>
-              {% if logradas %}<span>🏅 {{ logradas }} lograda{{ 's' if logradas != 1 }}</span>{% endif %}
-            </p>
-          </div>
-        </div>
+<div class="portada" style="background: linear-gradient(135deg, {{ patrulla.color }} 0%, {{ patrulla.color }}bb 100%)">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>{{ patrulla.emblema or '🤝' }} Patrulla {{ patrulla.nombre }}</h1>
+  {% if patrulla.lema %}<p class="sub">«{{ patrulla.lema }}»</p>{% endif %}
+  <div class="pastillas">
+    <span class="pastilla"><span aria-hidden="true">👥</span> <span class="valor">{{ resumen.integrantes }}</span> <small>integrantes</small></span>
+    <span class="pastilla"><span aria-hidden="true">🎖️</span> <span class="valor">{{ resumen.con_cargo }}</span> <small>con cargo</small></span>
+    {% if resumen.acuerdos_pendientes %}
+      <span class="pastilla"><span aria-hidden="true">🤝</span> <span class="valor">{{ resumen.acuerdos_pendientes }}</span> <small>acuerdo{{ 's' if resumen.acuerdos_pendientes != 1 }} en marcha</small></span>
+    {% endif %}
+  </div>
+</div>
 
-        {% if avances %}
-          <p class="chips">
-            {% for a in avances %}
-              <span class="chip" title="{{ a.competencia.titulo }}"
-                    style="border-color: {{ a.competencia.area.color }}">
-                {{ a.competencia.area.icono }} {{ a.competencia.numero }} · {{ a.requeridos_hechos }}/{{ a.requeridos }}
-              </span>
-            {% endfor %}
+{% if patrulla.grito or patrulla.archivo_banderin or patrulla.historia %}
+<div class="tarjeta identidad">
+  <div class="fila-identidad">
+    {% if patrulla.archivo_banderin %}
+      <img class="banderin" src="/fotos/{{ patrulla.archivo_banderin }}"
+           alt="Banderín de la patrulla {{ patrulla.nombre }}"
+           data-foto="/fotos/{{ patrulla.archivo_banderin }}">
+    {% endif %}
+    <div>
+      {% if patrulla.grito %}<p class="grito">{{ patrulla.grito }}</p>{% endif %}
+      {% if patrulla.historia %}<p>{{ patrulla.historia }}</p>{% endif %}
+      {% if patrulla.fundada_en %}
+        <p class="meta"><span>Desde el {{ patrulla.fundada_en.strftime('%d/%m/%Y') }}</span></p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# --- Quiénes son ---------------------------------------------------------- #}
+<h2>👥 Quiénes somos</h2>
+<p class="sub-titulo">Por nombre, nunca por avance: cada recorrido es propio.</p>
+
+<div class="rejilla">
+  {% for joven, avances in integrantes %}
+    {% set logradas = avances|selectattr('elegida.lograda')|list|length %}
+    {% set suyos = porta.get(joven.id, []) %}
+    <article class="tarjeta">
+      <div class="encabezado-tarjeta">
+        <span class="avatar" style="--color: {{ color_de(joven.nombre) }}" aria-hidden="true">{{ iniciales(joven.nombre) }}</span>
+        <div>
+          <h3>{{ joven.nombre }}{% if joven.id == usuario.id %} <span class="chip activo">vos</span>{% endif %}</h3>
+          <p class="meta">
+            <span>Etapa {{ joven.etapa_nombre }}</span>
+            <span>{{ avances|length }} carta{{ 's' if avances|length != 1 }}</span>
+            {% if logradas %}<span>🏅 {{ logradas }} lograda{{ 's' if logradas != 1 }}</span>{% endif %}
           </p>
-        {% else %}
-          <p class="meta">Todavía no eligió cartas para esta etapa.</p>
-        {% endif %}
-
-        <div class="acciones">
-          <a class="boton secundario" href="/cartas-de/{{ joven.id }}">Ver su recorrido →</a>
         </div>
-      </article>
+      </div>
+
+      {% if suyos %}
+        <p class="chips">
+          {% for p in suyos %}
+            <span class="chip cargo">🎖️ {{ p.cargo.nombre }}</span>
+          {% endfor %}
+        </p>
+      {% endif %}
+
+      {% if avances %}
+        <p class="chips">
+          {% for a in avances %}
+            <span class="chip" title="{{ a.competencia.titulo }}"
+                  style="border-color: {{ a.competencia.area.color }}">
+              {{ a.competencia.area.icono }} {{ a.competencia.numero }} · {{ a.requeridos_hechos }}/{{ a.requeridos }}
+            </span>
+          {% endfor %}
+        </p>
+      {% else %}
+        <p class="meta">Todavía no eligió cartas para esta etapa.</p>
+      {% endif %}
+
+      <div class="acciones">
+        <a class="boton secundario" href="/cartas-de/{{ joven.id }}">Ver su recorrido →</a>
+      </div>
+    </article>
+  {% endfor %}
+</div>
+
+{# --- Cargos --------------------------------------------------------------- #}
+<h2 id="cargos">🎖️ Los cargos</h2>
+<p class="sub-titulo">Cada uno tiene una responsabilidad de verdad, y por eso rotan.
+  Los reparte y los evalúa el Consejo de Patrulla, no el educador.
+  <strong>Se pueden tener varios a la vez</strong>: en una patrulla de cinco no hay
+  una persona por cargo, y no pasa nada.</p>
+
+{% if not abiertos %}
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/patrulla.svg" alt="">
+    <strong>Todavía nadie tomó un cargo</strong>
+    <p>Es lo primero que conviene repartir: sin cargos, la patrulla depende de una
+      sola persona para todo.</p>
+  </div>
+{% else %}
+<div class="tabla-envoltura">
+  <table>
+    <thead><tr><th>Cargo</th><th>Quién</th><th>Desde</th><th>Cerrar el período</th></tr></thead>
+    <tbody>
+      {% for p in abiertos %}
+      <tr>
+        <td><strong>{{ p.cargo.nombre }}</strong>
+          {% if p.cargo.descripcion %}<span class="meta" style="display:block">{{ p.cargo.descripcion }}</span>{% endif %}</td>
+        <td>{{ p.joven.nombre }}</td>
+        <td>{{ p.desde.strftime('%d/%m/%Y') }}</td>
+        <td>
+          <details>
+            <summary>Cerrar</summary>
+            <form method="post" action="/patrulla/{{ patrulla.id }}/cargos/{{ p.id }}/cerrar"
+                  data-sin-recarga="Período cerrado.">
+              <label class="casilla">
+                <input type="checkbox" name="cumplido" value="true" checked>
+                Lo cumplió, a criterio del Consejo
+              </label>
+              <label for="hasta-{{ p.id }}">Hasta</label>
+              <input type="date" id="hasta-{{ p.id }}" name="hasta" value="{{ hoy.isoformat() }}">
+              <label for="nota-{{ p.id }}">Cómo le fue (opcional)</label>
+              <textarea id="nota-{{ p.id }}" name="nota" rows="2"></textarea>
+              <div class="acciones"><button type="submit" class="secundario">Cerrar el período</button></div>
+            </form>
+          </details>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if resumen.hay_quien_no_tiene_cargo %}
+  <p class="meta">Sin cargo: {% for j in resumen.sin_cargo %}{{ j.nombre }}{{ ', ' if not loop.last }}{% endfor %}.</p>
+{% endif %}
+
+<details class="tarjeta" {{ 'open' if not abiertos }}>
+  <summary><strong>Darle un cargo a alguien</strong></summary>
+  <p class="meta">Se le puede dar a alguien que ya tiene otro: son responsabilidades,
+    no puestos, y en una patrulla chica hay que repartirse más de una.</p>
+  <form method="post" action="/patrulla/{{ patrulla.id }}/cargos" data-sin-recarga="Cargo asignado.">
+    <div class="fila">
+      <div>
+        <label for="cargo_id">Cargo</label>
+        <select id="cargo_id" name="cargo_id" required>
+          {% for c in cargos %}<option value="{{ c.id }}">{{ c.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="joven_id">Quién</label>
+        <select id="joven_id" name="joven_id" required>
+          {% for joven, _ in integrantes %}<option value="{{ joven.id }}">{{ joven.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <label for="desde">Desde</label>
+    <input type="date" id="desde" name="desde" value="{{ hoy.isoformat() }}">
+    <div class="acciones"><button type="submit">Asignar el cargo</button></div>
+  </form>
+</details>
+
+{# --- Acuerdos ------------------------------------------------------------- #}
+<h2 id="acuerdos">🤝 Lo que acordamos</h2>
+
+{% set pendientes = acuerdos|rejectattr('cumplido')|list %}
+{% if not acuerdos %}
+  <p class="sub-titulo">Todavía no hay acuerdos anotados. Salen del Consejo de Patrulla.</p>
+{% else %}
+  <ul class="lista-acuerdos">
+    {% for a in acuerdos %}
+      <li class="{{ 'hecho' if a.cumplido }}">
+        <form method="post" action="/acuerdos/{{ a.id }}" data-autoguardar>
+          <label class="casilla">
+            <input type="checkbox" name="cumplido" value="true" {{ 'checked' if a.cumplido }}>
+            <span>
+              {{ a.texto }}
+              <span class="meta">
+                {% if a.responsable %}<span>{{ primer_nombre(a.responsable.nombre) }}</span>{% endif %}
+                {% if a.para_cuando %}<span>para el {{ a.para_cuando.strftime('%d/%m') }}</span>{% endif %}
+                {% if a.consejo %}<span><a href="/patrulla/{{ patrulla.id }}/consejo/{{ a.consejo_id }}">del Consejo del {{ a.consejo.fecha.strftime('%d/%m') }}</a></span>{% endif %}
+              </span>
+            </span>
+          </label>
+          <button type="submit" class="secundario boton-guardar">Guardar</button>
+          <span class="estado-guardado" data-estado=""></span>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<details class="tarjeta">
+  <summary><strong>Anotar un acuerdo</strong></summary>
+  <form method="post" action="/patrulla/{{ patrulla.id }}/acuerdos" data-sin-recarga="Acuerdo anotado.">
+    <label for="texto-acuerdo">Qué se acordó</label>
+    <input type="text" id="texto-acuerdo" name="texto" required
+           placeholder="Llevar las carpas a secar antes del sábado">
+    <div class="fila">
+      <div>
+        <label for="responsable_id">Quién se hace cargo (opcional)</label>
+        <select id="responsable_id" name="responsable_id">
+          <option value="">Toda la patrulla</option>
+          {% for joven, _ in integrantes %}<option value="{{ joven.id }}">{{ joven.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="para_cuando">Para cuándo (opcional)</label>
+        <input type="date" id="para_cuando" name="para_cuando">
+      </div>
+    </div>
+    <div class="acciones"><button type="submit">Anotar</button></div>
+  </form>
+</details>
+
+{# --- Consejo de Patrulla -------------------------------------------------- #}
+<h2 id="consejo">🗣️ El Consejo de Patrulla</h2>
+<p class="sub-titulo">Donde la patrulla decide: qué van a hacer, quién toma qué
+  cargo, cómo les fue. Lo preside el Guía y participan todos.</p>
+
+{% if consejos %}
+  <div class="rejilla angosta">
+    {% for c in consejos %}
+      <a class="tarjeta enlazada" href="/patrulla/{{ patrulla.id }}/consejo/{{ c.id }}"
+         style="text-decoration:none; color:inherit">
+        <h3 style="margin:0">{{ c.fecha.strftime('%d/%m/%Y') }}</h3>
+        <p class="meta">
+          <span>{{ c.presentes|length }} presente{{ 's' if c.presentes|length != 1 }}</span>
+          {% if c.acuerdos %}<span>{{ c.acuerdos|length }} acuerdo{{ 's' if c.acuerdos|length != 1 }}</span>{% endif %}
+        </p>
+        <p>{{ c.temas[:140] }}{{ '…' if c.temas|length > 140 }}</p>
+      </a>
     {% endfor %}
   </div>
+{% else %}
+  <p class="sub-titulo">Todavía no hay actas. La primera puede ser la de hoy.</p>
+{% endif %}
 
-  <h2>📖 La memoria de la patrulla</h2>
-  <a class="tarjeta enlazada" href="/libro-de-oro" style="display:flex; gap:.9rem; align-items:center; text-decoration:none; color:inherit">
-    <span class="burbuja" aria-hidden="true" style="--tono: rgba(200,169,81,.22)">📖</span>
-    <span>
-      <strong>Libro de Oro</strong>
-      <span class="meta" style="display:block">Campamentos, salidas, la primera fogata: lo que quieran recordar.</span>
-    </span>
-  </a>
+<details class="tarjeta" id="acta" {{ 'open' if not consejos }}>
+  <summary><strong>Anotar un Consejo</strong></summary>
+  <form method="post" action="/patrulla/{{ patrulla.id }}/consejo">
+    <div class="fila">
+      <div>
+        <label for="fecha-consejo">Cuándo fue</label>
+        <input type="date" id="fecha-consejo" name="fecha" value="{{ hoy.isoformat() }}">
+      </div>
+    </div>
+    <fieldset class="presentes">
+      <legend>Quiénes estuvieron</legend>
+      {% for joven, _ in integrantes %}
+        <label class="casilla">
+          <input type="checkbox" name="presente" value="{{ joven.id }}" checked>
+          {{ joven.nombre }}
+        </label>
+      {% endfor %}
+    </fieldset>
+    <label for="temas">De qué hablaron</label>
+    <textarea id="temas" name="temas" rows="5" required
+      placeholder="Qué actividades quieren para el ciclo, cómo salió el campamento, quién toma qué cargo…"></textarea>
+    <div class="acciones"><button type="submit" class="grande">Guardar el acta</button></div>
+  </form>
+</details>
+
+{# --- Identidad ------------------------------------------------------------ #}
+<h2 id="identidad">🚩 Nuestra identidad</h2>
+<p class="sub-titulo">El nombre, el grito, el banderín. Es lo que hace que esta
+  patrulla sea distinta de las otras, y lo escriben ustedes.</p>
+
+<details class="tarjeta" {{ 'open' if not patrulla.grito and not patrulla.historia }}>
+  <summary><strong>Editar la identidad</strong></summary>
+  <form method="post" action="/patrulla/{{ patrulla.id }}/identidad" enctype="multipart/form-data">
+    <div class="fila">
+      <div>
+        <label for="lema">Lema</label>
+        <input type="text" id="lema" name="lema" maxlength="200" value="{{ patrulla.lema }}"
+               placeholder="Siempre más alto">
+      </div>
+      <div>
+        <label for="emblema">Emblema</label>
+        <input type="text" id="emblema" name="emblema" maxlength="10" value="{{ patrulla.emblema }}"
+               placeholder="🦅">
+      </div>
+    </div>
+    <label for="grito">El grito</label>
+    <textarea id="grito" name="grito" rows="3"
+      placeholder="El que gritan al formar.">{{ patrulla.grito }}</textarea>
+
+    <label for="historia">Nuestra historia</label>
+    <textarea id="historia" name="historia" rows="4"
+      placeholder="Cómo empezó la patrulla, de dónde salió el nombre, quiénes pasaron por acá.">{{ patrulla.historia }}</textarea>
+
+    <div class="fila">
+      <div>
+        <label for="fundada_en">Desde cuándo existe</label>
+        <input type="date" id="fundada_en" name="fundada_en"
+               value="{{ patrulla.fundada_en.isoformat() if patrulla.fundada_en else '' }}">
+      </div>
+      <div>
+        <label for="banderin">El banderín (una foto)</label>
+        <input type="file" id="banderin" name="banderin" accept="image/*">
+      </div>
+    </div>
+    <div class="acciones"><button type="submit">Guardar</button></div>
+  </form>
+</details>
+
+<h2>📖 La memoria de la patrulla</h2>
+<a class="tarjeta enlazada" href="/libro-de-oro/{{ patrulla.id }}" style="display:flex; gap:.9rem; align-items:center; text-decoration:none; color:inherit">
+  <span class="burbuja" aria-hidden="true" style="--tono: rgba(200,169,81,.22)">📖</span>
+  <span>
+    <strong>Libro de Oro</strong>
+    <span class="meta" style="display:block">Campamentos, salidas, la primera fogata: lo que quieran recordar.</span>
+  </span>
+</a>
 {% endif %}
 {% endblock %}

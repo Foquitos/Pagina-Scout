@@ -55,6 +55,32 @@
 <p class="sub-titulo">La cambia el equipo de educadores. Ni las cartas ni los puntos
   la mueven solos.</p>
 
+{# Lo que el cap. 9 pide para cada etapa, no solo las cartas: los cargos de
+   patrulla, las descubiertas y los proyectos. #}
+<div class="tarjeta">
+  <h3 style="margin-top:0">Lo que pide la etapa {{ resumen.etapa_nombre }}</h3>
+  <ul class="requisitos">
+    {% for r in resumen.requisitos %}
+      <li class="{{ 'cumple' if r.cumple else 'falta' }} {{ 'se-conversa' if not r.medible }}">
+        <span class="tilde" aria-hidden="true">{{ '✔' if r.cumple and r.medible else ('💬' if not r.medible else '·') }}</span>
+        <span>
+          {{ r.texto }}
+          {% if r.medible %}
+            <span class="meta"><span>{{ r.tiene }} de {{ r.pide }}</span></span>
+          {% else %}
+            <span class="meta"><span>esto no lo puede saber la aplicación: se conversa</span></span>
+          {% endif %}
+        </span>
+      </li>
+    {% endfor %}
+  </ul>
+  <p class="meta">Las descubiertas y los proyectos salen de lo que
+    {{ primer_nombre(joven.nombre) }} marcó como «estuve» en el
+    <a href="/calendario">calendario</a>. Los cargos, de los períodos que cerró su
+    <a href="/patrulla/{{ joven.patrulla_id }}#cargos">Consejo de Patrulla</a> como
+    cumplidos.</p>
+</div>
+
 {% if confirmar == 'etapa' %}
   <div class="aviso alerta" data-aviso="El cambio de etapa está sin confirmar.">
     <span class="icono" aria-hidden="true">✋</span>
@@ -166,14 +192,51 @@
             {% if elegida.con_pendientes %}
               <span class="etiqueta alerta">con requeridos sin marcar</span>
             {% endif %}
+            {% if not elegida.acordada %}
+              <span class="etiqueta requiere_revision">💬 falta conversarla</span>
+            {% endif %}
           </p>
           <p class="meta">
             {% if elegida.lograda_en %}Cerrada el {{ elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}
-            {% if elegida.lograda_por %} por {{ elegida.lograda_por.nombre }}{% endif %}
+            {% if elegida.cerrada_por_el_joven %} por {{ primer_nombre(joven.nombre) }}
+            {% elif elegida.lograda_por %} por {{ elegida.lograda_por.nombre }}{% endif %}
           </p>
+
+          {# La autoevaluación es lo que el joven escribió al cerrarla. Es el
+             punto de partida de la conversación del cap. 9, así que va primero
+             y entera. #}
+          {% if elegida.autoevaluacion %}
+            <blockquote class="comentario autoevaluacion">{{ elegida.autoevaluacion }}
+              <footer class="meta">Autoevaluación de {{ primer_nombre(joven.nombre) }}</footer>
+            </blockquote>
+          {% endif %}
           {% if elegida.nota_cierre %}
             <blockquote class="comentario">{{ elegida.nota_cierre }}</blockquote>
           {% endif %}
+
+          {% if not elegida.acordada %}
+            <details class="tarjeta" id="acordar-{{ a.competencia.id }}">
+              <summary>💬 Ya la conversamos</summary>
+              <div class="aviso info">
+                <span class="icono" aria-hidden="true">📖</span>
+                <div><strong>Esto no aprueba nada: la carta ya está lograda.</strong>
+                  <p>La cerró {{ primer_nombre(joven.nombre) }} y así queda. Si no coincidís,
+                    conversalo: la guía dice que ante la discrepancia «siempre primará la
+                    autoevaluación». Marcá acá cuando hayan hablado.</p></div>
+              </div>
+              <form method="post" action="/progresion/{{ joven.id }}/cartas/{{ a.competencia.id }}"
+                    data-sin-recarga="Conversación registrada.">
+                <input type="hidden" name="accion" value="acordar">
+                <label for="acuerdo-{{ a.competencia.id }}">Qué se conversó (opcional)</label>
+                <textarea id="acuerdo-{{ a.competencia.id }}" name="nota" rows="2"
+                  placeholder="Lo charlamos después del campamento: contó cómo organizó la cocina."></textarea>
+                <div class="acciones"><button type="submit">Registrar la conversación</button></div>
+              </form>
+            </details>
+          {% elif elegida.acordada_por %}
+            <p class="meta">💬 Conversada con {{ elegida.acordada_por.nombre }}.</p>
+          {% endif %}
+
           <form method="post" action="/progresion/{{ joven.id }}/cartas/{{ a.competencia.id }}"
                 data-sin-recarga="Carta reabierta.">
             <input type="hidden" name="accion" value="reabrir">
@@ -262,6 +325,102 @@
           </details>
         {% endif %}
       </div>
+    </article>
+  {% endfor %}
+{% endif %}
+
+{# --- Cargos de patrulla ---------------------------------------------------- #}
+
+<h2 id="cargos">🎖️ Los cargos que desempeñó</h2>
+{% if not periodos %}
+  <p class="sub-titulo">Todavía no tomó ningún cargo. Los reparte su Consejo de
+    Patrulla{% if joven.patrulla_id %}, en
+    <a href="/patrulla/{{ joven.patrulla_id }}#cargos">su página</a>{% endif %}.</p>
+{% else %}
+  <div class="tabla-envoltura">
+    <table>
+      <thead><tr><th>Cargo</th><th>Desde</th><th>Hasta</th><th>El Consejo dijo</th></tr></thead>
+      <tbody>
+        {% for p in periodos %}
+        <tr>
+          <td><strong>{{ p.cargo.nombre }}</strong></td>
+          <td>{{ p.desde.strftime('%d/%m/%Y') }}</td>
+          <td>{{ p.hasta.strftime('%d/%m/%Y') if p.hasta else '—' }}</td>
+          <td>
+            {% if p.abierto %}<span class="etiqueta pendiente">en curso</span>
+            {% elif p.cumplido %}<span class="etiqueta aprobada">cumplido</span>
+            {% elif p.cumplido is none %}<span class="etiqueta pendiente">sin evaluar</span>
+            {% else %}<span class="etiqueta rechazada">no cumplido</span>{% endif %}
+            {% if p.nota %}<span class="meta" style="display:block">{{ p.nota }}</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+{# --- Especialidades -------------------------------------------------------- #}
+
+<h2 id="especialidades">⭐ Especialidades</h2>
+{% if not especialidades %}
+  <p class="sub-titulo">Todavía no pidió ninguna. Son voluntarias y la elige quien
+    la va a hacer; lo que arma el equipo es el recorrido, en
+    <a href="/especialidades">Especialidades</a>.</p>
+{% else %}
+  {% for e in especialidades %}
+    <article class="tarjeta">
+      <div class="encabezado-tarjeta">
+        <span class="burbuja" aria-hidden="true">{{ e.icono }}</span>
+        <div>
+          <h3>{{ e.nombre }}
+            {% if e.lograda %}<span class="etiqueta aprobada">🏅 lograda</span>
+            {% elif not e.preparada %}<span class="etiqueta pendiente">📨 pedida, falta armarla</span>{% endif %}</h3>
+          <p class="meta">
+            {% if e.preparada %}<span>{{ e.fase_nombre }}</span>{% endif %}
+            {% if e.experto %}<span>con {{ e.experto }}</span>{% endif %}
+            <span>pedida el {{ e.pedida_en.strftime('%d/%m/%Y') }}</span>
+          </p>
+        </div>
+      </div>
+      {% if e.motivo %}<p class="meta">«{{ e.motivo }}»</p>{% endif %}
+
+      {% for clave, texto in e.escrito.items() %}
+        {% if texto %}
+          <blockquote class="comentario">{{ texto }}
+            <footer class="meta">{{ FASES_NOMBRE[clave] }}</footer>
+          </blockquote>
+        {% endif %}
+      {% endfor %}
+
+      {% if e.nota_cierre %}
+        <blockquote class="comentario">{{ e.nota_cierre }}
+          <footer class="meta">{{ e.lograda_por.nombre if e.lograda_por else 'El equipo' }}</footer>
+        </blockquote>
+      {% endif %}
+
+      {% if not e.preparada %}
+        <p class="meta">Falta armarle el recorrido para que pueda empezar:
+          <a href="/especialidades#especialidad-{{ e.id }}">hacerlo ahora →</a></p>
+      {% else %}
+        <form method="post" action="/especialidades/{{ e.id }}/entregar"
+              data-sin-recarga="{{ 'Especialidad reabierta.' if e.lograda else 'Insignia entregada.' }}">
+          {% if e.lograda %}
+            <input type="hidden" name="reabrir" value="true">
+          {% else %}
+            <label for="cierre-{{ e.id }}">Qué se conversó (opcional)</label>
+            <textarea id="cierre-{{ e.id }}" name="nota" rows="2"></textarea>
+          {% endif %}
+          <div class="acciones">
+            <button type="submit" class="{{ 'secundario' if e.lograda }}">
+              {{ 'Reabrirla' if e.lograda else '🏅 Dar por concluida' }}
+            </button>
+            {% if not e.lograda and e.fase != 'desafio' %}
+              <span class="meta">Todavía no llegó a la fase de servicio.</span>
+            {% endif %}
+          </div>
+        </form>
+      {% endif %}
     </article>
   {% endfor %}
 {% endif %}

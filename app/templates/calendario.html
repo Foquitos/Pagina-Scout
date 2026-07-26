@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block titulo %}Calendario{% endblock %}
+
+{% macro fila_actividad(a, estuve, usuario, hoy) %}
+  <article class="tarjeta acento actividad {{ a.clase }}" id="actividad-{{ a.id }}">
+    <div class="encabezado-tarjeta">
+      <span class="burbuja" aria-hidden="true">{{ a.clase_icono }}</span>
+      <div>
+        <h3>{{ a.titulo }}</h3>
+        <p class="meta">
+          <span>{{ a.fecha.strftime('%d/%m/%Y') }}{% if a.hasta %} al {{ a.hasta.strftime('%d/%m') }}{% endif %}</span>
+          <span>{{ a.clase_nombre }}</span>
+          <span>{{ a.patrulla.nombre if a.patrulla else 'toda la Unidad' }}</span>
+          {% if a.lugar %}<span>{{ a.lugar }}</span>{% endif %}
+        </p>
+      </div>
+    </div>
+    {% if a.detalle %}<p>{{ a.detalle }}</p>{% endif %}
+    {% if a.idea %}
+      <p class="meta">💡 Salió de una idea de
+        {{ primer_nombre(a.idea.autor.nombre) if a.idea.autor else 'la Unidad' }}.</p>
+    {% endif %}
+
+    <div class="acciones">
+      {% if not usuario.es_educador and a.fecha <= hoy %}
+        <form method="post" action="/calendario/{{ a.id }}/estuve" data-sin-recarga="Listo.">
+          <button type="submit" class="{{ '' if a.id in estuve else 'secundario' }}"
+                  aria-pressed="{{ 'true' if a.id in estuve else 'false' }}">
+            {{ '✓ Estuve' if a.id in estuve else 'Estuve acá' }}
+          </button>
+        </form>
+      {% endif %}
+      {% if usuario.es_educador %}
+        <form method="post" action="/calendario/{{ a.id }}/borrar"
+              onsubmit="return confirm('¿Sacar «{{ a.titulo[:60] }}» del calendario?')"
+              data-sin-recarga="Sacado del calendario."
+              data-confirmar="¿Sacar «{{ a.titulo[:60] }}» del calendario?">
+          <button type="submit" class="secundario">Quitar</button>
+        </form>
+      {% endif %}
+    </div>
+  </article>
+{% endmacro %}
+
+{% block contenido %}
+<div class="portada">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>📆 Qué viene</h1>
+  <p class="sub">Lo que la Unidad y las patrullas eligieron hacer este ciclo,
+    más los campamentos y las celebraciones.</p>
+</div>
+
+{% if not usuario.unidad_id %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">🧭</span>
+    <div>Todavía no estás en una Unidad.</div>
+  </div>
+{% else %}
+
+{% if usuario.es_educador %}
+  <details class="tarjeta">
+    <summary><strong>➕ Agendar algo</strong></summary>
+    <form method="post" action="/calendario" data-sin-recarga="Agendado.">
+      <label for="titulo">Qué</label>
+      <input type="text" id="titulo" name="titulo" required maxlength="200"
+             placeholder="Campamento de patrullas en Los Robles">
+      <div class="fila">
+        <div>
+          <label for="fecha">Cuándo</label>
+          <input type="date" id="fecha" name="fecha" value="{{ hoy.isoformat() }}" required>
+        </div>
+        <div>
+          <label for="hasta">Hasta (si dura varios días)</label>
+          <input type="date" id="hasta" name="hasta">
+        </div>
+      </div>
+      <div class="fila">
+        <div>
+          <label for="clase">Qué es</label>
+          <select id="clase" name="clase">
+            {% for c in clases %}<option value="{{ c }}">{{ clases_nombre[c] }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="patrulla_id">De quién</label>
+          <select id="patrulla_id" name="patrulla_id">
+            <option value="">Toda la Unidad</option>
+            {% for p in patrullas %}<option value="{{ p.id }}">{{ p.nombre }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <label for="lugar">Dónde (opcional)</label>
+      <input type="text" id="lugar" name="lugar" maxlength="160">
+      <label for="detalle">Detalle (opcional)</label>
+      <textarea id="detalle" name="detalle" rows="3"></textarea>
+      <div class="acciones"><button type="submit">Agendar</button></div>
+    </form>
+  </details>
+{% endif %}
+
+<h2>🔜 Lo que viene</h2>
+{% if not proximas %}
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/mapa.svg" alt="">
+    <strong>No hay nada agendado todavía</strong>
+    <p>El calendario del ciclo lo arma el Consejo de Unidad y lo aprueba la Asamblea.</p>
+    {% if not usuario.es_educador %}<a class="boton" href="/ideas">Proponé algo</a>{% endif %}
+  </div>
+{% else %}
+  {% for a in proximas %}
+    {{ fila_actividad(a, estuve, usuario, hoy) }}
+  {% endfor %}
+{% endif %}
+
+<h2>🕓 Lo que ya pasó</h2>
+{% if not usuario.es_educador %}
+  <p class="sub-titulo">Marcá en cuáles estuviste. No es una lista de asistencia: es
+    tu registro, y es lo que cuenta cuando mires si estás en condiciones de cambiar
+    de etapa.</p>
+{% endif %}
+
+{% if not pasadas %}
+  <p class="sub-titulo">Todavía no pasó nada por acá.</p>
+{% else %}
+  {% for a in pasadas %}
+    {{ fila_actividad(a, estuve, usuario, hoy) }}
+  {% endfor %}
+{% endif %}
+{% endif %}
+{% endblock %}

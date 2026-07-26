@@ -1,0 +1,32 @@
+{# El recorrido de una especialidad, escrito para esta persona.
+
+   Se usa dos veces: al contestar un pedido y al ajustarlo más adelante. Por eso
+   es un parcial y no está escrito dos veces: si mañana cambia un campo, cambia
+   en los dos lugares o en ninguno. #}
+<form method="post" action="/especialidades/{{ e.id }}/preparar"
+      data-sin-recarga="Recorrido guardado.">
+  <label for="experto-{{ e.id }}">Quién lo acompaña</label>
+  <input type="text" id="experto-{{ e.id }}" name="experto" maxlength="120"
+         value="{{ e.experto }}" placeholder="Marta, la mamá de Camila, que es cocinera">
+  <p class="meta">No tiene por qué ser del equipo. La guía habla de «una persona
+    experta» y les pide contactarla e informarle el sentido de las especialidades
+    en el Programa de Jóvenes.</p>
+
+  <label for="pide-exploracion-{{ e.id }}">1. Exploración (conocer)</label>
+  <textarea id="pide-exploracion-{{ e.id }}" name="pide_exploracion" rows="2"
+    placeholder="Reconocer los elementos, técnicas y herramientas: el uso del colador, el sartén, cómo se cortan las verduras.">{{ e.pide_exploracion }}</textarea>
+
+  <label for="pide-taller-{{ e.id }}">2. Taller (hacer)</label>
+  <textarea id="pide-taller-{{ e.id }}" name="pide_taller" rows="2"
+    placeholder="Armar un menú de campamento con su costo y su valor nutricional, y cocinarlo.">{{ e.pide_taller }}</textarea>
+
+  <label for="pide-desafio-{{ e.id }}">3. Desafío (servir)</label>
+  <textarea id="pide-desafio-{{ e.id }}" name="pide_desafio" rows="2"
+    placeholder="Cocinar para la patrulla en el campamento, o enseñarle a los que recién entran.">{{ e.pide_desafio }}</textarea>
+
+  <div class="acciones">
+    <button type="submit" class="{{ '' if not e.preparada else 'secundario' }}">
+      {{ 'Guardar el recorrido' if e.preparada else '✅ Dársela para que empiece' }}
+    </button>
+  </div>
+</form>

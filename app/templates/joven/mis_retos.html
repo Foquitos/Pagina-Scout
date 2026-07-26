@@ -3,6 +3,7 @@
 
 {% block contenido %}
 {% set validados = entregas|selectattr('estado', 'equalto', 'aprobada')|list|length %}
+<p class="miga"><a href="/muro">← El muro de la Unidad</a></p>
 
 <div class="portada">
   <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">

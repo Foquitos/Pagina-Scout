@@ -97,5 +97,77 @@
       </form>
     </article>
   {% endfor %}
+
+  {# --- El cierre de la carta: la autoevaluación (cap. 9) ---
+     La escribe el joven y la carta la cierra el joven. El equipo de educadores
+     conversa después; si no coincide, la guía dice que prima la autoevaluación. #}
+  <h2 id="cierre">🏅 Cerrar esta carta</h2>
+
+  {% if elegida.lograda %}
+    <div class="aviso ok">
+      <span class="icono" aria-hidden="true">🏅</span>
+      <div>
+        <strong>Esta carta está cerrada.</strong>
+        <p>La cerraste el {{ elegida.lograda_en.strftime('%d/%m/%Y') }}{% if not elegida.cerrada_por_el_joven and elegida.lograda_por %},
+          junto con {{ primer_nombre(elegida.lograda_por.nombre) }}{% endif %}.
+          {% if elegida.acordada %}
+            El equipo de educadores ya la conversó con vos.
+          {% else %}
+            Falta charlarla con tu educador/a: eso no la destraba —ya está lograda—,
+            es para que puedan mirarla juntos.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    {% if elegida.autoevaluacion %}
+      <blockquote class="comentario autoevaluacion">{{ elegida.autoevaluacion }}
+        <footer class="meta">Tu autoevaluación · {{ elegida.lograda_en.strftime('%d/%m/%Y') }}</footer>
+      </blockquote>
+    {% endif %}
+    {% if elegida.nota_cierre %}
+      <blockquote class="comentario">{{ elegida.nota_cierre }}
+        <footer class="meta">{{ elegida.acordada_por.nombre if elegida.acordada_por else 'El equipo' }}</footer>
+      </blockquote>
+    {% endif %}
+
+  {% else %}
+    <div class="tarjeta">
+      <p class="sub-titulo" style="margin-top:0">Esta carta la cerrás vos. No es un
+        trámite: es contar qué te llevás, que es de lo que después van a hablar con
+        tu educador/a.</p>
+
+      {% if confirmar %}
+        <div class="aviso alerta" data-aviso="La carta sigue abierta: falta confirmar.">
+          <span class="icono" aria-hidden="true">✋</span>
+          <div>
+            <strong>{{ confirmar }}</strong>
+            <p>Se puede igual —hay desafíos que se hacen sin ir tildando la lista, y
+              uno opcional puede reemplazar a uno requerido— pero marcalo abajo para
+              que quede claro que lo decidiste vos.</p>
+          </div>
+        </div>
+      {% endif %}
+
+      <form method="post" action="/mis-cartas/{{ competencia.id }}/cerrar">
+        <label for="autoevaluacion">Tu autoevaluación</label>
+        <p class="meta" style="margin:.2rem 0 .5rem">
+          {% for p in preguntas %}<span>{{ p }}</span>{% endfor %}
+        </p>
+        <textarea id="autoevaluacion" name="autoevaluacion" rows="7" required
+          placeholder="Contá con tus palabras cómo te fue. No hace falta responder todas.">{{ borrador }}</textarea>
+
+        {% if confirmar %}
+          <label class="casilla">
+            <input type="checkbox" name="confirmado" value="true" required>
+            Sé que quedan desafíos sin marcar y la cierro igual.
+          </label>
+        {% endif %}
+        <div class="acciones">
+          <button type="submit" class="grande">Cerrar la carta</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
 {% endif %}
 {% endblock %}

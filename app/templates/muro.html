@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block titulo %}El muro{% endblock %}
+
+{% block contenido %}
+<div class="portada">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>📣 El muro de la Unidad</h1>
+  <p class="sub">Lo que cada uno quiso mostrar de lo que hizo. Se comparte porque
+    uno quiere, y solo lo que ya está validado.</p>
+</div>
+
+{% if not usuario.es_educador %}
+  <p class="miga"><a href="/mis-retos">📋 Ver todo lo que entregué →</a></p>
+{% endif %}
+
+{% if not publicaciones %}
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/carpa.svg" alt="">
+    <strong>Todavía no hay nada en el muro</strong>
+    <p>Cuando entregues un reto vas a poder marcar «compartirlo con la Unidad».
+      Ver que otro lo hizo es lo que más ganas da de hacerlo.</p>
+    <a class="boton" href="/hoy">Ver el reto de hoy</a>
+  </div>
+{% else %}
+  {% for e in publicaciones %}
+    {% set reto = e.asignacion.reto %}
+    {% set area = reto.area %}
+    <article class="tarjeta acento publicacion" {% if area %}style="border-left-color: {{ area.color }}"{% endif %}>
+      <div class="encabezado-tarjeta">
+        <span class="avatar" style="--color: {{ color_de(e.joven.nombre) }}" aria-hidden="true">{{ iniciales(e.joven.nombre) }}</span>
+        <div>
+          <h3>{{ e.joven.nombre }}
+            {% if e.joven.id == usuario.id %}<span class="chip activo">vos</span>{% endif %}</h3>
+          {# Sin puntos al lado del nombre: el muro muestra qué hizo cada uno,
+             nunca cuánto sumó. El puntaje es de la patrulla y vive en el tablero. #}
+          <p class="meta">
+            {% if e.patrulla %}<span>{{ e.patrulla.nombre }}</span>{% endif %}
+            <span>{{ e.enviada_en.strftime('%d/%m') }}</span>
+            {% if area %}<span>{{ area.icono }} {{ area.nombre }}</span>{% endif %}
+          </p>
+        </div>
+      </div>
+
+      <p class="meta"><strong>{{ reto.titulo }}</strong></p>
+      {% if e.texto %}<p>{{ e.texto }}</p>{% endif %}
+
+      {% if e.archivo_foto %}
+        <img class="foto-entrega" src="/fotos/{{ e.archivo_foto }}"
+             alt="Foto de la entrega de {{ e.joven.nombre }}"
+             data-foto="/fotos/{{ e.archivo_foto }}" loading="lazy">
+      {% endif %}
+
+      {% if e.joven.id == usuario.id %}
+        <div class="acciones">
+          <form method="post" action="/reto/{{ e.asignacion_id }}/compartir"
+                data-sin-recarga="Sacado del muro.">
+            <button type="submit" class="secundario">Sacarlo del muro</button>
+          </form>
+        </div>
+      {% endif %}
+    </article>
+  {% endfor %}
+{% endif %}
+{% endblock %}

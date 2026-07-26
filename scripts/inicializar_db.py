@@ -24,14 +24,17 @@ from sqlalchemy.orm import Session  # noqa: E402
 from app.config import DIR_DATOS  # noqa: E402
 from app.db import Base, SesionLocal, motor  # noqa: E402
 from app.models import (  # noqa: E402
+    CARGOS_INICIALES,
     DESAFIO_ESPECIALIDAD,
     DESAFIO_OPCIONAL,
     DESAFIO_REQUERIDO,
     ROL_EDUCADOR,
     ROL_JOVEN,
     Area,
+    Cargo,
     Competencia,
     Desafio,
+    Idea,
     Patrulla,
     Unidad,
     Usuario,
@@ -48,13 +51,43 @@ COLUMNAS_NUEVAS = {
         "lograda_por_id": "INTEGER REFERENCES usuarios(id)",
         "con_pendientes": "BOOLEAN DEFAULT 0",
         "nota_cierre": "TEXT DEFAULT ''",
+        "autoevaluacion": "TEXT DEFAULT ''",
+        # Las cartas que ya estaban cerradas las cerró un educador conversando:
+        # arrancan acordadas, que es lo que efectivamente pasó.
+        "acordada": "BOOLEAN DEFAULT 0",
+        "acordada_en": "DATETIME",
+        "acordada_por_id": "INTEGER REFERENCES usuarios(id)",
     },
     # Arranca en 0 y eso es lo correcto: las cuentas que ya existían eligieron su
     # contraseña alguna vez, así que no hay nada que obligarlas a cambiar.
     "usuarios": {
         "debe_cambiar_clave": "BOOLEAN DEFAULT 0",
     },
+    "patrullas": {
+        "grito": "TEXT DEFAULT ''",
+        "emblema": "VARCHAR(10) DEFAULT ''",
+        "historia": "TEXT DEFAULT ''",
+        "archivo_banderin": "VARCHAR(255)",
+        "fundada_en": "DATE",
+    },
+    "entregas": {
+        # Apagada para lo que ya está entregado: compartir lo que un chico
+        # escribió cuando nadie se lo preguntó no se hace retroactivamente.
+        "compartida": "BOOLEAN DEFAULT 0",
+    },
+    "ideas": {
+        "respuesta": "TEXT DEFAULT ''",
+    },
 }
+
+# Tablas que se fueron. Se borran en vez de quedar dando vueltas: una tabla vacía
+# que nadie lee es una pregunta que alguien se va a hacer en dos años.
+#
+# - `votos` y `asambleas`: la Asamblea se reúne en persona, no vota por la app.
+# - `especialidades_ofrecidas`: no hay catálogo, la especialidad la pide el joven.
+#
+# El orden importa: primero la que referencia, después la referida.
+TABLAS_RETIRADAS = ("votos", "asambleas", "especialidades_ofrecidas")
 
 
 def migrar(motor_) -> int:
@@ -62,6 +95,7 @@ def migrar(motor_) -> int:
     inspector = inspect(motor_)
     tablas = set(inspector.get_table_names())
     agregadas = 0
+    nuevas: set[str] = set()
     with motor_.begin() as conexion:
         for tabla, columnas in COLUMNAS_NUEVAS.items():
             if tabla not in tablas:
@@ -72,8 +106,138 @@ def migrar(motor_) -> int:
                     continue
                 conexion.execute(text(f"ALTER TABLE {tabla} ADD COLUMN {nombre} {definicion}"))
                 print(f"  + {tabla}.{nombre}")
+                nuevas.add(f"{tabla}.{nombre}")
                 agregadas += 1
+
+        # Las cartas que ya estaban cerradas las cerró un educador después de
+        # conversarlas: nacen acordadas. Si arrancaran en cero, la aplicación
+        # pediría volver a conversar todo lo que ya se conversó.
+        if "competencias_elegidas.acordada" in nuevas:
+            conexion.execute(
+                text(
+                    "UPDATE competencias_elegidas "
+                    "SET acordada = 1, acordada_en = lograda_en, "
+                    "    acordada_por_id = lograda_por_id "
+                    "WHERE lograda = 1"
+                )
+            )
+            print("  · las cartas ya cerradas quedan como acordadas")
+
+        # Las ideas que habían quedado «en la Asamblea» pasan a ser propuestas
+        # otra vez: esa Asamblea ahora se hace en persona.
+        if "ideas" in tablas:
+            conexion.execute(
+                text("UPDATE ideas SET estado = 'propuesta' WHERE estado = 'en_asamblea'")
+            )
+        # `especialidades` cambió de forma mientras se afinaba de quién es cada
+        # decisión: la pide el joven —la que quiera— y el recorrido lo prepara el
+        # equipo para esa persona. La tabla vieja no se puede migrar campo a
+        # campo, así que se rehace. Va **antes** que `TABLAS_RETIRADAS` porque
+        # apuntaba al catálogo que ahí se borra, y con las claves foráneas
+        # encendidas no se puede borrar un padre que todavía tiene hijos.
+        if "especialidades" in tablas:
+            columnas = {c["name"] for c in inspector.get_columns("especialidades")}
+            if "pedida_en" not in columnas:
+                cuantas = conexion.execute(
+                    text("SELECT COUNT(*) FROM especialidades")
+                ).scalar()
+                conexion.execute(text("DROP TABLE especialidades"))
+                aviso = "  - especialidades (cambió de forma"
+                print(f"{aviso}, se perdieron {cuantas})" if cuantas else f"{aviso})")
+
+        for tabla in TABLAS_RETIRADAS:
+            if tabla in tablas:
+                conexion.execute(text(f"DROP TABLE {tabla}"))
+                print(f"  - {tabla}")
     return agregadas
+
+
+def rehacer_ideas(motor_) -> bool:
+    """Saca `ideas.asamblea_id`, que quedó de cuando se votaba por la aplicación.
+
+    SQLite no sabe borrar una columna que aparece en una clave foránea, así que
+    hay que rehacer la tabla entera: renombrar la vieja, dejar que el modelo
+    cree la nueva, copiar las filas y tirar la vieja.
+
+    Los dos `PRAGMA` no son decorativos. `foreign_keys=OFF` porque durante el
+    cambalache las referencias quedan colgando; `legacy_alter_table=ON` porque
+    sin eso el `RENAME` sale a corregir a todas las tablas que apuntan a `ideas`
+    —o sea `apoyos_idea`— y las deja apuntando a la tabla vieja.
+    """
+    inspector = inspect(motor_)
+    tablas = set(inspector.get_table_names())
+
+    # Restos de un intento anterior que se cortó por la mitad. Se limpian
+    # siempre, aunque el resto ya esté hecho: una tabla huérfana que todavía
+    # apunta a `asambleas` impide borrar `asambleas`.
+    if "ideas_vieja" in tablas:
+        with motor_.connect().execution_options(isolation_level="AUTOCOMMIT") as conexion:
+            conexion.execute(text("PRAGMA foreign_keys=OFF"))
+            conexion.execute(text("DROP TABLE ideas_vieja"))
+            conexion.execute(text("PRAGMA foreign_keys=ON"))
+        print("  - ideas_vieja (quedó de una migración a medias)")
+
+    if "ideas" not in tablas:
+        return False
+    viejas = {c["name"] for c in inspector.get_columns("ideas")}
+    if "asamblea_id" not in viejas:
+        return False
+
+    comunes = [c.name for c in Idea.__table__.columns if c.name in viejas]
+    lista = ", ".join(comunes)
+    # Los índices se van con la tabla renombrada pero conservan su nombre, y
+    # entonces el modelo no puede volver a crearlos. Se borran a mano.
+    indices = [i["name"] for i in inspector.get_indexes("ideas")]
+
+    # Los PRAGMA no hacen nada adentro de una transacción: hay que ir en
+    # autocommit.
+    with motor_.connect().execution_options(isolation_level="AUTOCOMMIT") as conexion:
+        conexion.execute(text("PRAGMA foreign_keys=OFF"))
+        conexion.execute(text("PRAGMA legacy_alter_table=ON"))
+        try:
+            conexion.execute(text("ALTER TABLE ideas RENAME TO ideas_vieja"))
+            for indice in indices:
+                conexion.execute(text(f"DROP INDEX IF EXISTS {indice}"))
+            Idea.__table__.create(conexion)
+            conexion.execute(
+                text(f"INSERT INTO ideas ({lista}) SELECT {lista} FROM ideas_vieja")
+            )
+            conexion.execute(text("DROP TABLE ideas_vieja"))
+        finally:
+            conexion.execute(text("PRAGMA legacy_alter_table=OFF"))
+            conexion.execute(text("PRAGMA foreign_keys=ON"))
+    print("  - ideas.asamblea_id (la Asamblea vota en persona)")
+    return True
+
+
+def asegurar_cargos(sesion: Session) -> int:
+    """Cada Unidad arranca con el catálogo de cargos de la guía (cap. 4).
+
+    Se agregan los que falten por nombre, así que sumar un cargo propio a mano no
+    se pierde y correr esto de nuevo no duplica nada.
+    """
+    creados = 0
+    for unidad_id in sesion.scalars(select(Unidad.id)):
+        existentes = {
+            nombre
+            for nombre in sesion.scalars(
+                select(Cargo.nombre).where(Cargo.unidad_id == unidad_id)
+            )
+        }
+        for orden, (nombre, descripcion) in enumerate(CARGOS_INICIALES):
+            if nombre in existentes:
+                continue
+            sesion.add(
+                Cargo(
+                    unidad_id=unidad_id,
+                    nombre=nombre,
+                    descripcion=descripcion,
+                    orden=orden,
+                )
+            )
+            creados += 1
+    sesion.commit()
+    return creados
 
 
 def cargar_cartas(sesion: Session) -> tuple[int, int]:
@@ -199,6 +363,9 @@ def main() -> None:
     parser.add_argument("--demo", action="store_true", help="carga datos de prueba")
     args = parser.parse_args()
 
+    # Antes que nada: la tabla `ideas` tiene que quedar sin su vínculo a las
+    # asambleas, porque `migrar` va a borrar esas tablas.
+    rehacer_ideas(motor)
     if migrar(motor):
         print("Base actualizada con las columnas nuevas.")
     Base.metadata.create_all(motor)
@@ -207,6 +374,8 @@ def main() -> None:
         print(f"Cartas de Exploración: {competencias} competencias, {desafios} desafíos.")
         if args.demo:
             cargar_demo(sesion)
+        if creados := asegurar_cargos(sesion):
+            print(f"Cargos de patrulla: {creados} agregados al catálogo.")
 
 
 if __name__ == "__main__":

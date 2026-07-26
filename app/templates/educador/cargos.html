@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titulo %}Cargos de patrulla{% endblock %}
+
+{% block contenido %}
+<h1>🎖️ Cargos de patrulla</h1>
+<p class="sub">El catálogo de la Unidad. Quién ocupa cada cargo lo decide cada
+  patrulla en su Consejo, no vos: acá solo está la lista de cargos que existen.</p>
+
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">📖</span>
+  <div>
+    <strong>Un cargo cumplido cuenta para la etapa.</strong>
+    <p>Pistas pide uno; Senda, otro distinto; Travesía, tres o más. Se ve en la
+      página de progresión de cada joven, al lado de las cartas.</p>
+  </div>
+</div>
+
+<div class="tabla-envoltura">
+  <table>
+    <thead><tr><th>Cargo</th><th>Qué hace</th><th>Períodos</th><th>Estado</th></tr></thead>
+    <tbody>
+      {% for c in cargos %}
+      <tr class="{{ '' if c.activo else 'apagada' }}">
+        <td><strong>{{ c.nombre }}</strong></td>
+        <td class="meta">{{ c.descripcion }}</td>
+        <td>{{ en_uso.get(c.id, 0) }}</td>
+        <td>
+          <form method="post" action="/cargos/{{ c.id }}" data-sin-recarga="Catálogo actualizado.">
+            <button type="submit" class="secundario">
+              {{ 'Dar de baja' if c.activo else 'Volver a ofrecer' }}
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="meta">Un cargo dado de baja deja de ofrecerse, pero no se borra: los
+  períodos ya cumplidos son parte de la progresión de alguien.</p>
+
+<h2>Sumar un cargo</h2>
+<form method="post" action="/cargos" class="tarjeta" data-sin-recarga="Cargo agregado.">
+  <label for="nombre">Nombre</label>
+  <input type="text" id="nombre" name="nombre" required maxlength="80"
+         placeholder="Fotógrafo/a de la patrulla">
+  <label for="descripcion">Qué hace (opcional)</label>
+  <input type="text" id="descripcion" name="descripcion"
+         placeholder="Saca las fotos de las salidas y las sube al Libro de Oro.">
+  <p class="meta">La guía dice que los cargos «pueden variar en cantidad y en
+    denominación, de acuerdo con las costumbres de las Unidades», y que aparecen
+    otros según las actividades y proyectos que emprendan.</p>
+  <div class="acciones"><button type="submit">Agregar</button></div>
+</form>
+{% endblock %}

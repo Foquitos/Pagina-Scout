@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block titulo %}Ideas{% endblock %}
+
+{% block contenido %}
+<div class="portada">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>💡 ¿Qué queremos hacer?</h1>
+  <p class="sub">Lo que hace la Unidad lo eligen ustedes. Acá se juntan las ideas
+    para llevarlas a la Asamblea.</p>
+</div>
+
+{% if not usuario.unidad_id %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">🧭</span>
+    <div>Todavía no estás en una Unidad.<p>Avisale a tu educador/a para que te sume.</p></div>
+  </div>
+{% else %}
+
+{# La Asamblea es presencial y así tiene que seguir. Decirlo en la pantalla
+   evita que alguien espere acá una votación que nunca va a aparecer. #}
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">🗣️</span>
+  <div>
+    <strong>Elegir se elige en la Asamblea, y la Asamblea es en persona.</strong>
+    <p>Esto no vota: junta las propuestas para que lleguen enteras a esa reunión,
+      con lo que hace falta para hacerlas y cuántos se sumarían. Lo que se decide
+      allá se anota después acá.</p>
+  </div>
+</div>
+
+<details class="tarjeta" id="proponer" {{ 'open' if not ideas }}>
+  <summary><strong>💡 Tengo una idea</strong></summary>
+  <form method="post" action="/ideas" data-sin-recarga="Idea propuesta.">
+    <label for="titulo">¿Qué se te ocurre?</label>
+    <input type="text" id="titulo" name="titulo" required maxlength="200"
+           placeholder="Una salida de noche a la reserva">
+
+    <div class="fila">
+      <div>
+        <label for="clase">Qué sería</label>
+        <select id="clase" name="clase">
+          {% for c in clases %}<option value="{{ c }}">{{ clases_nombre[c] }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="ambito">Para quiénes</label>
+        <select id="ambito" name="ambito">
+          <option value="unidad">Toda la Unidad</option>
+          <option value="patrulla">Mi patrulla</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="texto">Contala un poco (opcional)</label>
+    <textarea id="texto" name="texto" rows="3"
+      placeholder="De qué se trata, por qué estaría bueno."></textarea>
+
+    <label for="hace_falta">Qué haría falta (opcional)</label>
+    <textarea id="hace_falta" name="hace_falta" rows="2"
+      placeholder="Carpas, permiso, alguien que sepa, plata para el micro…"></textarea>
+
+    <div class="acciones"><button type="submit" class="grande">Proponer</button></div>
+  </form>
+</details>
+
+{% if not ideas %}
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/mapa.svg" alt="">
+    <strong>Todavía no hay ideas</strong>
+    <p>Cualquiera puede proponer. Una idea escrita en dos líneas ya sirve.</p>
+  </div>
+{% else %}
+
+{% for estado in estados %}
+  {% set del_estado = ideas|selectattr('estado', 'equalto', estado)|list %}
+  {% if del_estado %}
+    <h2>
+      {% if estado == 'propuesta' %}🌱 Propuestas
+      {% elif estado == 'posible' %}👍 Se pueden hacer
+      {% elif estado == 'elegida' %}🎉 Elegidas en la Asamblea
+      {% else %}📦 Guardadas para después{% endif %}
+      <span class="chip">{{ del_estado|length }}</span>
+    </h2>
+
+    {% if estado == 'posible' %}
+      <p class="sub-titulo">El equipo las miró y son posibles. Estas son las que van
+        a la Asamblea.</p>
+    {% elif estado == 'guardada' %}
+      <p class="sub-titulo">No salieron esta vez. No se borran: el ciclo que viene
+        vuelven a estar sobre la mesa.</p>
+    {% endif %}
+
+    <div class="rejilla">
+      {% for i in del_estado %}
+        <article class="tarjeta acento" id="idea-{{ i.id }}">
+          <div class="encabezado-tarjeta">
+            <span class="burbuja" aria-hidden="true">{{ i.clase_icono }}</span>
+            <div>
+              <h3>{{ i.titulo }}</h3>
+              <p class="meta">
+                <span>{{ i.clase_nombre }}</span>
+                <span>{{ 'toda la Unidad' if i.ambito == 'unidad' else 'de patrulla' }}</span>
+                {% if i.autor %}<span>{{ primer_nombre(i.autor.nombre) }}</span>{% endif %}
+                {% if i.patrulla %}<span>{{ i.patrulla.nombre }}</span>{% endif %}
+              </p>
+            </div>
+          </div>
+
+          {% if i.texto %}<p>{{ i.texto }}</p>{% endif %}
+          {% if i.hace_falta %}
+            <p class="meta"><strong>Haría falta:</strong> {{ i.hace_falta }}</p>
+          {% endif %}
+          {% if i.respuesta %}
+            <blockquote class="comentario">{{ i.respuesta }}
+              <footer class="meta">El equipo de educadores</footer>
+            </blockquote>
+          {% endif %}
+
+          <div class="acciones">
+            {% if not usuario.es_educador %}
+              <form method="post" action="/ideas/{{ i.id }}/apoyo" data-sin-recarga="Listo.">
+                <button type="submit" class="{{ '' if i.id in mis_apoyos else 'secundario' }}"
+                        aria-pressed="{{ 'true' if i.id in mis_apoyos else 'false' }}">
+                  🙌 {{ 'Me sumé' if i.id in mis_apoyos else 'Me sumo' }}
+                  {% if apoyos.get(i.id) %}({{ apoyos[i.id] }}){% endif %}
+                </button>
+              </form>
+            {% elif apoyos.get(i.id) %}
+              <span class="chip">🙌 {{ apoyos[i.id] }} se sumarían</span>
+            {% endif %}
+
+            {% if i.id in borrables %}
+              <form method="post" action="/ideas/{{ i.id }}/borrar"
+                    onsubmit="return confirm('¿Borrar «{{ i.titulo[:60] }}»?')"
+                    data-sin-recarga="Idea borrada."
+                    data-confirmar="¿Borrar «{{ i.titulo[:60] }}»?">
+                <button type="submit" class="secundario">Borrar</button>
+              </form>
+            {% endif %}
+          </div>
+
+          {% if usuario.es_educador %}
+            <details>
+              <summary>Qué hacemos con esta</summary>
+              <form method="post" action="/ideas/{{ i.id }}/estado"
+                    data-sin-recarga="Idea actualizada.">
+                <label for="estado-{{ i.id }}">En qué anda</label>
+                <select id="estado-{{ i.id }}" name="estado">
+                  {% for e in estados %}
+                    <option value="{{ e }}" {{ 'selected' if e == i.estado }}>{{ estados_nombre[e] }}</option>
+                  {% endfor %}
+                </select>
+                <label for="respuesta-{{ i.id }}">Qué le contestamos (opcional)</label>
+                <textarea id="respuesta-{{ i.id }}" name="respuesta" rows="2"
+                  placeholder="Este ciclo no llegamos con las fechas, pero queda para el próximo.">{{ i.respuesta }}</textarea>
+                <p class="meta">A quien propuso algo se le contesta. Que una idea
+                  desaparezca sin una palabra es la forma más rápida de que no
+                  vuelva a proponer nada.</p>
+                <div class="acciones"><button type="submit" class="secundario">Guardar</button></div>
+              </form>
+
+              <form method="post" action="/ideas/{{ i.id }}/agendar">
+                <label for="fecha-{{ i.id }}">Llevarla al calendario para el</label>
+                <input type="date" id="fecha-{{ i.id }}" name="fecha" value="{{ hoy.isoformat() }}">
+                <div class="acciones"><button type="submit">📆 Agendarla</button></div>
+              </form>
+            </details>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endblock %}

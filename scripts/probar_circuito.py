@@ -29,28 +29,37 @@ os.environ["VALIDADOR"] = "simulado"
 
 from fastapi.testclient import TestClient  # noqa: E402
 from PIL import Image  # noqa: E402
-from sqlalchemy import func, select  # noqa: E402
+from sqlalchemy import func, select, update  # noqa: E402
 
 from app.db import Base, SesionLocal, motor  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import (  # noqa: E402
+    CLASE_DESCUBIERTA,
     DESAFIO_ESPECIALIDAD,
     DESAFIO_REQUERIDO,
+    Actividad,
     Area,
     Asignacion,
     AvanceDesafio,
     CambioEtapa,
+    Cargo,
     CompetenciaElegida,
     Desafio,
     EntradaBitacora,
     Entrega,
+    Especialidad,
+
+    Idea,
+    ParticipacionActividad,
     Patrulla,
+    PeriodoCargo,
+    ROL_JOVEN,
     Reto,
     Usuario,
 )
 from app.servicios import medios  # noqa: E402
 from app.servicios.progresion import MIN_CARTAS  # noqa: E402
-from scripts.inicializar_db import cargar_cartas, cargar_demo  # noqa: E402
+from scripts.inicializar_db import asegurar_cargos, cargar_cartas, cargar_demo  # noqa: E402
 
 SUBIDAS = _temporal / "uploads"
 
@@ -77,6 +86,7 @@ def preparar() -> None:
     with SesionLocal() as sesion:
         cargar_cartas(sesion)
         cargar_demo(sesion)
+        asegurar_cargos(sesion)
 
 
 def main() -> int:
@@ -576,6 +586,30 @@ def main() -> int:
                 comentario=recuerdo_senda,
             )
         )
+        # La etapa no son solo las cartas (cap. 9): Senda pide además dos cargos
+        # distintos cumplidos y haber estado en una descubierta. Sin esto la
+        # aplicación tiene razón en pedir confirmación, y eso se prueba aparte.
+        dos_cargos = list(s.scalars(select(Cargo.id).order_by(Cargo.orden).limit(2)))
+        for cargo_id in dos_cargos:
+            s.add(
+                PeriodoCargo(
+                    cargo_id=cargo_id,
+                    joven_id=eli_id,
+                    patrulla_id=s.get(Usuario, eli_id).patrulla_id,
+                    desde=date.today() - timedelta(days=120),
+                    hasta=date.today() - timedelta(days=10),
+                    cumplido=True,
+                )
+            )
+        descubierta = Actividad(
+            unidad_id=s.get(Usuario, eli_id).unidad_id,
+            titulo="Visita al comedor del barrio",
+            fecha=date.today() - timedelta(days=30),
+            clase=CLASE_DESCUBIERTA,
+        )
+        s.add(descubierta)
+        s.flush()
+        s.add(ParticipacionActividad(actividad_id=descubierta.id, joven_id=eli_id))
         s.commit()
 
     r = edu.post(f"/progresion/{bruno_id}/etapa", data={"etapa": "senda"}, follow_redirects=False)
@@ -828,6 +862,653 @@ def main() -> int:
               s.get(Asignacion, auto_id) is None and s.get(Reto, auto_reto) is None)
         check("el reto que escribió el educador sigue en su lista",
               s.get(Reto, reto_id) is not None)
+
+    # --- 1. Los cargos de patrulla (cap. 4) ---------------------------------
+    with SesionLocal() as s:
+        ana = s.scalar(select(Usuario).where(Usuario.usuario == "ana"))
+        ana_patrulla = ana.patrulla_id
+        cargo_guia = s.scalar(select(Cargo).where(Cargo.nombre == "Guía"))
+        cargo_guia_id = cargo_guia.id
+        cargo_cocina_id = s.scalar(select(Cargo.id).where(Cargo.nombre == "Cocinero/a"))
+        dante_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "dante"))
+
+    check("el catálogo de cargos nace con los de la guía", cargo_guia is not None)
+    check(
+        "la patrulla propia abre",
+        joven.get(f"/patrulla/{ana_patrulla}").status_code == 200,
+    )
+    check(
+        "la patrulla ajena no existe para un joven",
+        joven.get("/patrulla/999999").status_code == 404,
+    )
+    otra = None
+    with SesionLocal() as s:
+        otra = s.scalar(select(Patrulla.id).where(Patrulla.id != ana_patrulla))
+    check("ni la de al lado", joven.get(f"/patrulla/{otra}").status_code == 404)
+    check("el educador sí entra a cualquiera", edu.get(f"/patrulla/{otra}").status_code == 200)
+
+    joven.post(
+        f"/patrulla/{ana_patrulla}/cargos",
+        data={"cargo_id": str(cargo_guia_id), "joven_id": str(ana_id)},
+    )
+    with SesionLocal() as s:
+        periodo = s.scalar(select(PeriodoCargo).where(PeriodoCargo.joven_id == ana_id))
+        check("un joven puede repartir cargos en su patrulla", periodo is not None)
+        check("y el período nace abierto", periodo is not None and periodo.hasta is None)
+        periodo_id = periodo.id
+
+    joven.post(
+        f"/patrulla/{ana_patrulla}/cargos",
+        data={"cargo_id": str(cargo_guia_id), "joven_id": str(ana_id)},
+    )
+    with SesionLocal() as s:
+        repetidos = s.scalar(
+            select(func.count(PeriodoCargo.id)).where(PeriodoCargo.joven_id == ana_id)
+        )
+        check("tomar dos veces el mismo cargo no duplica el período", repetidos == 1)
+
+    check(
+        "no se le puede dar un cargo a alguien de otra patrulla",
+        joven.post(
+            f"/patrulla/{ana_patrulla}/cargos",
+            data={"cargo_id": str(cargo_guia_id), "joven_id": str(dante_id)},
+        ).status_code == 404,
+    )
+
+    joven.post(
+        f"/patrulla/{ana_patrulla}/cargos/{periodo_id}/cerrar",
+        data={"cumplido": "true", "nota": "Coordinó todo el ciclo."},
+    )
+    with SesionLocal() as s:
+        cerrado = s.get(PeriodoCargo, periodo_id)
+        check("el Consejo cierra el período con su evaluación",
+              cerrado.hasta is not None and cerrado.cumplido)
+
+    # Ese cargo cumplido es lo que Pistas pide además de las cartas.
+    with SesionLocal() as s:
+        bruno = s.scalar(select(Usuario).where(Usuario.usuario == "bruno"))
+        bruno.etapa = "pistas"
+        s.commit()
+    texto_progresion = edu.get(f"/progresion/{bruno_id}").text
+    check("la etapa muestra lo que pide además de las cartas",
+          "Cargos de patrulla distintos, cumplidos" in texto_progresion)
+    # Travesía suma dos exigencias que ninguna base de datos puede verificar. No
+    # se cuentan: se muestran para que alguien se acuerde de conversarlas.
+    from app.servicios.progresion import REQUISITOS_ETAPA  # noqa: PLC0415
+
+    check("Travesía pide tres cargos", REQUISITOS_ETAPA["travesia"].cargos == 3)
+    check("y suma lo que no se puede medir",
+          any("Exploración de Travesía" in t
+              for t in REQUISITOS_ETAPA["travesia"].conversadas))
+
+    # --- 2. Voz y voto: las ideas (cap. 8) ----------------------------------
+    #
+    # La Asamblea no pasa por la aplicación: se reúne en persona. Acá se prueba
+    # que la pantalla junta las propuestas y anota lo que se decidió allá.
+    joven.post("/ideas", data={
+        "titulo": "Salida de noche a la reserva",
+        "texto": "Ir a ver las estrellas con el telescopio del club.",
+        "hace_falta": "Permiso y alguien que sepa de astronomía.",
+        "clase": "actividad", "ambito": "unidad",
+    })
+    with SesionLocal() as s:
+        idea = s.scalar(select(Idea).where(Idea.titulo.like("Salida de noche%")))
+        idea_id = idea.id
+        check("un joven propone una idea", idea is not None)
+        check("y queda a nombre de su patrulla", idea.patrulla_id == ana_patrulla)
+        check("nace como propuesta", idea.estado == "propuesta")
+
+    check("la idea aparece en el buzón", "Salida de noche" in joven.get("/ideas").text)
+    check("la pantalla avisa que la Asamblea es presencial",
+          "la Asamblea es en persona" in joven.get("/ideas").text)
+    check("no hay ninguna pantalla de votación",
+          joven.get("/asamblea").status_code == 404)
+
+    joven.post(f"/ideas/{idea_id}/apoyo")
+    check("«me sumo» queda anotado", "Me sumé" in joven.get("/ideas").text)
+    check(
+        "un educador no apoya ideas: eso es de los jóvenes",
+        edu.post(f"/ideas/{idea_id}/apoyo").status_code == 403,
+    )
+
+    # El equipo la mira y dice si se puede.
+    check(
+        "un joven no mueve el estado de una idea",
+        joven.post(f"/ideas/{idea_id}/estado", data={"estado": "posible"}).status_code == 403,
+    )
+    edu.post(f"/ideas/{idea_id}/estado",
+             data={"estado": "posible", "respuesta": "Se puede, hay que pedir permiso."})
+    with SesionLocal() as s:
+        mirada = s.get(Idea, idea_id)
+        check("el equipo la marca como posible", mirada.estado == "posible")
+        check("y le contesta a quien la propuso",
+              "hay que pedir permiso" in mirada.respuesta)
+    check("la respuesta se ve en la página", "pedir permiso" in joven.get("/ideas").text)
+
+    check(
+        "un estado inventado se rechaza",
+        edu.post(f"/ideas/{idea_id}/estado", data={"estado": "genial"}).status_code == 400,
+    )
+
+    # Una segunda idea para probar el guardado y el borrado.
+    edu.post("/ideas", data={"titulo": "Torneo de pionerismo", "clase": "proyecto",
+                             "ambito": "unidad"})
+    with SesionLocal() as s:
+        segunda = s.scalar(select(Idea).where(Idea.titulo == "Torneo de pionerismo"))
+        segunda_id = segunda.id
+        check("el educador también propone: la guía se lo pide", segunda is not None)
+
+    edu.post(f"/ideas/{segunda_id}/estado",
+             data={"estado": "guardada", "respuesta": "Este ciclo no llegamos."})
+    with SesionLocal() as s:
+        check("lo que no sale se guarda, no se borra",
+              s.get(Idea, segunda_id).estado == "guardada")
+
+    # Después de la Asamblea presencial, el equipo anota lo elegido y lo agenda.
+    edu.post(f"/ideas/{idea_id}/agendar",
+             data={"fecha": (date.today() + timedelta(days=20)).isoformat()})
+    with SesionLocal() as s:
+        elegida_idea = s.get(Idea, idea_id)
+        check("agendarla la marca como elegida en la Asamblea",
+              elegida_idea.estado == "elegida")
+        agendada = s.scalar(select(Actividad).where(Actividad.idea_id == idea_id))
+        check("y cae en el calendario", agendada is not None)
+        check("con el título de la idea", agendada.titulo == elegida_idea.titulo)
+
+    # Borrar: el equipo siempre; el autor solo mientras nadie la haya mirado.
+    joven.post("/ideas", data={"titulo": "Me arrepentí", "clase": "actividad"})
+    with SesionLocal() as s:
+        arrepentida = s.scalar(select(Idea).where(Idea.titulo == "Me arrepentí"))
+        arrepentida_id = arrepentida.id
+    joven.post(f"/ideas/{arrepentida_id}/borrar")
+    with SesionLocal() as s:
+        check("el autor borra la suya mientras nadie la miró",
+              s.get(Idea, arrepentida_id) is None)
+
+    check(
+        "pero no una que el equipo ya marcó",
+        joven.post(f"/ideas/{idea_id}/borrar").status_code == 403,
+    )
+    edu.post(f"/ideas/{segunda_id}/borrar")
+    with SesionLocal() as s:
+        check("el equipo sí la borra", s.get(Idea, segunda_id) is None)
+
+
+    # --- 3. La autoevaluación: la carta la cierra el joven (cap. 9) ---------
+    joven.post("/mis-cartas/33")  # una carta que todavía no tocó
+    check("la carta nueva queda elegida", elegida_de(ana_id, 33, "senda") is not None)
+    with SesionLocal() as s:
+        requeridos_33 = list(
+            s.scalars(
+                select(Desafio.id).where(
+                    Desafio.competencia_id == 33, Desafio.tipo == DESAFIO_REQUERIDO
+                )
+            )
+        )
+
+    r = joven.post("/mis-cartas/33/cerrar", data={"autoevaluacion": ""})
+    check("cerrar sin escribir nada se rechaza", r.status_code == 400)
+
+    reflexion = ("Aprendí a cocinar para ocho. Me costó calcular las cantidades y "
+                 "me ayudó Elisa. Quiero aprender a hacer pan en el fogón.")
+    r = joven.post("/mis-cartas/33/cerrar", data={"autoevaluacion": reflexion})
+    check("con requeridos sin marcar pide confirmar", "falta confirmar" in r.text.lower())
+    check("y no pierde lo que escribió", reflexion in r.text)
+    check("la carta sigue abierta", not elegida_de(ana_id, 33, "senda").lograda)
+
+    for desafio_id in requeridos_33:
+        joven.post(f"/mis-cartas/33/desafios/{desafio_id}", data={"hecho": "true"})
+    joven.post("/mis-cartas/33/cerrar", data={"autoevaluacion": reflexion})
+    cerrada_por_ella = elegida_de(ana_id, 33, "senda")
+    check("con todo hecho, el joven cierra su propia carta", cerrada_por_ella.lograda)
+    check("y queda firmada por ella, no por el educador",
+          cerrada_por_ella.lograda_por_id == ana_id)
+    check("la autoevaluación queda guardada",
+          cerrada_por_ella.autoevaluacion == reflexion)
+    check("no nace acordada: falta la conversación", not cerrada_por_ella.acordada)
+
+    panel = edu.get("/panel").text
+    check("el panel del educador pide esa conversación",
+          "esperan una conversación" in panel)
+    check("el educador ve la autoevaluación",
+          reflexion in edu.get(f"/progresion/{ana_id}").text)
+
+    edu.post(f"/progresion/{ana_id}/cartas/33",
+             data={"accion": "acordar", "nota": "Lo charlamos después del campamento."})
+    acordada = elegida_de(ana_id, 33, "senda")
+    check("el educador registra la conversación", acordada.acordada)
+    check("y queda quién la conversó", acordada.acordada_por_id is not None)
+    check("acordar no cambia quién la cerró", acordada.lograda_por_id == ana_id)
+
+    # --- 4. El Consejo de Patrulla ------------------------------------------
+    r = joven.post(f"/patrulla/{ana_patrulla}/consejo", data={"temas": ""})
+    check("un Consejo sin temas se rechaza", r.status_code == 400)
+
+    joven.post(f"/patrulla/{ana_patrulla}/consejo", data={
+        "fecha": date.today().isoformat(),
+        "temas": "Elegimos las actividades del ciclo y repartimos los cargos.",
+        "presente": [str(ana_id), str(dante_id)],
+    })
+    with SesionLocal() as s:
+        from app.models import ConsejoPatrulla, PresenciaConsejo  # noqa: PLC0415
+
+        consejo = s.scalar(select(ConsejoPatrulla))
+        consejo_id = consejo.id
+        check("queda el acta del Consejo", consejo is not None)
+        presentes = s.scalar(
+            select(func.count(PresenciaConsejo.id)).where(
+                PresenciaConsejo.consejo_id == consejo_id
+            )
+        )
+        # Dante es de otra patrulla: no puede figurar como presente en esta.
+        check("solo entran como presentes los de la patrulla", presentes == 1)
+
+    joven.post(f"/patrulla/{ana_patrulla}/acuerdos", data={
+        "texto": "Llevar las carpas a secar",
+        "responsable_id": str(ana_id),
+        "para_cuando": (date.today() + timedelta(days=3)).isoformat(),
+        "consejo_id": str(consejo_id),
+    })
+    with SesionLocal() as s:
+        from app.models import Acuerdo  # noqa: PLC0415
+
+        acuerdo = s.scalar(select(Acuerdo))
+        acuerdo_id = acuerdo.id
+        check("el acuerdo queda con nombre y fecha",
+              acuerdo.responsable_id == ana_id and acuerdo.para_cuando is not None)
+
+    check("el acuerdo espera a su responsable en /hoy",
+          "Llevar las carpas a secar" in joven.get("/hoy").text)
+    joven.post(f"/acuerdos/{acuerdo_id}", data={"cumplido": "true", "volver": "hoy"})
+    with SesionLocal() as s:
+        check("y se puede dar por hecho", s.get(Acuerdo, acuerdo_id).cumplido)
+    check("una vez hecho ya no molesta en /hoy",
+          "Llevar las carpas a secar" not in joven.get("/hoy").text)
+
+    # --- 5. El calendario del ciclo -----------------------------------------
+    manana = (date.today() + timedelta(days=5)).isoformat()
+    edu.post("/calendario", data={
+        "titulo": "Campamento de primavera", "fecha": manana,
+        "hasta": (date.today() + timedelta(days=7)).isoformat(),
+        "clase": "campamento", "lugar": "Los Robles",
+    })
+    with SesionLocal() as s:
+        campamento = s.scalar(select(Actividad).where(Actividad.titulo.like("Campamento%")))
+        campamento_id = campamento.id
+        check("el educador agenda un campamento", campamento is not None)
+        check("con su rango de días", campamento.hasta is not None)
+
+    check("lo que viene aparece en /hoy", "Campamento de primavera" in joven.get("/hoy").text)
+    check("y en el calendario", "Los Robles" in joven.get("/calendario").text)
+    check(
+        "un joven no agenda actividades de la Unidad",
+        joven.post("/calendario", data={"titulo": "La mía", "fecha": manana}).status_code == 403,
+    )
+
+    # «Estuve» lo marca cada uno, y es lo que cuenta para la etapa.
+    with SesionLocal() as s:
+        proyecto = Actividad(
+            unidad_id=s.get(Usuario, ana_id).unidad_id,
+            titulo="Proyecto de la huerta",
+            fecha=date.today() - timedelta(days=15),
+            clase="proyecto",
+        )
+        s.add(proyecto)
+        s.commit()
+        proyecto_id = proyecto.id
+
+    check(
+        "un educador no marca «estuve» por otro",
+        edu.post(f"/calendario/{proyecto_id}/estuve").status_code == 403,
+    )
+    joven.post(f"/calendario/{proyecto_id}/estuve")
+    with SesionLocal() as s:
+        check("el joven marca dónde estuvo",
+              s.scalar(select(func.count(ParticipacionActividad.id)).where(
+                  ParticipacionActividad.joven_id == ana_id)) == 1)
+    # Y eso es lo que alimenta los requisitos de la etapa: no una lista de
+    # asistencia que lleva un adulto, sino lo que cada uno dice que hizo.
+    with SesionLocal() as s:
+        from app.servicios import agenda as servicio_agenda  # noqa: PLC0415
+
+        hizo = servicio_agenda.lo_que_hizo(s, s.get(Usuario, ana_id))
+        check("lo marcado cuenta como proyecto de Unidad", hizo.proyectos_unidad == 1)
+    check("y la etapa lo lista entre lo que pide",
+          "Descubiertas" in edu.get(f"/progresion/{ana_id}").text)
+
+    # Una actividad de otra patrulla no se ve, igual que el Libro de Oro.
+    with SesionLocal() as s:
+        ajena = Actividad(
+            unidad_id=s.get(Usuario, ana_id).unidad_id,
+            patrulla_id=otra,
+            titulo="Reunión secreta de los Pumas",
+            fecha=date.today() + timedelta(days=2),
+        )
+        s.add(ajena)
+        s.commit()
+        ajena_id = ajena.id
+    check("la actividad de otra patrulla no se ve",
+          "Reunión secreta" not in joven.get("/calendario").text)
+    check("ni se puede marcar",
+          joven.post(f"/calendario/{ajena_id}/estuve").status_code == 404)
+
+    # --- 6. Las especialidades ----------------------------------------------
+    #
+    # La pide el joven, la que quiera; el recorrido lo arma el equipo para esa
+    # persona; la cierra el equipo.
+    check("la página de especialidades abre",
+          joven.get("/especialidades").status_code == 200)
+    check(
+        "una especialidad sin nombre se rechaza",
+        joven.post("/especialidades", data={"nombre": " "}).status_code == 400,
+    )
+    check(
+        "un educador no pide especialidades",
+        edu.post("/especialidades", data={"nombre": "Cocina"}).status_code == 403,
+    )
+
+    # El campo es libre: nada de elegir de una lista.
+    joven.post("/especialidades", data={
+        "nombre": "Apicultura", "icono": "🐝",
+        "motivo": "Mi tío tiene colmenas y quiero aprender a manejarlas.",
+    })
+    with SesionLocal() as s:
+        esp = s.scalar(select(Especialidad).where(Especialidad.joven_id == ana_id))
+        esp_id = esp.id
+        check("el joven pide la especialidad que quiere", esp is not None)
+        check("y queda con sus palabras", esp.nombre == "Apicultura")
+        check("con el motivo que escribió", "colmenas" in esp.motivo)
+        check("nace pedida, todavía sin preparar",
+              esp.estado == "pedida" and not esp.preparada)
+
+    joven.post("/especialidades", data={"nombre": "Apicultura"})
+    with SesionLocal() as s:
+        check("pedir dos veces lo mismo no la duplica",
+              s.scalar(select(func.count(Especialidad.id)).where(
+                  Especialidad.joven_id == ana_id)) == 1)
+
+    # Pedirla es el aviso: aparece en el panel del equipo desde ese momento.
+    check("el equipo ve el pedido en su panel",
+          "esperan que armes el recorrido" in edu.get("/panel").text)
+    check("y en la lista de especialidades", "Apicultura" in edu.get("/especialidades").text)
+    check("con el motivo a la vista", "colmenas" in edu.get("/especialidades").text)
+
+    # Hasta que el equipo no la prepara, no se puede empezar.
+    texto_joven = joven.get("/especialidades").text
+    check("mientras tanto el joven ve que la están preparando",
+          "la está preparando" in texto_joven)
+
+    check(
+        "un joven no arma su propio recorrido",
+        joven.post(f"/especialidades/{esp_id}/preparar",
+                   data={"pide_taller": "lo que yo quiera"}).status_code == 403,
+    )
+
+    edu.post(f"/especialidades/{esp_id}/preparar", data={
+        "experto": "Su tío Julio, apicultor",
+        "pide_exploracion": "Conocer la colmena, el ahumador y el traje.",
+        "pide_taller": "Acompañar una revisión de cuadros.",
+        "pide_desafio": "Contarle a la Unidad cómo se cuida una colmena.",
+    })
+    with SesionLocal() as s:
+        preparada = s.get(Especialidad, esp_id)
+        check("el equipo arma el recorrido", preparada.preparada)
+        check("con quién la acompaña", "Julio" in preparada.experto)
+        check("y qué se espera en cada fase",
+              "ahumador" in preparada.pide_exploracion)
+        check("queda firmado por quien la preparó",
+              preparada.preparada_por_id is not None)
+
+    texto_joven = joven.get("/especialidades").text
+    check("ahora el joven la puede empezar", "la está preparando" not in texto_joven)
+    check("y ve lo que le pidieron", "ahumador" in texto_joven)
+
+    joven.post(f"/especialidades/{esp_id}",
+               data={"fase": "taller", "texto": "Fui a revisar los cuadros con mi tío."})
+    with SesionLocal() as s:
+        check("escribir en el taller adelanta la fase sola",
+              s.get(Especialidad, esp_id).fase == "taller")
+
+    check(
+        "una fase inventada se rechaza",
+        joven.post(f"/especialidades/{esp_id}",
+                   data={"fase": "recreo", "texto": "x"}).status_code == 400,
+    )
+
+    joven.post(f"/especialidades/{esp_id}",
+               data={"fase": "desafio", "texto": "Lo conté en la reunión del sábado."})
+    check("el panel avisa que hay una lista para la insignia",
+          "fase de servicio" in edu.get("/panel").text)
+
+    check(
+        "la especialidad de otro no se toca",
+        elisa.post(f"/especialidades/{esp_id}",
+                   data={"fase": "taller", "texto": "mía"}).status_code == 404,
+    )
+    check(
+        "un joven no da por concluida su propia especialidad",
+        joven.post(f"/especialidades/{esp_id}/entregar").status_code == 403,
+    )
+
+    edu.post(f"/especialidades/{esp_id}/entregar",
+             data={"nota": "Explicó la colmena con las fotos de su tío."})
+    with SesionLocal() as s:
+        cerrada = s.get(Especialidad, esp_id)
+        check("el educador la da por concluida", cerrada.lograda)
+        check("y queda con quién la cerró y qué se conversó",
+              cerrada.lograda_por_id is not None and "colmena" in cerrada.nota_cierre)
+    check(
+        "una especialidad lograda no se borra",
+        joven.post(f"/especialidades/{esp_id}/borrar").status_code == 400,
+    )
+
+    # Cancelar un pedido antes de que lo preparen es barato.
+    joven.post("/especialidades", data={"nombre": "Malabares"})
+    with SesionLocal() as s:
+        malabares = s.scalar(select(Especialidad).where(Especialidad.nombre == "Malabares"))
+        malabares_id = malabares.id
+    joven.post(f"/especialidades/{malabares_id}/borrar")
+    with SesionLocal() as s:
+        check("cancelar un pedido sin preparar se puede",
+              s.get(Especialidad, malabares_id) is None)
+
+
+    # --- 7. La identidad de la patrulla -------------------------------------
+    joven.post(f"/patrulla/{ana_patrulla}/identidad", data={
+        "lema": "Siempre más alto",
+        "grito": "¡Halcones, al cielo!",
+        "emblema": "🦅",
+        "historia": "La patrulla nació en el campamento de 2019.",
+        "fundada_en": "2019-03-15",
+    })
+    with SesionLocal() as s:
+        p = s.get(Patrulla, ana_patrulla)
+        check("la patrulla escribe su propia identidad", p.grito == "¡Halcones, al cielo!")
+        check("con su emblema y su fecha", p.emblema == "🦅" and p.fundada_en is not None)
+    check("el grito se ve en su página",
+          "¡Halcones, al cielo!" in joven.get(f"/patrulla/{ana_patrulla}").text)
+    check(
+        "nadie edita la identidad de otra patrulla",
+        joven.post(f"/patrulla/{otra}/identidad", data={"grito": "jaja"}).status_code == 404,
+    )
+
+    # El banderín es una foto y se comprime como cualquier otra.
+    joven.post(
+        f"/patrulla/{ana_patrulla}/identidad",
+        data={"lema": "Siempre más alto"},
+        files={"banderin": ("banderin.jpg", original, "image/jpeg")},
+    )
+    with SesionLocal() as s:
+        check("el banderín queda guardado",
+              s.get(Patrulla, ana_patrulla).archivo_banderin is not None)
+    check("y solo se ve con sesión iniciada", len(list(SUBIDAS.glob("*.jpg"))) == 1)
+
+    # --- 8. El muro de la Unidad --------------------------------------------
+    #
+    # Se comparte porque uno quiso, solo lo validado, y sin puntos al lado.
+    check("el muro abre", joven.get("/muro").status_code == 200)
+
+    edu.post("/asignar", data={"reto_id": str(reto_id), "fecha": date.today().isoformat(),
+                               "alcance": "unidad"})
+    with SesionLocal() as s:
+        para_muro = s.scalar(select(func.max(Asignacion.id)))
+
+    relato_muro = ("Armé el botiquín de la patrulla con la lista que nos dio la "
+                   "enfermera y lo colgamos en el rincón.")
+    joven.post(f"/reto/{para_muro}", data={"texto": relato_muro})
+    with SesionLocal() as s:
+        entrega_muro = s.scalar(
+            select(Entrega).where(Entrega.asignacion_id == para_muro,
+                                  Entrega.joven_id == ana_id)
+        )
+        check("una entrega completa se valida sola",
+              entrega_muro.estado == "aprobada")
+        check("y no se comparte si nadie lo pidió", not entrega_muro.compartida)
+        entrega_muro_id = entrega_muro.id
+
+    check("mientras tanto el muro sigue vacío para esa entrega",
+          relato_muro not in joven.get("/muro").text)
+
+    joven.post(f"/reto/{para_muro}/compartir")
+    with SesionLocal() as s:
+        check("el autor la comparte",
+              s.get(Entrega, entrega_muro_id).compartida)
+    texto_muro = joven.get("/muro").text
+    check("y aparece en el muro", relato_muro in texto_muro)
+    check("con el nombre de quien la hizo", "Ana" in texto_muro)
+    check("el muro no muestra puntos", "puntaje" not in texto_muro.lower())
+    check("otro joven de la Unidad la ve", relato_muro in elisa.get("/muro").text)
+    check("y el equipo también", relato_muro in edu.get("/muro").text)
+
+    check(
+        "nadie comparte la entrega de otro",
+        elisa.post(f"/reto/{para_muro}/compartir").status_code == 404,
+    )
+
+    # Dar de baja una entrega la saca del muro.
+    edu.post(f"/validaciones/{entrega_muro_id}",
+             data={"decision": "rechazar", "devolucion": "Esto no llegó a pasar."})
+    with SesionLocal() as s:
+        baja = s.get(Entrega, entrega_muro_id)
+        check("el educador puede dar de baja algo ya validado",
+              baja.estado == "rechazada" and baja.puntaje_otorgado == 0)
+        check("y eso la saca del muro", not baja.compartida)
+    check("ya no se ve en el muro", relato_muro not in joven.get("/muro").text)
+    check(
+        "no se comparte algo que no está validado",
+        joven.post(f"/reto/{para_muro}/compartir").status_code == 400,
+    )
+
+    # La lista de entregas del educador no es una cola de aprobación.
+    entregas_html = edu.get("/validaciones").text
+    check("la sección se llama por lo que es",
+          "Lo que entregaron" in entregas_html)
+    check("y avisa que lo completo se valida solo",
+          "no es una cola de aprobación" in entregas_html.lower())
+
+    # --- 9. El puntaje no premia a la patrulla más numerosa -----------------
+    with SesionLocal() as s:
+        halcones_p = s.scalar(select(Patrulla).where(Patrulla.nombre == "Halcones"))
+        ceibos_p = s.scalar(select(Patrulla).where(Patrulla.nombre == "Ceibos"))
+        # Halcones queda con el doble de gente y el doble de puntos: mismo
+        # esfuerzo por cabeza, así que ninguna tiene que ganarle a la otra. Se
+        # arma desde cero y no sobre lo que había, porque a esta altura de la
+        # prueba la gente ya se movió de patrulla varias veces.
+        s.execute(update(Entrega).values(puntaje_otorgado=0, estado="pendiente"))
+        s.execute(
+            update(Usuario)
+            .where(Usuario.rol == ROL_JOVEN)
+            .values(patrulla_id=None)
+        )
+        s.execute(
+            update(Usuario)
+            .where(Usuario.usuario.in_(("ana", "bruno")))
+            .values(patrulla_id=halcones_p.id)
+        )
+        s.execute(
+            update(Usuario)
+            .where(Usuario.usuario == "eli")
+            .values(patrulla_id=ceibos_p.id)
+        )
+        s.commit()
+
+    from app.servicios import puntajes as servicio_puntajes  # noqa: PLC0415
+
+    with SesionLocal() as s:
+        entregas_falsas = [
+            Entrega(asignacion_id=para_muro, joven_id=ana_id, patrulla_id=halcones_p.id,
+                    estado="aprobada", puntaje_otorgado=20),
+            Entrega(asignacion_id=para_muro, joven_id=eli_id, patrulla_id=ceibos_p.id,
+                    estado="aprobada", puntaje_otorgado=10),
+        ]
+        s.execute(
+            update(Entrega)
+            .where(Entrega.id == entrega_muro_id)
+            .values(estado="aprobada", puntaje_otorgado=20, patrulla_id=halcones_p.id)
+        )
+        s.add(entregas_falsas[1])
+        s.commit()
+
+        filas = servicio_puntajes.tablero_de_unidad(
+            s, halcones_p.unidad_id, date.today()
+        )
+        por_nombre = {f.patrulla.nombre: f for f in filas}
+        halcones_f, ceibos_f = por_nombre["Halcones"], por_nombre["Ceibos"]
+        check("Halcones suma el doble de puntos en total",
+              halcones_f.puntos == 2 * ceibos_f.puntos,
+              f"{halcones_f.puntos} contra {ceibos_f.puntos}")
+        check("pero tiene el doble de integrantes",
+              halcones_f.integrantes == 2 * ceibos_f.integrantes,
+              f"{halcones_f.integrantes} contra {ceibos_f.integrantes}")
+        check("así que el promedio por integrante empata",
+              halcones_f.promedio == ceibos_f.promedio,
+              f"{halcones_f.promedio} contra {ceibos_f.promedio}")
+        check("una patrulla sin integrantes no divide por cero",
+              all(f.promedio == 0 for f in filas if f.integrantes == 0))
+        check("el promedio redondo se escribe sin decimal",
+              "." not in halcones_f.promedio_texto, halcones_f.promedio_texto)
+
+    check("el tablero explica por qué es por integrante",
+          "por integrante" in joven.get("/tablero").text)
+
+    # --- 10. Varios cargos a la vez ------------------------------------------
+    #
+    # En una patrulla de cinco no hay una persona por cargo, y la guía no lo
+    # pide: son responsabilidades, no puestos.
+    with SesionLocal() as s:
+        tres = list(s.scalars(select(Cargo.id).order_by(Cargo.orden).limit(3)))
+    for cargo_id in tres:
+        joven.post(f"/patrulla/{ana_patrulla}/cargos",
+                   data={"cargo_id": str(cargo_id), "joven_id": str(ana_id)})
+    with SesionLocal() as s:
+        abiertos_ana = s.scalar(
+            select(func.count(PeriodoCargo.id)).where(
+                PeriodoCargo.joven_id == ana_id, PeriodoCargo.hasta.is_(None)
+            )
+        )
+        check("una misma persona puede tener varios cargos a la vez",
+              abiertos_ana == 3, abiertos_ana)
+    check("y la pantalla lo dice",
+          "Se pueden tener varios a la vez" in joven.get(f"/patrulla/{ana_patrulla}").text)
+
+    # --- todas las pantallas nuevas abren, para los dos roles ---------------
+    #
+    # Una plantilla rota no se nota hasta que alguien entra. Esto entra a todas.
+    for ruta in ("/hoy", "/mis-cartas", "/mi-patrulla", f"/patrulla/{ana_patrulla}",
+                 f"/patrulla/{ana_patrulla}/consejo/{consejo_id}", "/ideas",
+                 "/muro", "/calendario", "/especialidades", "/bitacora",
+                 "/mis-retos", "/tablero", "/libro-de-oro"):
+        check(f"un joven abre {ruta}", joven.get(ruta).status_code == 200)
+
+    for ruta in ("/panel", "/validaciones", "/retos", "/asignar", "/patrullas",
+                 "/jovenes", "/cargos", "/ideas", "/especialidades", "/calendario",
+                 f"/patrulla/{ana_patrulla}", f"/progresion/{ana_id}"):
+        check(f"un educador abre {ruta}", edu.get(ruta).status_code == 200)
+
+    # Y las que son de un solo rol siguen cerradas para el otro.
+    check("un joven no entra al catálogo de cargos", joven.get("/cargos").status_code == 403)
+    check("un joven no ve el catálogo de especialidades del equipo",
+          "Sumar una especialidad" not in joven.get("/especialidades").text)
 
     print()
     if fallos:

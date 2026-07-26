@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% block titulo %}Progresión de {{ joven.nombre }}{% endblock %}
+
+{% block contenido %}
+<p class="miga"><a href="/jovenes">← Jóvenes</a></p>
+
+<div class="encabezado-tarjeta" style="margin-bottom:1.2rem">
+  <span class="avatar" style="--color: {{ color_de(joven.nombre) }}; width:60px; height:60px; font-size:1.3rem"
+        aria-hidden="true">{{ iniciales(joven.nombre) }}</span>
+  <div>
+    <h1>{{ joven.nombre }}</h1>
+    <p class="meta">
+      <span>Etapa {{ joven.etapa_nombre }}</span>
+      {% if joven.patrulla %}<span>Patrulla {{ joven.patrulla.nombre }}</span>{% endif %}
+      <span>usuario: {{ joven.usuario }}</span>
+    </p>
+  </div>
+</div>
+
+<div class="pastillas" style="margin-bottom:1.2rem">
+  <span class="pastilla"><span aria-hidden="true">🃏</span> <span class="valor">{{ resumen.elegidas }}</span> <small>de {{ min_cartas }} a {{ max_cartas }} elegidas</small></span>
+  <span class="pastilla"><span aria-hidden="true">🏅</span> <span class="valor">{{ resumen.logradas }}</span> <small>logradas</small></span>
+  {% if resumen.listas_para_cerrar %}
+    <span class="pastilla"><span aria-hidden="true">💬</span> <span class="valor">{{ resumen.listas_para_cerrar }}</span> <small>para conversar</small></span>
+  {% endif %}
+</div>
+
+{% if resumen.listo_para_avanzar %}
+  <div class="aviso ok">
+    <span class="icono" aria-hidden="true">🎉</span>
+    <div><strong>Completó el recorrido de la etapa {{ resumen.etapa_nombre }}.</strong>
+      <p>Tiene {{ resumen.logradas }} cartas logradas. El paso de etapa se celebra
+        con la Unidad, no se firma solo.</p></div>
+  </div>
+{% elif resumen.listas_para_cerrar %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">💬</span>
+    <div><strong>{{ resumen.listas_para_cerrar }}
+      carta{{ 's' if resumen.listas_para_cerrar != 1 }}
+      cumplió todos sus requeridos.</strong>
+      <p>Conversalas con {{ joven.nombre }} y su patrulla, y cerralas acá abajo.</p></div>
+  </div>
+{% elif not resumen.eleccion_completa %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">🎒</span>
+    <div><strong>Su elección de cartas todavía no está armada.</strong>
+      <p>Lleva {{ resumen.elegidas }} de las {{ min_cartas }} a {{ max_cartas }} de la
+        etapa. Las elige él o ella, desde su propia pantalla: acompañala a hacerlo.</p></div>
+  </div>
+{% endif %}
+
+{# --- El paso de etapa ------------------------------------------------------ #}
+
+<h2 id="etapa">🧭 La etapa</h2>
+<p class="sub-titulo">La cambia el equipo de educadores. Ni las cartas ni los puntos
+  la mueven solos.</p>
+
+{% if confirmar == 'etapa' %}
+  <div class="aviso alerta">
+    <span class="icono" aria-hidden="true">✋</span>
+    <div><strong>Falta confirmar el cambio.</strong>
+      <p>{{ resumen.motivo_pendiente or 'Ese cambio no es el paso esperado de la etapa.' }}
+        Se puede hacer igual: elegí la etapa otra vez y marcá la casilla.</p></div>
+  </div>
+{% endif %}
+
+<div class="tarjeta">
+  <form method="post" action="/progresion/{{ joven.id }}/etapa">
+    <div class="fila">
+      <div>
+        <label for="etapa">Etapa</label>
+        <select id="etapa" name="etapa">
+          {% for e in etapas %}
+            <option value="{{ e }}" {{ 'selected' if e == joven.etapa }}>{{ ETAPAS_NOMBRE[e] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="nota-etapa">Qué se conversó (opcional)</label>
+        <input type="text" id="nota-etapa" name="nota"
+               placeholder="Lo hablamos en el Consejo de Unidad del sábado.">
+      </div>
+    </div>
+
+    <p class="meta" style="margin-top:.8rem">Al cambiar de etapa, las cartas de
+      {{ resumen.etapa_nombre }} quedan guardadas como están y la etapa nueva
+      empieza con una elección en blanco.
+      {% if resumen.cerradas_con_pendientes %}
+        De las {{ resumen.logradas }} logradas, {{ resumen.cerradas_con_pendientes }}
+        se {{ 'cerró' if resumen.cerradas_con_pendientes == 1 else 'cerraron' }}
+        con requeridos sin marcar.
+      {% endif %}</p>
+
+    <label class="casilla">
+      <input type="checkbox" name="confirmado" value="true">
+      Confirmo el cambio aunque no tenga las {{ min_cartas }} cartas logradas
+      —o aunque vuelva a una etapa anterior—.
+    </label>
+
+    <div class="acciones">
+      <button type="submit">Cambiar la etapa</button>
+      {% if not resumen.listo_para_avanzar %}
+        <span class="meta">{{ resumen.motivo_pendiente }}</span>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+{% if historial %}
+  <details class="tarjeta">
+    <summary>📜 Cómo fue su recorrido ({{ historial|length }} cambio{{ 's' if historial|length != 1 }})</summary>
+    <ul class="lista-desafios">
+      {% for c in historial %}
+        <li>
+          <span class="tilde" aria-hidden="true">{{ '⚠' if c.con_pendientes else '✔' }}</span>
+          <div>
+            <strong>{{ c.anterior_nombre }} → {{ c.nueva_nombre }}</strong>
+            <p class="meta">
+              <span>{{ c.creado_en.strftime('%d/%m/%Y') }}</span>
+              {% if c.educador %}<span>{{ c.educador.nombre }}</span>{% endif %}
+              <span>{{ c.cartas_logradas }} de {{ c.cartas_elegidas }} cartas logradas</span>
+            </p>
+            {% if c.nota %}<blockquote class="comentario">{{ c.nota }}</blockquote>{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
+{% endif %}
+
+{# --- Las cartas de la etapa ------------------------------------------------ #}
+
+<h2>🃏 Las cartas de esta etapa</h2>
+
+{% if not avances %}
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/cartas.svg" alt="">
+    <strong>Todavía no eligió cartas para la etapa {{ resumen.etapa_nombre }}</strong>
+    <p>Las elige la persona, no el equipo de educadores: acompañala a hacerlo
+      desde su propia pantalla.</p>
+    <a class="boton secundario" href="/cartas-de/{{ joven.id }}">Ver su recorrido</a>
+  </div>
+{% else %}
+  <p class="sub-titulo">Cerrar una carta es decir «esta competencia la desarrolló».
+    Lo que marcó el joven es el insumo de esa conversación, no la decisión.</p>
+
+  {% for a in avances %}
+    {% set area = a.competencia.area %}
+    {% set elegida = a.elegida %}
+    <article class="tarjeta carta {{ 'lograda' if elegida.lograda }}" id="carta-{{ a.competencia.id }}"
+             style="--color: {{ area.color }}; --tono: {{ area.color }}22">
+      <div class="anillo chico" style="--p: {{ a.porcentaje }}; --c: {{ area.color }}">
+        <span>{{ a.requeridos_hechos }}/{{ a.requeridos }}</span>
+      </div>
+      <div>
+        <h3>{{ a.competencia.titulo }}</h3>
+        <p class="meta">
+          <span>{{ area.icono }} {{ area.nombre }}</span>
+          <span>carta {{ a.competencia.numero }}</span>
+          {% if a.opcionales_hechos %}<span>+{{ a.opcionales_hechos }} opcionales</span>{% endif %}
+        </p>
+
+        {% if elegida.lograda %}
+          <p>
+            <span class="etiqueta aprobada">🏅 Lograda</span>
+            {% if elegida.con_pendientes %}
+              <span class="etiqueta alerta">con requeridos sin marcar</span>
+            {% endif %}
+          </p>
+          <p class="meta">
+            {% if elegida.lograda_en %}Cerrada el {{ elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}
+            {% if elegida.lograda_por %} por {{ elegida.lograda_por.nombre }}{% endif %}
+          </p>
+          {% if elegida.nota_cierre %}
+            <blockquote class="comentario">{{ elegida.nota_cierre }}</blockquote>
+          {% endif %}
+          <form method="post" action="/progresion/{{ joven.id }}/cartas/{{ a.competencia.id }}">
+            <input type="hidden" name="accion" value="reabrir">
+            <div class="acciones">
+              <button type="submit" class="secundario">Reabrir la carta</button>
+              <a class="boton secundario" href="/cartas-de/{{ joven.id }}">Ver lo que escribió →</a>
+            </div>
+          </form>
+
+        {% else %}
+          {% if a.completa %}
+            <p class="meta">✔ Cumplió los {{ a.requeridos }} requeridos.</p>
+          {% elif a.sin_empezar %}
+            <p class="meta">Sin marcas todavía.</p>
+          {% else %}
+            <p class="meta">Le {{ 'falta' if a.requeridos_pendientes == 1 else 'faltan' }}
+              {{ a.requeridos_pendientes }} requerido{{ 's' if a.requeridos_pendientes != 1 }}.</p>
+          {% endif %}
+
+          {% if confirmar == a.competencia.id|string %}
+            <div class="aviso alerta">
+              <span class="icono" aria-hidden="true">✋</span>
+              <div><strong>Falta confirmar.</strong>
+                <p>Para darla por lograda con requeridos sin marcar, marcá la casilla.</p></div>
+            </div>
+          {% endif %}
+
+          <details class="tarjeta" {{ 'open' if confirmar == a.competencia.id|string }}>
+            <summary>🏅 Dar esta carta por lograda</summary>
+
+            {% if a.completa %}
+              <div class="aviso info">
+                <span class="icono" aria-hidden="true">💬</span>
+                <div><strong>Cumplió todo lo requerido.</strong>
+                  <p>Aun así, la carta se cierra después de conversarla con el joven
+                    y su patrulla: no la cierra el contador.</p></div>
+              </div>
+            {% else %}
+              <div class="aviso alerta">
+                <span class="icono" aria-hidden="true">⚠️</span>
+                <div><strong>Le
+                  {{ 'falta' if a.requeridos_pendientes == 1 else 'faltan' }}
+                  {{ a.requeridos_pendientes }} desafío{{ 's' if a.requeridos_pendientes != 1 }}
+                  requerido{{ 's' if a.requeridos_pendientes != 1 }} sin marcar.</strong>
+                  <p>Se puede cerrar igual —un opcional puede reemplazar a un requerido,
+                    y no todo lo que se hace queda tildado— pero queda registrado que
+                    se cerró con pendientes.</p></div>
+              </div>
+            {% endif %}
+
+            <form method="post" action="/progresion/{{ joven.id }}/cartas/{{ a.competencia.id }}">
+              <input type="hidden" name="accion" value="cerrar">
+              <label for="nota-{{ a.competencia.id }}">Qué se conversó (opcional)</label>
+              <textarea id="nota-{{ a.competencia.id }}" name="nota" rows="2"
+                placeholder="Lo charlamos en el Consejo de Patrulla: mostró el trabajo con las fotos del campamento."></textarea>
+              {% if not a.completa %}
+                <label class="casilla">
+                  <input type="checkbox" name="confirmado" value="true">
+                  Sé que quedan requeridos sin marcar y la doy por lograda igual.
+                </label>
+              {% endif %}
+              <div class="acciones">
+                <button type="submit">Darla por lograda</button>
+              </div>
+            </form>
+          </details>
+
+          <details>
+            <summary>Ver los {{ a.total }} desafíos</summary>
+            <ul class="lista-desafios">
+              {% for d in a.competencia.desafios %}
+                {% set marca = marcas.get(d.id) if marcas else None %}
+                <li class="{{ 'hecho' if marca and marca.hecho }}">
+                  <span class="tilde" aria-hidden="true">{{ '✔' if marca and marca.hecho else '·' }}</span>
+                  <div>
+                    {{ d.texto }}
+                    {% if d.tipo and d.tipo != 'requerido' %}
+                      <span class="chip {{ d.tipo }}">{{ d.tipo_nombre|lower }}</span>
+                    {% endif %}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+      </div>
+    </article>
+  {% endfor %}
+{% endif %}
+{% endblock %}

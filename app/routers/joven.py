@@ -28,12 +28,10 @@ from app.models import (
     Usuario,
 )
 from app.servicios import medios, progresion, puntajes, retos
+from app.servicios.progresion import MAX_CARTAS, MIN_CARTAS
 from app.servicios.validacion import ContextoValidacion, obtener_validador
 
 router = APIRouter()
-
-MIN_CARTAS = 12
-MAX_CARTAS = 14
 
 
 def _guardar_foto(archivo: UploadFile) -> str:

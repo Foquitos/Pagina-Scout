@@ -50,7 +50,8 @@
   <div class="paso">
     <span class="emoji" aria-hidden="true">💬</span>
     <strong>No se aprueba: se conversa</strong>
-    <span class="texto">Vos, tu patrulla y tu educador/a deciden juntos si está lograda.</span>
+    <span class="texto">Cuando cumplís los requeridos lo hablan entre vos, tu patrulla
+      y tu educador/a, y él o ella la da por lograda.</span>
   </div>
 </div>
 
@@ -65,7 +66,8 @@
     y tu educador/a. Es la autoevaluación, la coevaluación y la heteroevaluación
     de las que habla la guía.</p>
   <p class="meta">Las cuatro etapas de la Rama son Pistas, Senda, Rumbo y Travesía.
-    Estás en {{ usuario.etapa_nombre }}.</p>
+    Estás en {{ usuario.etapa_nombre }}. El paso de una etapa a la siguiente lo
+    decide el equipo de educadores con vos, mirando cómo venís con estas cartas.</p>
 </details>
 
 <h2 id="elegidas">🃏 Las cartas que elegí</h2>
@@ -97,7 +99,8 @@
           {% if a.elegida.lograda %}
             <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
           {% elif a.completa %}
-            <p class="meta">✔ Cumpliste todos los requeridos. Conversalo con tu educador/a.</p>
+            <p class="meta">✔ Cumpliste todos los requeridos. Conversalo con tu educador/a
+              para cerrarla.</p>
           {% endif %}
           <div class="acciones">
             <a class="boton secundario" href="/mis-cartas/{{ a.competencia.id }}">Trabajar en esta carta →</a>

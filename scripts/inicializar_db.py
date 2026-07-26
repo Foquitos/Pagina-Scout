@@ -1,10 +1,11 @@
-"""Crea las tablas y carga las Cartas de Exploración.
+"""Crea las tablas, actualiza el esquema y carga las Cartas de Exploración.
 
     python scripts/inicializar_db.py                  # tablas + cartas
     python scripts/inicializar_db.py --demo           # + unidad, patrullas y usuarios de prueba
 
 Es idempotente: se puede correr las veces que haga falta. Las cartas se
-actualizan desde datos/cartas_exploracion.json sin tocar el resto de los datos.
+actualizan desde datos/cartas_exploracion.json sin tocar el resto de los datos,
+y sobre una base ya existente se agregan las columnas nuevas antes de nada.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import select  # noqa: E402
+from sqlalchemy import inspect, select, text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.config import DIR_DATOS  # noqa: E402
@@ -36,6 +37,38 @@ from app.models import (  # noqa: E402
     Usuario,
 )
 from app.seguridad import hashear_clave  # noqa: E402
+
+
+# Columnas que se sumaron después de la primera versión. `create_all` crea las
+# tablas que faltan, pero no toca las que ya existen: sin esto, una base vieja
+# se queda sin las columnas nuevas. Cuando esto crezca a varias Unidades hay que
+# pasar a Alembic; para una base por grupo, esto alcanza y se lee de un vistazo.
+COLUMNAS_NUEVAS = {
+    "competencias_elegidas": {
+        "lograda_por_id": "INTEGER REFERENCES usuarios(id)",
+        "con_pendientes": "BOOLEAN DEFAULT 0",
+        "nota_cierre": "TEXT DEFAULT ''",
+    },
+}
+
+
+def migrar(motor_) -> int:
+    """Agrega las columnas que falten. Idempotente y sin tocar los datos."""
+    inspector = inspect(motor_)
+    tablas = set(inspector.get_table_names())
+    agregadas = 0
+    with motor_.begin() as conexion:
+        for tabla, columnas in COLUMNAS_NUEVAS.items():
+            if tabla not in tablas:
+                continue  # la va a crear create_all, ya con todo
+            existentes = {c["name"] for c in inspector.get_columns(tabla)}
+            for nombre, definicion in columnas.items():
+                if nombre in existentes:
+                    continue
+                conexion.execute(text(f"ALTER TABLE {tabla} ADD COLUMN {nombre} {definicion}"))
+                print(f"  + {tabla}.{nombre}")
+                agregadas += 1
+    return agregadas
 
 
 def cargar_cartas(sesion: Session) -> tuple[int, int]:
@@ -161,6 +194,8 @@ def main() -> None:
     parser.add_argument("--demo", action="store_true", help="carga datos de prueba")
     args = parser.parse_args()
 
+    if migrar(motor):
+        print("Base actualizada con las columnas nuevas.")
     Base.metadata.create_all(motor)
     with SesionLocal() as sesion:
         competencias, desafios = cargar_cartas(sesion)

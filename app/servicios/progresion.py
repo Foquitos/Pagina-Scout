@@ -5,6 +5,17 @@ conversan el joven, su patrulla y el equipo de educadores (cap. 9). Por eso el
 avance se cuenta sobre los desafíos **requeridos** —los mínimos de la carta— y
 los opcionales se muestran aparte, sumando pero sin cambiar la meta.
 
+Las cartas y la etapa van de la mano: las cartas de la etapa son el recorrido
+que se propuso el joven, y son lo que el equipo mira para decidir el paso a la
+etapa siguiente. Pero ninguna de las dos cosas se cierra sola. Las dos las
+decide un educador, y este módulo se ocupa de que ninguna se decida a ciegas:
+cuando lo que se pide no coincide con lo marcado —una carta con requeridos sin
+hacer, una etapa sin las cartas mínimas logradas— levanta
+`NecesitaConfirmacion` en vez de negarse. La guía es explícita en que el
+acompañamiento es personalizado y en que hay razones legítimas para cerrar algo
+que el papel muestra incompleto; lo que no puede pasar es que ocurra sin que
+nadie lo haya mirado.
+
 Lo que sí es visible para otros es el recorrido, nunca un número comparable
 entre personas: `/mi-patrulla` lista a la patrulla por nombre, no por avance.
 """
@@ -12,18 +23,42 @@ entre personas: `/mi-patrulla` lista a la patrulla por nombre, no por avance.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.orm import Session
 
 from app.models import (
     DESAFIO_REQUERIDO,
+    ETAPAS,
+    ETAPAS_NOMBRE,
     AvanceDesafio,
+    CambioEtapa,
     Competencia,
     CompetenciaElegida,
     Desafio,
     Usuario,
 )
+
+# Cuántas cartas elige cada joven para su etapa (cap. 9).
+MIN_CARTAS = 12
+MAX_CARTAS = 14
+
+
+class NecesitaConfirmacion(Exception):
+    """Se puede hacer, pero no en silencio: que el educador lo confirme.
+
+    No es un "no". Es la diferencia entre el camino de siempre y una decisión
+    que alguien tiene que tomar a propósito.
+    """
+
+    def __init__(self, motivo: str):
+        super().__init__(motivo)
+        self.motivo = motivo
+
+
+def _ahora() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -59,8 +94,17 @@ class AvanceCarta:
         return self.requeridos > 0 and self.requeridos_hechos == self.requeridos
 
     @property
+    def requeridos_pendientes(self) -> int:
+        return max(0, self.requeridos - self.requeridos_hechos)
+
+    @property
     def sin_empezar(self) -> bool:
         return self.hechos == 0 and self.comentarios == 0
+
+    @property
+    def lista_para_cerrar(self) -> bool:
+        """Cumplió los requeridos y todavía nadie la cerró: hay algo que conversar."""
+        return self.completa and not self.elegida.lograda
 
 
 def marcas_de(sesion: Session, joven: Usuario) -> dict[int, AvanceDesafio]:
@@ -133,3 +177,205 @@ def desafios_de(sesion: Session, competencia_id: int) -> list[Desafio]:
             .order_by(Desafio.orden)
         )
     )
+
+
+def carta_elegida(
+    sesion: Session, joven: Usuario, competencia_id: int
+) -> CompetenciaElegida | None:
+    """La elección de esa carta en la etapa actual del joven, si la tiene."""
+    return sesion.scalar(
+        select(CompetenciaElegida).where(
+            CompetenciaElegida.joven_id == joven.id,
+            CompetenciaElegida.competencia_id == competencia_id,
+            CompetenciaElegida.etapa == joven.etapa,
+        )
+    )
+
+
+# --- Cómo viene la etapa -----------------------------------------------------
+
+
+@dataclass
+class AvanceEtapa:
+    """La etapa de un joven vista entera: es lo que se mira para cambiarla."""
+
+    joven: Usuario
+    avances: list[AvanceCarta]
+
+    @property
+    def elegidas(self) -> int:
+        return len(self.avances)
+
+    @property
+    def logradas(self) -> int:
+        return sum(1 for a in self.avances if a.elegida.lograda)
+
+    @property
+    def cerradas_con_pendientes(self) -> int:
+        return sum(1 for a in self.avances if a.elegida.con_pendientes)
+
+    @property
+    def listas_para_cerrar(self) -> int:
+        """Cumplió los requeridos y falta la conversación de cierre."""
+        return sum(1 for a in self.avances if a.lista_para_cerrar)
+
+    @property
+    def eleccion_completa(self) -> bool:
+        return MIN_CARTAS <= self.elegidas <= MAX_CARTAS
+
+    @property
+    def faltan_para_avanzar(self) -> int:
+        """Cuántas cartas logradas faltan para el mínimo de la etapa."""
+        return max(0, MIN_CARTAS - self.logradas)
+
+    @property
+    def listo_para_avanzar(self) -> bool:
+        return self.faltan_para_avanzar == 0
+
+    @property
+    def etapa_nombre(self) -> str:
+        return ETAPAS_NOMBRE.get(self.joven.etapa, self.joven.etapa)
+
+    @property
+    def motivo_pendiente(self) -> str:
+        """Qué le falta, en una frase, para el aviso del formulario."""
+        if self.listo_para_avanzar:
+            return ""
+        if not self.elegidas:
+            return f"Todavía no eligió ninguna carta para la etapa {self.etapa_nombre}."
+        return (
+            f"Lleva {self.logradas} de las {MIN_CARTAS} cartas logradas de la etapa "
+            f"{self.etapa_nombre}: le faltan {self.faltan_para_avanzar}."
+        )
+
+
+def resumen_de_etapa(sesion: Session, joven: Usuario) -> AvanceEtapa:
+    return AvanceEtapa(joven=joven, avances=cartas_elegidas(sesion, joven))
+
+
+def conteo_por_joven(sesion: Session, jovenes: list[Usuario]) -> dict[int, tuple[int, int]]:
+    """(elegidas, logradas) de cada joven en su etapa actual, en una sola consulta.
+
+    El listado de la Unidad necesita el número, no el detalle: traer las cartas
+    de treinta personas para contarlas sería pagar de más.
+    """
+    ids = [j.id for j in jovenes]
+    if not ids:
+        return {}
+    filas = sesion.execute(
+        select(
+            CompetenciaElegida.joven_id,
+            func.count(CompetenciaElegida.id),
+            func.sum(cast(CompetenciaElegida.lograda, Integer)),
+        )
+        .join(
+            Usuario,
+            (Usuario.id == CompetenciaElegida.joven_id)
+            & (Usuario.etapa == CompetenciaElegida.etapa),
+        )
+        .where(CompetenciaElegida.joven_id.in_(ids))
+        .group_by(CompetenciaElegida.joven_id)
+    )
+    conteos = {joven_id: (elegidas, logradas or 0) for joven_id, elegidas, logradas in filas}
+    return {j.id: conteos.get(j.id, (0, 0)) for j in jovenes}
+
+
+def historial_de_etapas(sesion: Session, joven: Usuario) -> list[CambioEtapa]:
+    return list(
+        sesion.scalars(
+            select(CambioEtapa)
+            .where(CambioEtapa.joven_id == joven.id)
+            .order_by(CambioEtapa.creado_en.desc(), CambioEtapa.id.desc())
+        )
+    )
+
+
+# --- Lo que decide el educador -----------------------------------------------
+
+
+def cerrar_carta(
+    elegida: CompetenciaElegida,
+    avance: AvanceCarta,
+    educador: Usuario,
+    nota: str = "",
+    confirmado: bool = False,
+) -> None:
+    """Da una carta por lograda. Sin todos los requeridos, pide confirmar.
+
+    Que falten requeridos no la vuelve imposible: un desafío opcional puede
+    reemplazar a uno requerido si se conversó, y hay chicos que hicieron la
+    competencia sin haber ido tildando la lista. Lo que no puede es pasar
+    inadvertido.
+    """
+    if not avance.completa and not confirmado:
+        raise NecesitaConfirmacion(_faltan_requeridos(avance))
+
+    elegida.lograda = True
+    elegida.lograda_en = _ahora()
+    elegida.lograda_por_id = educador.id
+    elegida.con_pendientes = not avance.completa
+    elegida.nota_cierre = nota.strip()
+
+
+def reabrir_carta(elegida: CompetenciaElegida) -> None:
+    """Vuelve atrás un cierre. Lo marcado adentro de la carta no se toca."""
+    elegida.lograda = False
+    elegida.lograda_en = None
+    elegida.lograda_por_id = None
+    elegida.con_pendientes = False
+    elegida.nota_cierre = ""
+
+
+def _faltan_requeridos(avance: AvanceCarta) -> str:
+    faltan = avance.requeridos_pendientes
+    return (
+        f"Le {'falta' if faltan == 1 else 'faltan'} {faltan} desafío"
+        f"{'' if faltan == 1 else 's'} requerido{'' if faltan == 1 else 's'} "
+        f"sin marcar en esta carta."
+    )
+
+
+def cambiar_etapa(
+    sesion: Session,
+    joven: Usuario,
+    etapa_nueva: str,
+    educador: Usuario,
+    nota: str = "",
+    confirmado: bool = False,
+) -> CambioEtapa | None:
+    """Mueve a un joven de etapa y deja el registro de quién y con qué números.
+
+    Avanzar con las cartas de la etapa logradas es el camino esperado y sale
+    derecho. Cualquier otra cosa —avanzar con cartas pendientes, o volver a una
+    etapa anterior— se puede, pero la confirma el educador.
+
+    Devuelve `None` si la etapa pedida es la que ya tenía.
+    """
+    if etapa_nueva not in ETAPAS:
+        raise ValueError("Etapa desconocida.")
+    if etapa_nueva == joven.etapa:
+        return None
+
+    resumen = resumen_de_etapa(sesion, joven)
+    avanza = ETAPAS.index(etapa_nueva) > ETAPAS.index(joven.etapa)
+    esperado = avanza and resumen.listo_para_avanzar
+    if not esperado and not confirmado:
+        raise NecesitaConfirmacion(
+            resumen.motivo_pendiente
+            if avanza
+            else f"Volver a la etapa {ETAPAS_NOMBRE[etapa_nueva]} es ir para atrás en su progresión."
+        )
+
+    cambio = CambioEtapa(
+        joven_id=joven.id,
+        etapa_anterior=joven.etapa,
+        etapa_nueva=etapa_nueva,
+        educador_id=educador.id,
+        cartas_elegidas=resumen.elegidas,
+        cartas_logradas=resumen.logradas,
+        con_pendientes=not esperado,
+        nota=nota.strip(),
+    )
+    joven.etapa = etapa_nueva
+    sesion.add(cambio)
+    return cambio

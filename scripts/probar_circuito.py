@@ -37,11 +37,14 @@ from app.models import (  # noqa: E402
     DESAFIO_ESPECIALIDAD,
     DESAFIO_REQUERIDO,
     AvanceDesafio,
+    CambioEtapa,
+    CompetenciaElegida,
     Desafio,
     Patrulla,
     Usuario,
 )
 from app.servicios import medios  # noqa: E402
+from app.servicios.progresion import MIN_CARTAS  # noqa: E402
 from scripts.inicializar_db import cargar_cartas, cargar_demo  # noqa: E402
 
 SUBIDAS = _temporal / "uploads"
@@ -251,7 +254,126 @@ def main() -> int:
 
     r = edu.get(f"/cartas-de/{ana_id}")
     check("el educador ve las cartas elegidas y los comentarios", comentario in r.text)
-    check("el listado de jóvenes enlaza la progresión", f"/cartas-de/{ana_id}" in edu.get("/jovenes").text)
+    check("el listado de jóvenes enlaza la progresión", f"/progresion/{ana_id}" in edu.get("/jovenes").text)
+
+    # --- cerrar cartas: la decisión es del educador --------------------------
+    check("un joven no entra a la progresión", joven.get(f"/progresion/{ana_id}").status_code == 403)
+    check("el educador abre la progresión", "Las cartas de esta etapa" in edu.get(f"/progresion/{ana_id}").text)
+
+    def elegida_de(joven_id: int, competencia_id: int, etapa: str) -> CompetenciaElegida:
+        with SesionLocal() as s:
+            return s.scalar(
+                select(CompetenciaElegida).where(
+                    CompetenciaElegida.joven_id == joven_id,
+                    CompetenciaElegida.competencia_id == competencia_id,
+                    CompetenciaElegida.etapa == etapa,
+                )
+            )
+
+    # Ana marcó un solo requerido de la carta 1: cerrarla es ir más allá de lo
+    # que muestra la lista, y eso no puede pasar sin que alguien lo confirme.
+    r = edu.post(f"/progresion/{ana_id}/cartas/1", data={"accion": "cerrar"}, follow_redirects=False)
+    check(
+        "cerrar una carta incompleta pide confirmación",
+        "confirmar=1" in r.headers["location"],
+        r.headers["location"],
+    )
+    check("y mientras tanto no la cierra", not elegida_de(ana_id, 1, "senda").lograda)
+    check(
+        "el aviso vuelve abierto sobre esa carta",
+        "Falta confirmar." in edu.get(f"/progresion/{ana_id}?confirmar=1").text,
+    )
+
+    cierre = "Lo mostró en el Consejo de Patrulla: el resto lo hizo en el campamento."
+    edu.post(
+        f"/progresion/{ana_id}/cartas/1",
+        data={"accion": "cerrar", "confirmado": "true", "nota": cierre},
+    )
+    cerrada = elegida_de(ana_id, 1, "senda")
+    check("confirmando se cierra igual", cerrada.lograda)
+    check("queda registrado que tenía requeridos sin marcar", cerrada.con_pendientes)
+    check("y firmada por quien la cerró", cerrada.lograda_por_id is not None)
+    check("el joven lee la nota del cierre", cierre in joven.get("/mis-cartas/1").text)
+    joven.post("/mis-cartas/1")
+    check("una carta lograda no se saca de la elección", elegida_de(ana_id, 1, "senda") is not None)
+
+    # La carta 7, con todos sus requeridos marcados, se cierra derecho.
+    with SesionLocal() as s:
+        requeridos_7 = list(
+            s.scalars(
+                select(Desafio.id).where(
+                    Desafio.competencia_id == 7, Desafio.tipo == DESAFIO_REQUERIDO
+                )
+            )
+        )
+    for desafio_id in requeridos_7:
+        joven.post(f"/mis-cartas/7/desafios/{desafio_id}", data={"hecho": "true"})
+    edu.post(f"/progresion/{ana_id}/cartas/7", data={"accion": "cerrar"})
+    completa = elegida_de(ana_id, 7, "senda")
+    check("con los requeridos hechos se cierra sin confirmar", completa.lograda)
+    check("y no queda marcada como incompleta", not completa.con_pendientes)
+
+    edu.post(f"/progresion/{ana_id}/cartas/7", data={"accion": "reabrir"})
+    check("el educador puede reabrir un cierre", not elegida_de(ana_id, 7, "senda").lograda)
+
+    # --- el paso de etapa ----------------------------------------------------
+    with SesionLocal() as s:
+        bruno = s.scalar(select(Usuario).where(Usuario.usuario == "bruno"))
+        bruno_id, bruno_patrulla = bruno.id, bruno.patrulla_id
+        eli_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "eli"))
+        # A Elisa le damos la etapa recorrida: es el único camino que sale
+        # derecho, y armarlo carta por carta desde el navegador no probaría nada
+        # distinto de lo que ya probamos arriba.
+        for numero in range(1, MIN_CARTAS + 1):
+            s.add(
+                CompetenciaElegida(
+                    joven_id=eli_id, competencia_id=numero, etapa="senda", lograda=True
+                )
+            )
+        s.commit()
+
+    r = edu.post(f"/progresion/{bruno_id}/etapa", data={"etapa": "senda"}, follow_redirects=False)
+    check(
+        "cambiar de etapa sin las cartas pide confirmación",
+        "confirmar=etapa" in r.headers["location"],
+        r.headers["location"],
+    )
+    with SesionLocal() as s:
+        check("y no lo cambia", s.get(Usuario, bruno_id).etapa == "pistas")
+    check(
+        "la página explica qué falta confirmar",
+        "Falta confirmar el cambio." in edu.get(f"/progresion/{bruno_id}?confirmar=etapa").text,
+    )
+
+    edu.post(
+        f"/progresion/{bruno_id}/etapa",
+        data={"etapa": "senda", "confirmado": "true", "nota": "Se suma al grupo de Senda."},
+    )
+    with SesionLocal() as s:
+        check("confirmando, el educador lo pasa igual", s.get(Usuario, bruno_id).etapa == "senda")
+        cambio = s.scalar(select(CambioEtapa).where(CambioEtapa.joven_id == bruno_id))
+        check("el cambio queda registrado con quién y con qué números",
+              cambio is not None and cambio.educador_id is not None and cambio.con_pendientes,
+              f"{cambio.cartas_logradas} cartas logradas" if cambio else "sin registro")
+
+    edu.post(f"/progresion/{eli_id}/etapa", data={"etapa": "rumbo"})
+    with SesionLocal() as s:
+        check("con la etapa recorrida el paso sale derecho", s.get(Usuario, eli_id).etapa == "rumbo")
+        check(
+            "las cartas quedan guardadas en la etapa donde se hicieron",
+            s.scalar(
+                select(func.count(CompetenciaElegida.id)).where(
+                    CompetenciaElegida.joven_id == eli_id, CompetenciaElegida.etapa == "senda"
+                )
+            ) == MIN_CARTAS,
+        )
+
+    edu.post(f"/jovenes/{bruno_id}", data={"patrulla_id": str(bruno_patrulla), "etapa": "travesia"})
+    with SesionLocal() as s:
+        check(
+            "la etapa no se cambia desde el listado de jóvenes",
+            s.get(Usuario, bruno_id).etapa == "senda",
+        )
 
     # --- Libro de Oro ---------------------------------------------------------
     check("reconoce youtu.be", medios.leer_video("https://youtu.be/dQw4w9WgXcQ").identificador == "dQw4w9WgXcQ")

@@ -35,7 +35,14 @@
       <a class="boton grande" href="/mis-cartas">Ir a mis cartas</a>{% endif %}
   </div>
 {% else %}
-  {% if not propia %}
+  {% if usuario.es_educador %}
+    <div class="aviso info">
+      <span class="icono" aria-hidden="true">🧭</span>
+      <div>Acá se lee lo que escribió. Para cerrar cartas o cambiarle la etapa,
+        entrá a su progresión.
+        <p><a class="boton secundario" href="/progresion/{{ joven.id }}">Gestionar su progresión →</a></p></div>
+    </div>
+  {% elif not propia %}
     <div class="aviso info">
       <span class="icono" aria-hidden="true">💬</span>
       <div>Esto es su progresión personal, no un puntaje.
@@ -58,7 +65,18 @@
           {% if a.opcionales_hechos %}<span>+{{ a.opcionales_hechos }} opcionales</span>{% endif %}
         </p>
         {% if a.elegida.lograda %}
-          <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
+          <p>
+            <span class="etiqueta aprobada">🏅 Lograda</span>
+            {% if a.elegida.con_pendientes and usuario.es_educador %}
+              <span class="etiqueta alerta">con requeridos sin marcar</span>
+            {% endif %}
+          </p>
+          {% if a.elegida.nota_cierre %}
+            <blockquote class="comentario">{{ a.elegida.nota_cierre }}
+              <footer class="meta">{{ a.elegida.lograda_por.nombre if a.elegida.lograda_por else 'El equipo de educadores' }}
+                {% if a.elegida.lograda_en %} · {{ a.elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}</footer>
+            </blockquote>
+          {% endif %}
         {% elif a.completa %}
           <p class="meta">✔ Cumplió todos los requeridos: la carta está lista para cerrarse.</p>
         {% elif a.sin_empezar %}

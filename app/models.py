@@ -173,7 +173,14 @@ class Desafio(Base):
 
 
 class CompetenciaElegida(Base):
-    """Las 12 a 14 cartas que cada joven elige para su etapa actual."""
+    """Las 12 a 14 cartas que cada joven elige para su etapa actual.
+
+    La elige el joven; quien la da por lograda es siempre un educador, y queda
+    firmado: `lograda_por_id` y `nota_cierre` son el registro de esa
+    conversación. `con_pendientes` marca las que se cerraron sin todos los
+    requeridos —la guía lo permite, un desafío opcional puede reemplazar a uno
+    requerido—, pero no se cierra en silencio.
+    """
 
     __tablename__ = "competencias_elegidas"
     __table_args__ = (UniqueConstraint("joven_id", "competencia_id", "etapa"),)
@@ -185,9 +192,13 @@ class CompetenciaElegida(Base):
     lograda: Mapped[bool] = mapped_column(Boolean, default=False)
     elegida_en: Mapped[datetime] = mapped_column(DateTime, default=_ahora)
     lograda_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    lograda_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    con_pendientes: Mapped[bool] = mapped_column(Boolean, default=False)
+    nota_cierre: Mapped[str] = mapped_column(Text, default="")
 
     competencia: Mapped[Competencia] = relationship()
-    joven: Mapped[Usuario] = relationship()
+    joven: Mapped[Usuario] = relationship(foreign_keys=[joven_id])
+    lograda_por: Mapped[Usuario | None] = relationship(foreign_keys=[lograda_por_id])
 
 
 class AvanceDesafio(Base):
@@ -215,6 +226,42 @@ class AvanceDesafio(Base):
 
     desafio: Mapped[Desafio] = relationship()
     joven: Mapped[Usuario] = relationship()
+
+
+class CambioEtapa(Base):
+    """Cada paso de etapa, con quién lo decidió y cómo venían las cartas.
+
+    La etapa la cambia siempre un educador (cap. 9: el paso de etapa lo define
+    el equipo con el joven, no un contador). Se guarda la foto del momento
+    —cuántas cartas tenía elegidas y cuántas logradas— porque las cartas viven
+    atadas a su etapa: después del cambio, la etapa nueva arranca sin ninguna y
+    ese número ya no se puede recalcular.
+    """
+
+    __tablename__ = "cambios_etapa"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    joven_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    etapa_anterior: Mapped[str] = mapped_column(String(20))
+    etapa_nueva: Mapped[str] = mapped_column(String(20))
+    educador_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    cartas_elegidas: Mapped[int] = mapped_column(Integer, default=0)
+    cartas_logradas: Mapped[int] = mapped_column(Integer, default=0)
+    # True si se cambió sin tener las cartas de la etapa logradas.
+    con_pendientes: Mapped[bool] = mapped_column(Boolean, default=False)
+    nota: Mapped[str] = mapped_column(Text, default="")
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=_ahora)
+
+    joven: Mapped[Usuario] = relationship(foreign_keys=[joven_id])
+    educador: Mapped[Usuario | None] = relationship(foreign_keys=[educador_id])
+
+    @property
+    def anterior_nombre(self) -> str:
+        return ETAPAS_NOMBRE.get(self.etapa_anterior, self.etapa_anterior)
+
+    @property
+    def nueva_nombre(self) -> str:
+        return ETAPAS_NOMBRE.get(self.etapa_nueva, self.etapa_nueva)
 
 
 # --- Retos y entregas --------------------------------------------------------

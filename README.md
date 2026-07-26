@@ -21,6 +21,11 @@ En http://127.0.0.1:8000 — usuarios de prueba `educador`, `ana`, `bruno`,
 Sin `--demo` se crean las tablas y se cargan las cartas, pero ningún usuario:
 para producción hay que dar de alta el primer educador a mano.
 
+Si ya tenías una base andando, ese mismo comando le agrega las columnas que
+falten antes de tocar nada más. Es idempotente y no borra datos; mientras no
+haya Alembic, es la vía para actualizar el esquema (ver `COLUMNAS_NUEVAS` en
+`scripts/inicializar_db.py`).
+
 Probado sobre **Python 3.14**.
 
 ## Cómo está armado
@@ -41,13 +46,14 @@ app/
   routers/
     auth.py          ingreso y salida
     joven.py         hoy, reto, mis retos, mis cartas, bitácora
-    educador.py      panel, validaciones, retos, asignar, patrullas, jóvenes
+    educador.py      panel, validaciones, retos, asignar, patrullas, jóvenes,
+                     progresión
     api.py           la misma lógica en JSON
   servicios/
     retos.py         qué reto ve cada joven hoy
     validacion.py    contrato de validación de evidencias
     puntajes.py      tablero de patrullas y rachas
-    progresion.py    cartas elegidas y avance de cada joven
+    progresion.py    cartas elegidas, avance, cierre de cartas y paso de etapa
     medios.py        compresión de fotos y enlaces de video
   static/
     estilos.css      la hoja de estilos, sin framework ni build
@@ -121,6 +127,46 @@ Los opcionales suman y se muestran, pero no mueven la meta.
 —"conversalo con tu educador/a"— y ahí se queda. Cerrar una competencia es una
 conversación entre el joven, su patrulla y el equipo de educadores (cap. 9), no
 un contador que llega a cero.
+
+## Las cartas y la etapa, en una sola página
+
+Las dos cosas van juntas —las cartas son el recorrido de la etapa— y las dos las
+decide un educador, en `/progresion/{joven_id}`: arriba el cambio de etapa,
+abajo las cartas elegidas con su avance. Se entra desde el listado de jóvenes,
+que muestra de cada uno la etapa y cuántas cartas lleva elegidas y logradas.
+
+**Nada se cierra solo, y nada se cierra a ciegas.** La app no bloquea: avisa. El
+camino esperado sale derecho, y todo lo demás pide una confirmación explícita:
+
+| lo que se pide | qué pasa |
+|---|---|
+| cerrar una carta con todos los requeridos hechos | se cierra; el aviso recuerda que primero se conversa |
+| cerrar una carta con requeridos sin marcar | hace falta marcar la casilla; queda guardado que se cerró con pendientes |
+| pasar a la etapa siguiente con las 12 cartas logradas | se cambia derecho |
+| cambiar de etapa sin eso, o volver a una anterior | hace falta marcar la casilla |
+
+Que falten requeridos no vuelve imposible cerrar una carta, y es a propósito: la
+guía dice que un desafío opcional puede reemplazar a uno requerido si se
+conversó, y hay chicos que hicieron la competencia sin ir tildando la lista. Lo
+que no puede pasar es que ocurra sin que nadie lo mire. Por eso, cuando falta
+confirmar, el POST no rompe: vuelve a la página con el aviso abierto sobre esa
+carta.
+
+**Cada cierre queda firmado.** Quién lo cerró, cuándo, si tenía pendientes y qué
+se conversó. Esa nota la leen el joven y su patrulla, porque es parte de la
+conversación; la marca de "con requeridos sin marcar" la ven solo los
+educadores.
+
+**El paso de etapa deja historia.** `CambioEtapa` guarda de dónde a dónde, quién
+lo decidió y cuántas cartas tenía elegidas y logradas en ese momento. Ese número
+hay que guardarlo sí o sí: las cartas viven atadas a su etapa, así que al día
+siguiente del cambio la etapa nueva arranca en cero y ya no se puede recalcular.
+Lo trabajado en la etapa anterior no se pierde, queda guardado ahí.
+
+**La etapa no se toca desde el listado de jóvenes.** Ahí solo se cambia la
+patrulla. Son dos decisiones distintas: mover a alguien de patrulla es organizar
+la Unidad; cambiarle la etapa es cerrar un tramo de su progresión personal, y
+para eso hay que estar mirando sus cartas.
 
 **Lo escrito lo leen tres personas.** `/cartas-de/{joven_id}` es una sola página
 de solo lectura para quien la escribió, su patrulla y los educadores, porque es

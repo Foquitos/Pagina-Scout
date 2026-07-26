@@ -4,7 +4,8 @@
 {% block contenido %}
 <h1>🧭 Jóvenes de la Unidad</h1>
 <p class="sub">Cada ingreso se hace con usuario y contraseña propios. No pedimos ni
-  guardamos datos personales más allá del nombre.</p>
+  guardamos datos personales más allá del nombre. La etapa se cambia desde la
+  progresión de cada uno, mirando cómo vienen sus cartas.</p>
 
 <details class="tarjeta" {{ 'open' if not jovenes }}>
   <summary>➕ Dar de alta</summary>
@@ -32,7 +33,7 @@
         </select>
       </div>
       <div>
-        <label for="etapa">Etapa de progresión</label>
+        <label for="etapa">Etapa con la que entra</label>
         <select id="etapa" name="etapa">
           {% for e in etapas %}<option value="{{ e }}">{{ ETAPAS_NOMBRE[e] }}</option>{% endfor %}
         </select>
@@ -51,6 +52,7 @@
 {% else %}
   <div class="rejilla">
     {% for j in jovenes %}
+    {% set elegidas, logradas = conteos[j.id] %}
     <article class="tarjeta">
       <div class="encabezado-tarjeta">
         <span class="avatar" style="--color: {{ color_de(j.nombre) }}" aria-hidden="true">{{ iniciales(j.nombre) }}</span>
@@ -58,34 +60,24 @@
           <h3>{{ j.nombre }} {% if not j.activo %}<span class="etiqueta">inactivo</span>{% endif %}</h3>
           <p class="meta">
             <span>usuario: {{ j.usuario }}</span>
-            <span>{{ ETAPAS_NOMBRE[j.etapa] }}</span>
+            <span>Etapa {{ ETAPAS_NOMBRE[j.etapa] }}</span>
+            <span>🃏 {{ elegidas }} · 🏅 {{ logradas }} de {{ min_cartas }}</span>
           </p>
         </div>
       </div>
 
       <form method="post" action="/jovenes/{{ j.id }}">
-        <div class="fila">
-          <div>
-            <label for="patrulla-{{ j.id }}">Patrulla</label>
-            <select id="patrulla-{{ j.id }}" name="patrulla_id">
-              <option value="">— sin patrulla —</option>
-              {% for p in patrullas %}
-                <option value="{{ p.id }}" {{ 'selected' if p.id == j.patrulla_id }}>{{ p.nombre }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div>
-            <label for="etapa-{{ j.id }}">Etapa</label>
-            <select id="etapa-{{ j.id }}" name="etapa">
-              {% for e in etapas %}
-                <option value="{{ e }}" {{ 'selected' if e == j.etapa }}>{{ ETAPAS_NOMBRE[e] }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
+        <label for="patrulla-{{ j.id }}">Patrulla</label>
+        <select id="patrulla-{{ j.id }}" name="patrulla_id">
+          <option value="">— sin patrulla —</option>
+          {% for p in patrullas %}
+            <option value="{{ p.id }}" {{ 'selected' if p.id == j.patrulla_id }}>{{ p.nombre }}</option>
+          {% endfor %}
+        </select>
         <div class="acciones">
           <button type="submit" class="secundario">Guardar</button>
-          <a class="boton secundario" href="/cartas-de/{{ j.id }}">Ver sus cartas →</a>
+          <a class="boton" href="/progresion/{{ j.id }}">🧭 Progresión →</a>
+          <a class="boton secundario" href="/cartas-de/{{ j.id }}">Ver sus cartas</a>
         </div>
       </form>
     </article>

@@ -385,6 +385,8 @@ textarea { min-height: 7rem; resize: vertical; }
 .etiqueta.requiere_revision { background: var(--alerta); }
 .etiqueta.aprobada { background: var(--ok); }
 .etiqueta.rechazada { background: #8c3b3b; }
+/* Un matiz, no un reproche: la carta se logró, con algo pendiente de tildar. */
+.etiqueta.alerta { background: #fbf1e8; color: var(--alerta); border: 2px solid #e6cdb6; }
 
 .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0 0; padding: 0; }
 .chip {
@@ -461,6 +463,8 @@ a.chip:hover { border-color: var(--verde); color: var(--verde-oscuro); }
 .aviso .icono { font-size: 1.3rem; line-height: 1.2; }
 .aviso.ok { border-color: #c3e2ce; background: #eef7f0; }
 .aviso.info { border-color: #c6dbe7; background: #eef5f9; }
+/* Para lo que se puede hacer pero conviene mirar dos veces. */
+.aviso.alerta { border-color: #e6cdb6; background: #fbf1e8; }
 .aviso p { margin: .2rem 0 0; font-weight: 500; }
 
 /* --- Estados vacíos ------------------------------------------ */

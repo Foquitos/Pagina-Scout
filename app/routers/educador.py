@@ -32,7 +32,7 @@ from app.models import (
     Usuario,
 )
 from app.seguridad import hashear_clave
-from app.servicios import medios, puntajes, retos
+from app.servicios import medios, progresion, puntajes, retos
 
 router = APIRouter()
 
@@ -368,17 +368,19 @@ def listar_jovenes(
     sesion: Session = Depends(obtener_sesion),
 ):
     unidad_id = _unidad_de(usuario)
+    jovenes = list(
+        sesion.scalars(
+            select(Usuario)
+            .where(Usuario.unidad_id == unidad_id, Usuario.rol == ROL_JOVEN)
+            .order_by(Usuario.nombre)
+        )
+    )
     return render(
         request,
         "educador/jovenes.html",
         usuario=usuario,
-        jovenes=list(
-            sesion.scalars(
-                select(Usuario)
-                .where(Usuario.unidad_id == unidad_id, Usuario.rol == ROL_JOVEN)
-                .order_by(Usuario.nombre)
-            )
-        ),
+        jovenes=jovenes,
+        conteos=progresion.conteo_por_joven(sesion, jovenes),
         patrullas=list(
             sesion.scalars(
                 select(Patrulla)
@@ -387,6 +389,7 @@ def listar_jovenes(
             )
         ),
         etapas=ETAPAS,
+        min_cartas=progresion.MIN_CARTAS,
     )
 
 
@@ -426,17 +429,116 @@ def crear_joven(
 def actualizar_joven(
     joven_id: int,
     patrulla_id: str = Form(""),
-    etapa: str = Form("pistas"),
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
+    """Cambia la patrulla. La etapa no: esa se toca en /progresion.
+
+    Son dos decisiones de naturaleza distinta. Mover a alguien de patrulla es
+    organizar la Unidad; cambiarle la etapa es cerrar un tramo de su progresión
+    personal, y para eso hay que estar mirando sus cartas.
+    """
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
+    joven.patrulla_id = int(patrulla_id) if patrulla_id.strip() else None
+    sesion.commit()
+    return redirigir("/jovenes")
+
+
+# --- Progresión personal -----------------------------------------------------
+
+
+def _joven_de_la_unidad(sesion: Session, joven_id: int, educador: Usuario) -> Usuario:
     joven = sesion.get(Usuario, joven_id)
-    if joven is None or joven.unidad_id != _unidad_de(usuario):
+    if joven is None or joven.rol != ROL_JOVEN or joven.unidad_id != _unidad_de(educador):
         raise HTTPException(404, "Esa persona no está en tu Unidad.")
+    return joven
+
+
+@router.get("/progresion/{joven_id}")
+def ver_progresion(
+    joven_id: int,
+    request: Request,
+    confirmar: str = "",
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Las cartas de la etapa y el cambio de etapa, en la misma página.
+
+    Juntas a propósito: la guía cuenta las cartas como el recorrido de la etapa,
+    así que la decisión de pasar de etapa se toma mirando cómo vienen, no de
+    memoria. `confirmar` trae lo que quedó pendiente de confirmar en el POST
+    anterior, para volver a mostrar el aviso donde corresponde.
+    """
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
+    resumen = progresion.resumen_de_etapa(sesion, joven)
+    return render(
+        request,
+        "educador/progresion.html",
+        usuario=usuario,
+        joven=joven,
+        resumen=resumen,
+        avances=resumen.avances,
+        marcas=progresion.marcas_de(sesion, joven),
+        historial=progresion.historial_de_etapas(sesion, joven),
+        etapas=ETAPAS,
+        min_cartas=progresion.MIN_CARTAS,
+        max_cartas=progresion.MAX_CARTAS,
+        confirmar=confirmar,
+    )
+
+
+@router.post("/progresion/{joven_id}/cartas/{competencia_id}")
+def resolver_carta(
+    joven_id: int,
+    competencia_id: int,
+    accion: str = Form(...),
+    nota: str = Form(""),
+    confirmado: bool = Form(False),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Da una carta por lograda, o reabre una que se cerró de más."""
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
+    elegida = progresion.carta_elegida(sesion, joven, competencia_id)
+    if elegida is None:
+        raise HTTPException(404, "Esa carta no está en su elección de esta etapa.")
+
+    destino = f"/progresion/{joven.id}#carta-{competencia_id}"
+    if accion == "reabrir":
+        progresion.reabrir_carta(elegida)
+    elif accion == "cerrar":
+        avance = progresion.avance_de_carta(elegida, progresion.marcas_de(sesion, joven))
+        try:
+            progresion.cerrar_carta(elegida, avance, usuario, nota, confirmado)
+        except progresion.NecesitaConfirmacion:
+            # No se pierde nada ni se rompe la navegación: vuelve a la página
+            # con el aviso abierto sobre esa carta.
+            return redirigir(f"/progresion/{joven.id}?confirmar={competencia_id}#carta-{competencia_id}")
+    else:
+        raise HTTPException(400, "Acción desconocida.")
+
+    sesion.commit()
+    return redirigir(destino)
+
+
+@router.post("/progresion/{joven_id}/etapa")
+def cambiar_etapa(
+    joven_id: int,
+    etapa: str = Form(...),
+    nota: str = Form(""),
+    confirmado: bool = Form(False),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """El paso de etapa. Lo decide el equipo de educadores, siempre."""
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
     if etapa not in ETAPAS:
         raise HTTPException(400, "Etapa desconocida.")
 
-    joven.patrulla_id = int(patrulla_id) if patrulla_id.strip() else None
-    joven.etapa = etapa
+    try:
+        progresion.cambiar_etapa(sesion, joven, etapa, usuario, nota, confirmado)
+    except progresion.NecesitaConfirmacion:
+        return redirigir(f"/progresion/{joven.id}?confirmar=etapa#etapa")
+
     sesion.commit()
-    return redirigir("/jovenes")
+    return redirigir(f"/progresion/{joven.id}#etapa")

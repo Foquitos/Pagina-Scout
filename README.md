@@ -169,6 +169,22 @@ El menú es un `<details>` y no un botón con JavaScript: abre y cierra igual si
 JS, que es la regla de toda la aplicación. Lo único que agrega `app.js` es que se
 cierre al tocar afuera o con Escape, que es comodidad y no funcionamiento.
 
+**El encabezado va de borde a borde de la pantalla; el contenido no.** La barra
+de arriba no se limita a nada, así la marca queda pegada a la izquierda del todo
+y el avatar a la derecha del todo, como en cualquier aplicación. El contenido sí
+tiene tope (`--ancho`, 1400px): a una rejilla de tarjetas el ancho le viene bien
+—entran cuatro columnas en una notebook en vez de dos—, pero a un renglón de
+texto hay que ponerle un final. Por eso hay un segundo tope, `--ancho-lectura`,
+que se aplica solo donde se lee y se escribe: los párrafos de entrada de cada
+sección y los `textarea`. En una tarjeta angosta no cambia nada, porque un
+`max-width` nunca achica lo que ya es más chico.
+
+Las tres cosas que sostienen que el encabezado no se parta en dos renglones:
+`flex-wrap: nowrap` en la barra, `margin-right: auto` en la marca y
+`flex-wrap: wrap` adentro del `<nav>`. Lo que cede cuando no entra todo es la
+navegación, que se acomoda en dos líneas en su propia caja; la marca y el avatar
+se quedan donde están.
+
 Las ilustraciones son **SVG escritos a mano** en `app/static/img/`: el campamento
 de las cabeceras, un dibujo por área de desarrollo (`img/areas/{codigo}.svg`, el
 nombre sale del `codigo` del área en la base) y los de las páginas vacías. Pesan

@@ -31,7 +31,14 @@
   --radio-chico: 12px;
   --sombra: 0 1px 2px rgba(29, 35, 33, .04), 0 10px 24px -16px rgba(29, 35, 33, .35);
   --sombra-alta: 0 2px 4px rgba(29, 35, 33, .05), 0 18px 32px -18px rgba(29, 35, 33, .45);
-  --ancho: 1000px;
+  /* Lo ancho que se deja poner el contenido. Con 1000px una pantalla de
+     notebook quedaba con dos franjas de aire a los costados y las tarjetas
+     apretadas en dos columnas; con esto una rejilla de `minmax(340px, 1fr)`
+     entra en cuatro y la pantalla se usa. Sigue habiendo un tope porque a los
+     renglones de texto hay que ponerles un final: el que los limita de verdad
+     es `--ancho-lectura`, más abajo, en los párrafos que son para leer. */
+  --ancho: 1400px;
+  --ancho-lectura: 70ch;
 }
 
 * { box-sizing: border-box; }
@@ -72,12 +79,19 @@ img { max-width: 100%; }
   color: #fff;
   box-shadow: 0 2px 12px rgba(29, 35, 33, .18);
 }
+/* El encabezado va de borde a borde de la pantalla, no encerrado en el ancho
+   del contenido: la marca pegada a la izquierda y el menú de la cuenta pegado a
+   la derecha del todo, como en cualquier aplicación. El contenido de abajo sí se
+   limita —un renglón de texto de 2000px no lo lee nadie—, pero la barra no.
+
+   `nowrap` es lo que mantiene las tres cosas en un solo renglón. Antes envolvía,
+   y en cuanto no entraban las siete pestañas el usuario se caía abajo del
+   título en vez de quedarse arriba a la derecha. Lo que cede ahora es la
+   navegación, que se parte en dos líneas adentro de su propia caja. */
 .encabezado .interior {
-  max-width: var(--ancho);
-  margin: 0 auto;
-  padding: .6rem 1rem;
+  padding: .6rem 1.4rem;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: .6rem 1rem;
 }
@@ -95,13 +109,16 @@ img { max-width: 100%; }
 .marca svg { width: 30px; height: 30px; flex: none; }
 
 /* La marca empuja: así la navegación y el menú de la cuenta quedan pegados a la
-   derecha, juntos, también cuando la barra se parte en dos líneas. */
-.marca { margin-right: auto; }
+   derecha. `min-width: 0` la deja achicarse antes que romper el renglón. */
+.marca { margin-right: auto; min-width: 0; }
+.marca span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .encabezado nav {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: .3rem;
+  min-width: 0;
 }
 .encabezado nav a {
   display: inline-flex;
@@ -195,16 +212,19 @@ img { max-width: 100%; }
 
 /* --- Estructura ---------------------------------------------- */
 
+/* El mismo respiro lateral que el encabezado, para que la marca de arriba y el
+   contenido de abajo arranquen en la misma línea mientras la pantalla no llegue
+   al tope de `--ancho`. */
 main {
   max-width: var(--ancho);
   margin: 0 auto;
-  padding: 1.4rem 1rem 3rem;
+  padding: 1.4rem 1.4rem 3rem;
 }
 
 .pie {
   max-width: var(--ancho);
   margin: 0 auto;
-  padding: 0 1rem 2.5rem;
+  padding: 0 1.4rem 2.5rem;
   color: var(--tinta-suave);
   font-size: .88rem;
 }
@@ -237,8 +257,19 @@ h2 {
 }
 h3 { font-size: 1.1rem; font-weight: 700; margin: 0 0 .3rem; }
 
-.sub { color: var(--tinta-suave); margin: 0 0 1.2rem; font-size: 1rem; }
-.sub-titulo { color: var(--tinta-suave); margin: -.4rem 0 1rem; }
+/* El texto de arriba de cada página explica de qué va la sección y es para
+   leer, así que se queda angosto aunque la pantalla sea enorme. Las tarjetas y
+   las rejillas de abajo sí aprovechan todo el ancho: ahí no hay renglones
+   largos que seguir, hay bloques. */
+.sub {
+  color: var(--tinta-suave);
+  margin: 0 0 1.2rem;
+  font-size: 1rem;
+  max-width: var(--ancho-lectura);
+}
+.sub-titulo { color: var(--tinta-suave); margin: -.4rem 0 1rem; max-width: var(--ancho-lectura); }
+/* Donde el texto va centrado, el bloque angosto también tiene que ir al medio. */
+.centrado .sub, .centrado .sub-titulo { margin-inline: auto; }
 
 .meta { font-size: .88rem; color: var(--tinta-suave); }
 .meta span + span::before { content: " · "; }
@@ -415,7 +446,10 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--verde);
   box-shadow: 0 0 0 4px rgba(62, 142, 90, .15);
 }
-textarea { min-height: 7rem; resize: vertical; }
+/* Se escribe adentro, así que vale el mismo tope que para leer: un renglón de
+   mil pixeles cuesta de seguir tanto al escribirlo como al leerlo. En una
+   tarjeta angosta no cambia nada, porque el tope nunca la achica. */
+textarea { min-height: 7rem; resize: vertical; max-width: var(--ancho-lectura); }
 ::placeholder { color: #a8a396; }
 
 .fila { display: flex; flex-wrap: wrap; gap: .9rem; }
@@ -1028,8 +1062,6 @@ html.js .solo-sin-js { display: none; }
   .encabezado .interior { padding: .6rem .9rem; }
   /* El menú de la cuenta sí se queda: en el celular es la única puerta a la
      contraseña, al equipo y a cerrar sesión. Lo que cede lugar es el texto. */
-  .marca { min-width: 0; }
-  .marca span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .menu-usuario .nombre { max-width: 5.5rem; }
   .menu-usuario .desplegable { min-width: 13.5rem; }
 

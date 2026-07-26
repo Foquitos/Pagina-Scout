@@ -7,8 +7,11 @@
 .gitignore
 
 .venv/
-__pycache__/
-*.py[cod]
+# Los ** son necesarios: un patrón sin ellos solo matchea en la raíz del
+# contexto, así que `__pycache__/` dejaba pasar app/__pycache__ y scripts/
+# __pycache__ con los .pyc compilados en Windows.
+**/__pycache__
+**/*.py[cod]
 
 # Los 10 capítulos de la guía y las cartas en PDF: documentación para quien
 # desarrolla, nada que el servidor necesite.

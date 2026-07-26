@@ -203,12 +203,27 @@ cambiarla.** Cambiarla es volver a entrar por acá.
 
 ## Actualizar la aplicación
 
-Construir, empujar y pedirle a Azure que se traiga la imagen nueva:
+Tres pasos: construir, empujar, y avisarle a Azure.
 
 ```bash
-docker build -t $IMAGEN .
-docker push $IMAGEN
-az containerapp update --name $APP --resource-group $GRUPO --image $IMAGEN
+SHA=$(git rev-parse --short HEAD)
+docker build -t ghcr.io/$USUARIO_GH/retos-unidad:latest \
+             -t ghcr.io/$USUARIO_GH/retos-unidad:$SHA .
+docker push ghcr.io/$USUARIO_GH/retos-unidad:$SHA
+docker push ghcr.io/$USUARIO_GH/retos-unidad:latest
+az containerapp update --name $APP --resource-group $GRUPO \
+    --image ghcr.io/$USUARIO_GH/retos-unidad:$SHA
+```
+
+**La etiqueta con el commit no es un adorno.** Si se despliega siempre
+`:latest`, `az containerapp update` ve la misma cadena de texto que ya tenía y
+puede no crear una revisión nueva: la aplicación se queda con la imagen vieja y
+no hay ningún error que lo delate. Con una etiqueta distinta por commit el
+despliegue es inequívoco, y además se puede volver atrás apuntando a la
+anterior:
+
+```bash
+az containerapp revision list --name $APP --resource-group $GRUPO --output table
 ```
 
 Las columnas nuevas del esquema las agrega el propio arranque, así que no hay

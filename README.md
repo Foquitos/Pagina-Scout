@@ -381,7 +381,9 @@ patrulla. Usa una base de datos temporal, no toca `scout.db`.
 La aplicación entera entra en un contenedor: `Dockerfile` la arma y
 `docker compose up --build` la levanta igual que va a correr afuera. El paso a
 paso para dejarla andando en Azure Container Apps —dentro del nivel gratuito,
-apagándose sola mientras nadie la usa— está en [DESPLIEGUE.md](DESPLIEGUE.md).
+apagándose sola mientras nadie la usa— está en [DESPLIEGUE.md](DESPLIEGUE.md),
+y el día a día de una que ya está andando —subir un cambio, dar de alta un
+educador, respaldar, volver atrás— en [OPERAR.md](OPERAR.md).
 
 Lo único que hay que montar en un volumen es `/datos-persistentes`: ahí viven
 `scout.db` y las fotos. El resto de la imagen se rehace construyéndola de nuevo.

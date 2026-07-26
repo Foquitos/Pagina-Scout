@@ -2,47 +2,65 @@
 {% block titulo %}Cartas de {{ joven.nombre }}{% endblock %}
 
 {% block contenido %}
+{% set logradas = avances|selectattr('elegida.lograda')|list|length %}
+
 <p class="miga">
   {% if usuario.es_educador %}<a href="/jovenes">← Jóvenes</a>
   {% elif propia %}<a href="/mis-cartas">← Mis cartas</a>
   {% else %}<a href="/mi-patrulla">← Mi patrulla</a>{% endif %}
 </p>
 
-<h1>{% if propia %}Mi recorrido{% else %}{{ joven.nombre }}{% endif %}</h1>
-<p class="sub">
-  Etapa {{ joven.etapa_nombre }}
-  {% if joven.patrulla %} · Patrulla {{ joven.patrulla.nombre }}{% endif %}
-  · {{ avances|length }} de {{ min_cartas }} a {{ max_cartas }} cartas elegidas
-</p>
+<div class="encabezado-tarjeta" style="margin-bottom:1.2rem">
+  <span class="avatar" style="--color: {{ color_de(joven.nombre) }}; width:60px; height:60px; font-size:1.3rem"
+        aria-hidden="true">{{ iniciales(joven.nombre) }}</span>
+  <div>
+    <h1>{% if propia %}Mi recorrido{% else %}{{ joven.nombre }}{% endif %}</h1>
+    <p class="meta">
+      <span>Etapa {{ joven.etapa_nombre }}</span>
+      {% if joven.patrulla %}<span>Patrulla {{ joven.patrulla.nombre }}</span>{% endif %}
+      <span>{{ avances|length }} de {{ min_cartas }} a {{ max_cartas }} cartas</span>
+      {% if logradas %}<span>🏅 {{ logradas }} lograda{{ 's' if logradas != 1 }}</span>{% endif %}
+    </p>
+  </div>
+</div>
 
 {% if not avances %}
-  <p class="vacio">
-    {% if propia %}Todavía no elegiste cartas para esta etapa.
-    {% else %}Todavía no eligió cartas para esta etapa.{% endif %}
-  </p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/cartas.svg" alt="">
+    <strong>
+      {% if propia %}Todavía no elegiste cartas para esta etapa.
+      {% else %}Todavía no eligió cartas para esta etapa.{% endif %}
+    </strong>
+    {% if propia %}<p>Elegí las tuyas y empezá a recorrerlas.</p>
+      <a class="boton grande" href="/mis-cartas">Ir a mis cartas</a>{% endif %}
+  </div>
 {% else %}
   {% if not propia %}
-    <p class="meta">Esto es su progresión personal, no un puntaje. Se mira para
-      acompañar y para conversarlo en el Consejo de Patrulla.</p>
+    <div class="aviso info">
+      <span class="icono" aria-hidden="true">💬</span>
+      <div>Esto es su progresión personal, no un puntaje.
+        <p>Se mira para acompañar y para conversarlo en el Consejo de Patrulla.</p></div>
+    </div>
   {% endif %}
 
   {% for a in avances %}
-    <article class="tarjeta carta {{ 'lograda' if a.elegida.lograda }}">
-      <span class="numero">{{ a.competencia.numero }}</span>
-      <div style="flex:1">
+    {% set area = a.competencia.area %}
+    <article class="tarjeta carta {{ 'lograda' if a.elegida.lograda }}"
+             style="--color: {{ area.color }}; --tono: {{ area.color }}22">
+      <div class="anillo chico" style="--p: {{ a.porcentaje }}; --c: {{ area.color }}">
+        <span>{{ a.requeridos_hechos }}/{{ a.requeridos }}</span>
+      </div>
+      <div>
         <h3>{{ a.competencia.titulo }}</h3>
         <p class="meta">
-          <span>{{ a.competencia.area.icono }} {{ a.competencia.area.nombre }}</span>
-          <span>{{ a.requeridos_hechos }} de {{ a.requeridos }} requeridos</span>
+          <span>{{ area.icono }} {{ area.nombre }}</span>
+          <span>carta {{ a.competencia.numero }}</span>
           {% if a.opcionales_hechos %}<span>+{{ a.opcionales_hechos }} opcionales</span>{% endif %}
         </p>
-        <div class="avance">
-          <div style="width: {{ a.porcentaje }}%; background: {{ a.competencia.area.color }}"></div>
-        </div>
         {% if a.elegida.lograda %}
-          <p><span class="etiqueta aprobada">Lograda</span></p>
+          <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
         {% elif a.completa %}
-          <p class="meta">Cumplió todos los requeridos: la carta está lista para cerrarse.</p>
+          <p class="meta">✔ Cumplió todos los requeridos: la carta está lista para cerrarse.</p>
         {% elif a.sin_empezar %}
           <p class="meta">Sin marcas todavía.</p>
         {% endif %}
@@ -54,7 +72,7 @@
             {% for d in a.competencia.desafios %}
               {% set marca = marcas.get(d.id) %}
               <li class="{{ 'hecho' if marca and marca.hecho }}">
-                <span class="tilde">{{ '✔' if marca and marca.hecho else '·' }}</span>
+                <span class="tilde" aria-hidden="true">{{ '✔' if marca and marca.hecho else '·' }}</span>
                 <div>
                   {{ d.texto }}
                   {% if d.tipo and d.tipo != 'requerido' %}
@@ -62,7 +80,7 @@
                   {% endif %}
                   {% if marca and marca.comentario %}
                     <blockquote class="comentario">{{ marca.comentario }}
-                      <footer class="meta">{{ joven.nombre if not propia else 'Vos' }}
+                      <footer class="meta">{{ 'Vos' if propia else joven.nombre }}
                         · {{ marca.actualizado_en.strftime('%d/%m/%Y') }}</footer>
                     </blockquote>
                   {% endif %}

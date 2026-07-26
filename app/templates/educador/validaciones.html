@@ -2,52 +2,72 @@
 {% block titulo %}Validaciones{% endblock %}
 
 {% block contenido %}
-<h1>Validaciones</h1>
-<p class="sub">Acá no evaluás un examen: acompañás. Ante la duda, prima lo que dice el joven
-sobre su propio proceso.</p>
+<h1>✅ Validaciones</h1>
+<p class="sub">Acá no evaluás un examen: acompañás. Ante la duda, prima lo que dice
+  el joven sobre su propio proceso.</p>
 
+{% set filtros = [
+  ('requiere_revision', '⏳ Para revisar'),
+  ('aprobada', '🎉 Validadas'),
+  ('rechazada', '↩️ Sin validar'),
+  ('todas', 'Todas')
+] %}
 <p class="chips">
-  <a class="chip" href="/validaciones?estado=requiere_revision">Para revisar</a>
-  <a class="chip" href="/validaciones?estado=aprobada">Validadas</a>
-  <a class="chip" href="/validaciones?estado=rechazada">Sin validar</a>
-  <a class="chip" href="/validaciones?estado=todas">Todas</a>
+  {% for valor, texto in filtros %}
+    <a class="chip {{ 'activo' if estado == valor }}" href="/validaciones?estado={{ valor }}">{{ texto }}</a>
+  {% endfor %}
 </p>
 
 {% if not entregas %}
-  <p class="vacio">No hay entregas en este estado.</p>
+  <div class="vacio" style="margin-top:1rem">
+    <img src="/estaticos/img/vacio/carpa.svg" alt="">
+    <strong>No hay entregas en este estado</strong>
+    <p>Cuando alguien entregue un reto, aparece acá.</p>
+  </div>
 {% else %}
   {% for e in entregas %}
   <article class="tarjeta">
-    <h3>{{ e.asignacion.reto.titulo }}</h3>
-    <p class="meta">
-      <span>{{ e.joven.nombre }}</span>
-      {% if e.patrulla %}<span>Patrulla {{ e.patrulla.nombre }}</span>{% endif %}
-      <span>{{ e.enviada_en.strftime('%d/%m/%Y %H:%M') }}</span>
-      <span class="etiqueta {{ e.estado }}">{{ e.estado.replace('_', ' ') }}</span>
-      {% if e.validador %}<span>revisó: {{ e.validador }}</span>{% endif %}
-    </p>
+    <div class="encabezado-tarjeta">
+      <span class="avatar" style="--color: {{ color_de(e.joven.nombre) }}" aria-hidden="true">{{ iniciales(e.joven.nombre) }}</span>
+      <div>
+        <h3>{{ e.asignacion.reto.titulo }}</h3>
+        <p class="meta">
+          <span>{{ e.joven.nombre }}</span>
+          {% if e.patrulla %}<span>Patrulla {{ e.patrulla.nombre }}</span>{% endif %}
+          <span>{{ e.enviada_en.strftime('%d/%m/%Y %H:%M') }}</span>
+          {% if e.validador %}<span>revisó: {{ e.validador }}</span>{% endif %}
+        </p>
+      </div>
+      <span class="etiqueta {{ e.estado }}">
+        {% if e.estado == 'aprobada' %}🎉 Validada
+        {% elif e.estado == 'requiere_revision' %}⏳ Para revisar
+        {% elif e.estado == 'rechazada' %}↩️ Sin validar
+        {% else %}📨 Enviada{% endif %}
+      </span>
+    </div>
 
     {% if e.asignacion.reto.desafio %}
-      <p class="meta">Carta {{ e.asignacion.reto.desafio.competencia.numero }} —
+      <p class="meta">📇 Carta {{ e.asignacion.reto.desafio.competencia.numero }} —
         {{ e.asignacion.reto.desafio.competencia.titulo }}</p>
     {% endif %}
 
     {% if e.texto %}<p>{{ e.texto }}</p>{% endif %}
     {% if e.archivo_foto %}
-      <p><img src="/fotos/{{ e.archivo_foto }}" alt="Evidencia"
-              style="max-width:100%; border-radius:12px"></p>
+      <a href="/fotos/{{ e.archivo_foto }}"><img class="foto" src="/fotos/{{ e.archivo_foto }}" alt="Evidencia"></a>
     {% endif %}
-    {% if e.devolucion %}<p class="meta">Devolución actual: {{ e.devolucion }}</p>{% endif %}
+    {% if e.devolucion %}
+      <div class="comentario">{{ e.devolucion }}<footer class="meta">Devolución actual</footer></div>
+    {% endif %}
 
     <form method="post" action="/validaciones/{{ e.id }}">
       <label for="devolucion-{{ e.id }}">Tu devolución</label>
       <textarea id="devolucion-{{ e.id }}" name="devolucion" style="min-height:4rem"
         placeholder="Qué reconocés de lo que hizo y qué le sugerís para seguir."></textarea>
-      <p style="margin-top:.8rem; display:flex; gap:.5rem; flex-wrap:wrap">
+      <div class="acciones">
         <button type="submit" name="decision" value="aprobar">Validar ({{ e.asignacion.reto.puntaje }} pts)</button>
         <button type="submit" name="decision" value="devolver" class="secundario">Pedir que amplíe</button>
         <button type="submit" name="decision" value="rechazar" class="peligro">No validar</button>
-      </p>
+      </div>
     </form>
   </article>
   {% endfor %}

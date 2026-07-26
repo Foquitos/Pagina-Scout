@@ -2,39 +2,54 @@
 {% block titulo %}Carta {{ competencia.numero }}{% endblock %}
 
 {% block contenido %}
+{% set area = competencia.area %}
 <p class="miga"><a href="/mis-cartas">← Mis cartas</a></p>
 
-<h1>{{ competencia.titulo }}</h1>
-<p class="sub">
-  Carta {{ competencia.numero }} · {{ competencia.area.icono }} {{ competencia.area.nombre }}
-  · etapa {{ usuario.etapa_nombre }}
-</p>
+<div class="encabezado-tarjeta" style="margin-bottom:1rem">
+  <span class="burbuja" aria-hidden="true" style="--tono: {{ area.color }}22">{{ area.icono }}</span>
+  <div>
+    <h1>{{ competencia.titulo }}</h1>
+    <p class="meta">
+      <span>Carta {{ competencia.numero }}</span>
+      <span>{{ area.nombre }}</span>
+      <span>etapa {{ usuario.etapa_nombre }}</span>
+    </p>
+  </div>
+</div>
 
 {% if not elegida %}
-  <div class="aviso">Esta carta no está en tu elección de esta etapa. Elegila para
-    poder ir marcando sus desafíos.</div>
+  <div class="aviso info">
+    <span class="icono" aria-hidden="true">🧭</span>
+    <div><strong>Esta carta no está en tu elección de esta etapa.</strong>
+      <p>Elegila para poder ir marcando sus desafíos.</p></div>
+  </div>
   <form method="post" action="/mis-cartas/{{ competencia.id }}">
-    <button type="submit">Elegir esta carta</button>
+    <button type="submit" class="grande">＋ Elegir esta carta</button>
   </form>
 {% else %}
   <div class="tarjeta">
-    <p class="meta">
-      <span>{{ avance.requeridos_hechos }} de {{ avance.requeridos }} requeridos</span>
-      {% if avance.opcionales_hechos %}<span>+{{ avance.opcionales_hechos }} opcionales</span>{% endif %}
-    </p>
-    <div class="avance">
-      <div style="width: {{ avance.porcentaje }}%; background: {{ competencia.area.color }}"></div>
+    <div class="encabezado-tarjeta">
+      <div class="anillo" style="--p: {{ avance.porcentaje }}; --c: {{ area.color }}">
+        <span>{{ avance.porcentaje }}%</span>
+      </div>
+      <div>
+        <h3>Cómo venís</h3>
+        <p class="meta">
+          <span>{{ avance.requeridos_hechos }} de {{ avance.requeridos }} requeridos</span>
+          {% if avance.opcionales_hechos %}<span>+{{ avance.opcionales_hechos }} opcionales</span>{% endif %}
+        </p>
+        {% if elegida.lograda %}
+          <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
+        {% elif avance.completa %}
+          <p class="meta">🎉 Ya cumpliste todos los requeridos. El cierre se conversa:
+            contale a tu educador/a y a tu patrulla.</p>
+        {% endif %}
+      </div>
     </div>
-    {% if elegida.lograda %}
-      <p><span class="etiqueta aprobada">Lograda</span></p>
-    {% elif avance.completa %}
-      <p class="meta">Ya cumpliste todos los requeridos. El cierre de la carta se
-        conversa: contale a tu educador/a y a tu patrulla.</p>
-    {% endif %}
   </div>
 
-  <h2>Los desafíos</h2>
-  <p class="sub">Marcá lo que hiciste y contá cómo te fue. Lo pueden leer tu
+  <h2>🎯 Los desafíos</h2>
+  <p class="sub-titulo">Marcá lo que hiciste y contá cómo te fue. Lo pueden leer tu
     patrulla y el equipo de educadores.</p>
 
   {% for d in desafios %}
@@ -54,10 +69,10 @@
         <label for="comentario-{{ d.id }}">Cómo me fue (opcional)</label>
         <textarea id="comentario-{{ d.id }}" name="comentario" rows="2"
           placeholder="Qué hiciste, con quién, qué aprendiste o qué te costó.">{{ marca.comentario if marca }}</textarea>
-        <p style="margin-top:.5rem">
+        <div class="acciones">
           <button type="submit" class="secundario">Guardar</button>
           {% if marca %}<span class="meta">guardado el {{ marca.actualizado_en.strftime('%d/%m/%Y') }}</span>{% endif %}
-        </p>
+        </div>
       </form>
     </article>
   {% endfor %}

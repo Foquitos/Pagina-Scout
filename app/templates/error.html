@@ -2,7 +2,10 @@
 {% block titulo %}{{ titulo }}{% endblock %}
 
 {% block contenido %}
-<h1>{{ titulo }}</h1>
-{% if detalle %}<p class="sub">{{ detalle }}</p>{% endif %}
-<p><a class="boton secundario" href="/">Volver al inicio</a></p>
+<div class="vacio" style="margin-top:2rem">
+  <img src="/estaticos/img/vacio/mapa.svg" alt="">
+  <strong>{{ titulo }}</strong>
+  {% if detalle %}<p>{{ detalle }}</p>{% else %}<p>Nos fuimos del sendero. Volvamos al campamento.</p>{% endif %}
+  <a class="boton grande" href="/">Volver al inicio</a>
+</div>
 {% endblock %}

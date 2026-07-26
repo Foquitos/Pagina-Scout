@@ -3,32 +3,63 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}Retos de Unidad{% endblock %}</title>
+  <meta name="theme-color" content="#3E8E5A">
+  <title>{% block titulo %}Retos de Unidad{% endblock %} · Retos de Unidad</title>
   <link rel="stylesheet" href="/estaticos/estilos.css">
+  <link rel="icon" href="/estaticos/img/areas/habilidades_vida.svg">
 </head>
 <body>
+
+{# Un solo listado de secciones: lo usan la barra de arriba y la de abajo. #}
+{% set ruta = request.url.path %}
+{% if usuario and usuario.es_educador %}
+  {% set enlaces = [
+    {'href': '/panel',        'icono': '🏕️', 'texto': 'Panel',     'prefijos': ['/panel']},
+    {'href': '/validaciones', 'icono': '✅',  'texto': 'Validar',   'prefijos': ['/validaciones']},
+    {'href': '/retos',        'icono': '🎯',  'texto': 'Retos',     'prefijos': ['/retos']},
+    {'href': '/asignar',      'icono': '📅',  'texto': 'Asignar',   'prefijos': ['/asignar']},
+    {'href': '/patrullas',    'icono': '🤝',  'texto': 'Patrullas', 'prefijos': ['/patrullas', '/libro-de-oro']},
+    {'href': '/jovenes',      'icono': '🧭',  'texto': 'Jóvenes',   'prefijos': ['/jovenes', '/cartas-de']},
+    {'href': '/tablero',      'icono': '🏆',  'texto': 'Tablero',   'prefijos': ['/tablero']}
+  ] %}
+{% else %}
+  {% set enlaces = [
+    {'href': '/hoy',         'icono': '🏕️', 'texto': 'Hoy',      'prefijos': ['/hoy', '/reto']},
+    {'href': '/mis-retos',   'icono': '✅',  'texto': 'Retos',    'prefijos': ['/mis-retos']},
+    {'href': '/mis-cartas',  'icono': '🧭',  'texto': 'Cartas',   'prefijos': ['/mis-cartas', '/cartas-de']},
+    {'href': '/mi-patrulla', 'icono': '🤝',  'texto': 'Patrulla', 'prefijos': ['/mi-patrulla']},
+    {'href': '/libro-de-oro','icono': '📖',  'texto': 'Libro',    'prefijos': ['/libro-de-oro']},
+    {'href': '/bitacora',    'icono': '📓',  'texto': 'Bitácora', 'prefijos': ['/bitacora']},
+    {'href': '/tablero',     'icono': '🏆',  'texto': 'Tablero',  'prefijos': ['/tablero']}
+  ] %}
+{% endif %}
+
+{% macro clase_activa(enlace, ruta) -%}
+  {%- set ns = namespace(si=false) -%}
+  {%- for p in enlace.prefijos -%}
+    {%- if ruta == p or ruta.startswith(p ~ '/') -%}{%- set ns.si = true -%}{%- endif -%}
+  {%- endfor -%}
+  {{- 'activo' if ns.si -}}
+{%- endmacro %}
+
 <header class="encabezado">
   <div class="interior">
-    <span class="marca">⚜ Retos de Unidad</span>
+    <a class="marca" href="/">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="3.5"/>
+        <path d="M33 15 26.5 26.5 15 33l6.5-11.5z" fill="currentColor"/>
+        <circle cx="24" cy="24" r="3" fill="var(--verde-oscuro, #2c6a42)"/>
+      </svg>
+      <span>Retos de Unidad</span>
+    </a>
     {% if usuario %}
-    <nav>
-      {% if usuario.es_educador %}
-        <a href="/panel">Panel</a>
-        <a href="/validaciones">Validaciones</a>
-        <a href="/retos">Retos</a>
-        <a href="/asignar">Asignar</a>
-        <a href="/patrullas">Patrullas</a>
-        <a href="/jovenes">Jóvenes</a>
-      {% else %}
-        <a href="/hoy">Hoy</a>
-        <a href="/mis-retos">Mis retos</a>
-        <a href="/mis-cartas">Mis cartas</a>
-        <a href="/mi-patrulla">Mi patrulla</a>
-        <a href="/libro-de-oro">Libro de Oro</a>
-        <a href="/bitacora">Bitácora</a>
-      {% endif %}
-      <a href="/tablero">Tablero</a>
-      <a href="/salir">Salir</a>
+    <nav aria-label="Secciones">
+      {% for e in enlaces %}
+        <a href="{{ e.href }}" class="{{ clase_activa(e, ruta) }}">
+          <span class="icono" aria-hidden="true">{{ e.icono }}</span>{{ e.texto }}
+        </a>
+      {% endfor %}
+      <a href="/salir" class="salir">Salir</a>
     </nav>
     {% endif %}
   </div>
@@ -39,7 +70,28 @@
 </main>
 
 <footer class="pie">
-  {% if usuario %}<p>{{ usuario.nombre }}{% if usuario.patrulla %} · Patrulla {{ usuario.patrulla.nombre }}{% endif %}{% if not usuario.es_educador %} · Etapa {{ usuario.etapa_nombre }}{% endif %}</p>{% endif %}
+  {% if usuario %}
+  <div class="interior">
+    <span class="avatar chico" style="--color: {{ color_de(usuario.nombre) }}" aria-hidden="true">{{ iniciales(usuario.nombre) }}</span>
+    <span>
+      <strong>{{ usuario.nombre }}</strong>
+      {% if usuario.patrulla %} · Patrulla {{ usuario.patrulla.nombre }}{% endif %}
+      {% if not usuario.es_educador %} · Etapa {{ usuario.etapa_nombre }}{% endif %}
+    </span>
+  </div>
+  {% endif %}
 </footer>
+
+{% if usuario %}
+<nav class="barra-movil" aria-label="Secciones">
+  {% for e in enlaces %}
+    <a href="{{ e.href }}" class="{{ clase_activa(e, ruta) }}">
+      <span class="icono" aria-hidden="true">{{ e.icono }}</span>
+      <span class="texto">{{ e.texto }}</span>
+    </a>
+  {% endfor %}
+</nav>
+{% endif %}
+
 </body>
 </html>

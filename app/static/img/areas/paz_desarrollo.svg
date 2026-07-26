@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Paz y desarrollo">
+  <circle cx="80" cy="80" r="72" fill="#2E86AB" fill-opacity=".12"/>
+  <circle cx="80" cy="80" r="46" fill="#2E86AB"/>
+  <g fill="none" stroke="#fff" stroke-width="5" stroke-opacity=".85">
+    <ellipse cx="80" cy="80" rx="21" ry="46"/>
+    <path d="M38 62h84M38 98h84"/>
+  </g>
+  <path fill="#4aa86c" stroke="#fff" stroke-width="4" stroke-linejoin="round"
+        d="M104 118c14-2 26-14 28-30-16-2-30 8-32 22-8 4-12 10-13 17l6 1c1-5 4-8 11-10z"/>
+</svg>

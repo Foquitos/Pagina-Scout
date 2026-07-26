@@ -2,77 +2,94 @@
 {% block titulo %}Jóvenes{% endblock %}
 
 {% block contenido %}
-<h1>Jóvenes de la Unidad</h1>
-<p class="sub">Cada ingreso se hace con usuario y contraseña propios. No pedimos ni guardamos
-datos personales más allá del nombre.</p>
+<h1>🧭 Jóvenes de la Unidad</h1>
+<p class="sub">Cada ingreso se hace con usuario y contraseña propios. No pedimos ni
+  guardamos datos personales más allá del nombre.</p>
 
-<form method="post" action="/jovenes" class="tarjeta">
-  <h3>Dar de alta</h3>
-  <div class="fila">
-    <div>
-      <label for="nombre">Nombre</label>
-      <input type="text" id="nombre" name="nombre" required>
+<details class="tarjeta" {{ 'open' if not jovenes }}>
+  <summary>➕ Dar de alta</summary>
+  <form method="post" action="/jovenes">
+    <div class="fila">
+      <div>
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required>
+      </div>
+      <div>
+        <label for="usuario_nuevo">Usuario</label>
+        <input type="text" id="usuario_nuevo" name="usuario_nuevo" required autocapitalize="none">
+      </div>
+      <div>
+        <label for="clave">Contraseña inicial</label>
+        <input type="text" id="clave" name="clave" required>
+      </div>
     </div>
-    <div>
-      <label for="usuario_nuevo">Usuario</label>
-      <input type="text" id="usuario_nuevo" name="usuario_nuevo" required autocapitalize="none">
+    <div class="fila">
+      <div>
+        <label for="patrulla_id">Patrulla</label>
+        <select id="patrulla_id" name="patrulla_id">
+          <option value="">— sin patrulla —</option>
+          {% for p in patrullas %}<option value="{{ p.id }}">{{ p.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="etapa">Etapa de progresión</label>
+        <select id="etapa" name="etapa">
+          {% for e in etapas %}<option value="{{ e }}">{{ ETAPAS_NOMBRE[e] }}</option>{% endfor %}
+        </select>
+      </div>
     </div>
-    <div>
-      <label for="clave">Contraseña inicial</label>
-      <input type="text" id="clave" name="clave" required>
-    </div>
-  </div>
-  <div class="fila">
-    <div>
-      <label for="patrulla_id">Patrulla</label>
-      <select id="patrulla_id" name="patrulla_id">
-        <option value="">— sin patrulla —</option>
-        {% for p in patrullas %}<option value="{{ p.id }}">{{ p.nombre }}</option>{% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="etapa">Etapa de progresión</label>
-      <select id="etapa" name="etapa">
-        {% for e in etapas %}<option value="{{ e }}">{{ ETAPAS_NOMBRE[e] }}</option>{% endfor %}
-      </select>
-    </div>
-  </div>
-  <p style="margin-top:1rem"><button type="submit">Crear</button></p>
-</form>
+    <p style="margin-top:1.2rem"><button type="submit" class="grande">Crear</button></p>
+  </form>
+</details>
 
 {% if not jovenes %}
-  <p class="vacio">Todavía no hay jóvenes cargados.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/patrulla.svg" alt="">
+    <strong>Todavía no hay jóvenes cargados</strong>
+    <p>Dales de alta y entregales su usuario y contraseña.</p>
+  </div>
 {% else %}
-<table>
-  <thead><tr><th>Nombre</th><th>Usuario</th><th>Patrulla y etapa</th><th>Progresión</th></tr></thead>
-  <tbody>
+  <div class="rejilla">
     {% for j in jovenes %}
-    <tr>
-      <td>{{ j.nombre }}</td>
-      <td class="meta">{{ j.usuario }}</td>
-      <td>
-        <form method="post" action="/jovenes/{{ j.id }}" style="display:flex; gap:.4rem; flex-wrap:wrap">
-          <select name="patrulla_id" style="flex:1 1 8rem">
-            <option value="">— sin patrulla —</option>
-            {% for p in patrullas %}
-              <option value="{{ p.id }}" {{ 'selected' if p.id == j.patrulla_id }}>{{ p.nombre }}</option>
-            {% endfor %}
-          </select>
-          <select name="etapa" style="flex:1 1 7rem">
-            {% for e in etapas %}
-              <option value="{{ e }}" {{ 'selected' if e == j.etapa }}>{{ ETAPAS_NOMBRE[e] }}</option>
-            {% endfor %}
-          </select>
+    <article class="tarjeta">
+      <div class="encabezado-tarjeta">
+        <span class="avatar" style="--color: {{ color_de(j.nombre) }}" aria-hidden="true">{{ iniciales(j.nombre) }}</span>
+        <div>
+          <h3>{{ j.nombre }} {% if not j.activo %}<span class="etiqueta">inactivo</span>{% endif %}</h3>
+          <p class="meta">
+            <span>usuario: {{ j.usuario }}</span>
+            <span>{{ ETAPAS_NOMBRE[j.etapa] }}</span>
+          </p>
+        </div>
+      </div>
+
+      <form method="post" action="/jovenes/{{ j.id }}">
+        <div class="fila">
+          <div>
+            <label for="patrulla-{{ j.id }}">Patrulla</label>
+            <select id="patrulla-{{ j.id }}" name="patrulla_id">
+              <option value="">— sin patrulla —</option>
+              {% for p in patrullas %}
+                <option value="{{ p.id }}" {{ 'selected' if p.id == j.patrulla_id }}>{{ p.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="etapa-{{ j.id }}">Etapa</label>
+            <select id="etapa-{{ j.id }}" name="etapa">
+              {% for e in etapas %}
+                <option value="{{ e }}" {{ 'selected' if e == j.etapa }}>{{ ETAPAS_NOMBRE[e] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="acciones">
           <button type="submit" class="secundario">Guardar</button>
-        </form>
-      </td>
-      <td>
-        <a href="/cartas-de/{{ j.id }}">Ver cartas</a>
-        {% if not j.activo %}<span class="etiqueta">inactivo</span>{% endif %}
-      </td>
-    </tr>
+          <a class="boton secundario" href="/cartas-de/{{ j.id }}">Ver sus cartas →</a>
+        </div>
+      </form>
+    </article>
     {% endfor %}
-  </tbody>
-</table>
+  </div>
 {% endif %}
 {% endblock %}

@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import CLAVE_SECRETA, DIR_ESTATICOS, DIR_SUBIDAS
+from app.db import SesionLocal
 from app.dependencias import RedireccionAIngreso, plantillas, usuario_actual
 from app.models import Usuario
 from app.routers import api, auth, educador, joven
@@ -50,12 +51,37 @@ def _sin_sesion(request: Request, exc: RedireccionAIngreso):
     return RedirectResponse(exc.destino, status_code=303)
 
 
+def _usuario_de_sesion(request: Request) -> Usuario | None:
+    """Quién está mirando la página de error, para no perder la navegación.
+
+    Se abre una sesión propia porque las dependencias no corren acá. Si algo
+    falla, la página de error igual tiene que salir: por eso el try.
+    """
+    id_usuario = request.session.get("usuario_id") if "session" in request.scope else None
+    if id_usuario is None:
+        return None
+    try:
+        with SesionLocal() as sesion:
+            usuario = sesion.get(Usuario, id_usuario)
+            if usuario is not None:
+                # El pie de página muestra la patrulla: hay que traerla mientras
+                # la sesión sigue abierta, porque afuera ya no se puede.
+                _ = usuario.patrulla
+            return usuario
+    except Exception:  # noqa: BLE001 — la página de error nunca debe romperse
+        return None
+
+
 @app.exception_handler(403)
 def _sin_permiso(request: Request, exc):
     return plantillas.TemplateResponse(
         request,
         "error.html",
-        {"titulo": "No tenés acceso a esta página", "detalle": getattr(exc, "detail", "")},
+        {
+            "titulo": "No tenés acceso a esta página",
+            "detalle": getattr(exc, "detail", ""),
+            "usuario": _usuario_de_sesion(request),
+        },
         status_code=403,
     )
 
@@ -67,6 +93,10 @@ def _no_encontrado(request: Request, exc):
     return plantillas.TemplateResponse(
         request,
         "error.html",
-        {"titulo": "No encontramos eso", "detalle": getattr(exc, "detail", "")},
+        {
+            "titulo": "No encontramos eso",
+            "detalle": getattr(exc, "detail", ""),
+            "usuario": _usuario_de_sesion(request),
+        },
         status_code=404,
     )

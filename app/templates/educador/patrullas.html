@@ -2,44 +2,58 @@
 {% block titulo %}Patrullas{% endblock %}
 
 {% block contenido %}
-<h1>Patrullas</h1>
-<p class="sub">La guía recomienda entre 5 y 8 integrantes, pero el número lo deciden ellas y ellos:
-lo que importa es la cohesión, no el tamaño.</p>
+<h1>🤝 Patrullas</h1>
+<p class="sub">La guía recomienda entre 5 y 8 integrantes, pero el número lo deciden
+  ellas y ellos: lo que importa es la cohesión, no el tamaño.</p>
 
-<form method="post" action="/patrullas" class="tarjeta">
-  <h3>Nueva patrulla</h3>
-  <div class="fila">
-    <div>
-      <label for="nombre">Nombre</label>
-      <input type="text" id="nombre" name="nombre" required placeholder="Halcones">
+<details class="tarjeta" {{ 'open' if not patrullas }}>
+  <summary>➕ Crear una patrulla</summary>
+  <form method="post" action="/patrullas">
+    <div class="fila">
+      <div>
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required placeholder="Halcones">
+      </div>
+      <div>
+        <label for="color">Color</label>
+        <input type="color" id="color" name="color" value="#3E8E5A" style="height:3rem; padding:.2rem">
+      </div>
     </div>
-    <div>
-      <label for="color">Color</label>
-      <input type="text" id="color" name="color" value="#3E8E5A" placeholder="#3E8E5A">
-    </div>
-  </div>
-  <label for="lema">Lema</label>
-  <input type="text" id="lema" name="lema" placeholder="Siempre más alto">
-  <p style="margin-top:1rem"><button type="submit">Crear</button></p>
-</form>
+    <label for="lema">Lema</label>
+    <input type="text" id="lema" name="lema" placeholder="Siempre más alto">
+    <p style="margin-top:1.2rem"><button type="submit" class="grande">Crear patrulla</button></p>
+  </form>
+</details>
 
 {% if not patrullas %}
-  <p class="vacio">Todavía no hay patrullas.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/patrulla.svg" alt="">
+    <strong>Todavía no hay patrullas</strong>
+    <p>Es lo primero: sin patrulla, los puntos no tienen dónde ir.</p>
+  </div>
 {% else %}
-  {% for p in patrullas %}
-  <article class="tarjeta" style="border-left: 5px solid {{ p.color }}">
-    <h3>{{ p.nombre }}</h3>
-    {% if p.lema %}<p class="meta">{{ p.lema }}</p>{% endif %}
-    <p class="meta"><span>{{ p.integrantes|length }} integrantes</span></p>
-    {% if p.integrantes %}
-      <p class="chips">
-        {% for i in p.integrantes %}<span class="chip">{{ i.nombre }}</span>{% endfor %}
-      </p>
-    {% endif %}
-    <p style="margin-top:.7rem">
-      <a class="boton secundario" href="/libro-de-oro/{{ p.id }}">Libro de Oro</a>
-    </p>
-  </article>
-  {% endfor %}
+  <div class="rejilla">
+    {% for p in patrullas %}
+    <article class="tarjeta" style="border-left: 6px solid {{ p.color }}">
+      <h3>{{ p.nombre }}</h3>
+      {% if p.lema %}<p class="meta">«{{ p.lema }}»</p>{% endif %}
+      <p class="meta">{{ p.integrantes|length }} integrante{{ 's' if p.integrantes|length != 1 }}</p>
+      {% if p.integrantes %}
+        <p class="chips">
+          {% for i in p.integrantes %}
+            <span class="chip" style="display:inline-flex; align-items:center; gap:.35rem; padding-left:.25rem">
+              <span class="avatar chico" style="--color: {{ color_de(i.nombre) }}; width:24px; height:24px; font-size:.62rem"
+                    aria-hidden="true">{{ iniciales(i.nombre) }}</span>
+              {{ i.nombre }}
+            </span>
+          {% endfor %}
+        </p>
+      {% endif %}
+      <div class="acciones">
+        <a class="boton secundario" href="/libro-de-oro/{{ p.id }}">📖 Libro de Oro</a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
 {% endif %}
 {% endblock %}

@@ -2,20 +2,25 @@
 {% block titulo %}Libro de Oro · {{ patrulla.nombre }}{% endblock %}
 
 {% block contenido %}
-<h1>Libro de Oro de {{ patrulla.nombre }}</h1>
-<p class="sub">
-  {% if patrulla.lema %}«{{ patrulla.lema }}» · {% endif %}
-  {{ entradas|length }} página{{ 's' if entradas|length != 1 }}
-  {% if con_foto %}· {{ con_foto }} con foto{% endif %}
-  {% if con_video %}· {{ con_video }} con video{% endif %}
-</p>
+{% if usuario.es_educador %}<p class="miga"><a href="/patrullas">← Patrullas</a></p>{% endif %}
 
-<p class="meta">Lo que la patrulla quiere recordar: campamentos, salidas, la
-  primera fogata, el día que salió mal. Lo escriben ustedes y lo leen ustedes
-  {% if not usuario.es_educador %}y el equipo de educadores{% endif %}.</p>
+<div class="portada" style="background: linear-gradient(135deg, #d9b95e 0%, #a3801f 100%)">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>📖 Libro de Oro</h1>
+  <p class="sub">Patrulla {{ patrulla.nombre }}{% if patrulla.lema %} · «{{ patrulla.lema }}»{% endif %}</p>
+  <div class="pastillas">
+    <span class="pastilla"><span aria-hidden="true">📄</span> <span class="valor">{{ entradas|length }}</span> <small>página{{ 's' if entradas|length != 1 }}</small></span>
+    {% if con_foto %}<span class="pastilla"><span aria-hidden="true">📷</span> <span class="valor">{{ con_foto }}</span> <small>con foto</small></span>{% endif %}
+    {% if con_video %}<span class="pastilla"><span aria-hidden="true">🎬</span> <span class="valor">{{ con_video }}</span> <small>con video</small></span>{% endif %}
+  </div>
+</div>
 
-<details class="tarjeta explicacion" {{ 'open' if not entradas }}>
-  <summary>Escribir una página</summary>
+<p class="sub-titulo">Lo que la patrulla quiere recordar: campamentos, salidas, la
+  primera fogata, el día que salió mal. Lo escriben ustedes y lo leen ustedes{% if not usuario.es_educador %}
+  y el equipo de educadores{% endif %}.</p>
+
+<details class="tarjeta" {{ 'open' if not entradas }}>
+  <summary>✍️ Escribir una página</summary>
   <form method="post" action="/libro-de-oro/{{ patrulla.id }}" enctype="multipart/form-data">
     <label for="titulo">Título</label>
     <input type="text" id="titulo" name="titulo" required maxlength="200"
@@ -27,49 +32,54 @@
 
     <div class="fila">
       <div>
-        <label for="fecha">Fecha del recuerdo</label>
+        <label for="fecha">📅 Fecha del recuerdo</label>
         <input type="date" id="fecha" name="fecha" value="{{ hoy.isoformat() }}">
       </div>
       <div>
-        <label for="foto">Una foto</label>
+        <label for="foto">📷 Una foto</label>
         <input type="file" id="foto" name="foto" accept="image/*">
-        <p class="meta">Se achica sola antes de guardarse. No hace falta que la
-          reduzcas vos.</p>
+        <p class="meta">Se achica sola antes de guardarse.</p>
       </div>
     </div>
 
-    <label for="video">Enlace a un video (opcional)</label>
+    <label for="video">🎬 Enlace a un video (opcional)</label>
     <input type="text" id="video" name="video" inputmode="url"
-           placeholder="https://youtu.be/... o https://vimeo.com/...">
-    <p class="meta">El video no se sube acá: se guarda el enlace y se ve el
-      reproductor de YouTube o Vimeo. Subilo ahí como <strong>no listado</strong>
-      —así no aparece en búsquedas y solo entra quien tiene el link— y pegá la
-      dirección.</p>
+           placeholder="https://youtu.be/… o https://vimeo.com/…">
+    <p class="meta">Subilo a YouTube o Vimeo como <strong>no listado</strong> y pegá acá la
+      dirección: así solo entra quien tiene el link.</p>
 
-    <p style="margin-top:1rem"><button type="submit">Agregar al libro</button></p>
+    <p style="margin-top:1.2rem"><button type="submit" class="grande">Agregar al libro 📖</button></p>
   </form>
 </details>
 
 {% if not entradas %}
-  <p class="vacio">El libro está en blanco. La primera página la escribe quien se anime.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/libro.svg" alt="">
+    <strong>El libro está en blanco</strong>
+    <p>La primera página la escribe quien se anime.</p>
+  </div>
 {% else %}
   {% for e in entradas %}
     {% set v = video(e.video_servicio, e.video_id) %}
     <article class="tarjeta pagina-libro">
-      <h3>{{ e.titulo }}</h3>
-      <p class="meta">
-        <span>{{ e.fecha.strftime('%d/%m/%Y') }}</span>
-        {% if e.autor %}<span>{{ e.autor.nombre }}</span>{% endif %}
+      <span class="cinta-fecha"><span aria-hidden="true">📅</span> {{ e.fecha.strftime('%d/%m/%Y') }}</span>
+      <h3 style="margin-top:.5rem">{{ e.titulo }}</h3>
+
+      {% if e.autor %}
+      <p class="meta" style="display:flex; align-items:center; gap:.5rem">
+        <span class="avatar chico" style="--color: {{ color_de(e.autor.nombre) }}" aria-hidden="true">{{ iniciales(e.autor.nombre) }}</span>
+        {{ e.autor.nombre }}
       </p>
+      {% endif %}
 
       {% if e.archivo_foto %}
         <a href="/fotos/{{ e.archivo_foto }}">
-          <img class="foto-libro" src="/fotos/{{ e.archivo_foto }}" alt="{{ e.titulo }}" loading="lazy">
+          <img class="foto" src="/fotos/{{ e.archivo_foto }}" alt="{{ e.titulo }}" loading="lazy">
         </a>
       {% endif %}
 
       {% if v %}
-        <div class="video-libro">
+        <div class="marco-video">
           <iframe src="{{ v.embed }}" title="{{ e.titulo }}" loading="lazy"
             allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture"
             referrerpolicy="strict-origin-when-cross-origin"
@@ -81,8 +91,9 @@
 
       {% if usuario.es_educador or e.autor_id == usuario.id %}
         <form method="post" action="/libro-de-oro/{{ patrulla.id }}/{{ e.id }}/borrar"
-              onsubmit="return confirm('¿Borrar esta página del libro? No se puede deshacer.')">
-          <button type="submit" class="secundario">Borrar</button>
+              onsubmit="return confirm('¿Borrar esta página del libro? No se puede deshacer.')"
+              class="acciones">
+          <button type="submit" class="secundario">Borrar página</button>
         </form>
       {% endif %}
     </article>

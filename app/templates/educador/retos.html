@@ -2,73 +2,89 @@
 {% block titulo %}Retos{% endblock %}
 
 {% block contenido %}
-<h1>Retos de la Unidad</h1>
+<h1>🎯 Retos de la Unidad</h1>
 <p class="sub">Podés partir de un desafío de las Cartas de Exploración o escribir uno propio.</p>
 
-<form method="post" action="/retos" class="tarjeta">
-  <h3>Nuevo reto</h3>
+<details class="tarjeta" {{ 'open' if not retos }}>
+  <summary>➕ Crear un reto nuevo</summary>
+  <form method="post" action="/retos">
+    <label for="titulo">Título</label>
+    <input type="text" id="titulo" name="titulo" required
+           placeholder="Hacé un nudo margarita y explicá para qué sirve">
 
-  <label for="titulo">Título</label>
-  <input type="text" id="titulo" name="titulo" required
-         placeholder="Hacé un nudo margarita y explicá para qué sirve">
+    <label for="consigna">Consigna</label>
+    <textarea id="consigna" name="consigna" required
+      placeholder="Qué tiene que hacer, qué evidencia esperás y cualquier ayuda o material."></textarea>
 
-  <label for="consigna">Consigna</label>
-  <textarea id="consigna" name="consigna" required
-    placeholder="Qué tiene que hacer, qué evidencia esperás y cualquier ayuda o material."></textarea>
-
-  <div class="fila">
-    <div>
-      <label for="desafio_id">Desafío de una carta (opcional)</label>
-      <select id="desafio_id" name="desafio_id">
-        <option value="">— reto propio, sin carta —</option>
-        {% for c in competencias %}
-          <optgroup label="{{ c.numero }}. {{ c.titulo[:70] }}">
-            {% for d in c.desafios %}
-              <option value="{{ d.id }}">[{{ d.tipo_nombre or 'sin clasificar' }}] {{ d.texto[:100] }}</option>
-            {% endfor %}
-          </optgroup>
-        {% endfor %}
-      </select>
+    <div class="fila">
+      <div>
+        <label for="desafio_id">Desafío de una carta (opcional)</label>
+        <select id="desafio_id" name="desafio_id">
+          <option value="">— reto propio, sin carta —</option>
+          {% for c in competencias %}
+            <optgroup label="{{ c.numero }}. {{ c.titulo[:70] }}">
+              {% for d in c.desafios %}
+                <option value="{{ d.id }}">[{{ d.tipo_nombre or 'sin clasificar' }}] {{ d.texto[:100] }}</option>
+              {% endfor %}
+            </optgroup>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="area_id">Área (si no elegís carta)</label>
+        <select id="area_id" name="area_id">
+          <option value="">— sin área —</option>
+          {% for a in areas %}<option value="{{ a.id }}">{{ a.icono }} {{ a.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="puntaje">Puntos para la patrulla</label>
+        <input type="number" id="puntaje" name="puntaje" value="{{ puntaje_defecto }}" min="0" max="100">
+      </div>
     </div>
-    <div>
-      <label for="area_id">Área (si no elegís carta)</label>
-      <select id="area_id" name="area_id">
-        <option value="">— sin área —</option>
-        {% for a in areas %}<option value="{{ a.id }}">{{ a.icono }} {{ a.nombre }}</option>{% endfor %}
-      </select>
-    </div>
-    <div>
-      <label for="puntaje">Puntos para la patrulla</label>
-      <input type="number" id="puntaje" name="puntaje" value="{{ puntaje_defecto }}" min="0" max="100">
-    </div>
-  </div>
 
-  <div class="fila" style="margin-top:.8rem">
-    <label class="casilla"><input type="checkbox" name="pide_texto" value="true" checked> Pedir relato escrito</label>
-    <label class="casilla"><input type="checkbox" name="pide_foto" value="true"> Pedir foto</label>
-  </div>
+    <div class="fila" style="margin-top:.8rem">
+      <label class="casilla"><input type="checkbox" name="pide_texto" value="true" checked> 📝 Pedir relato escrito</label>
+      <label class="casilla"><input type="checkbox" name="pide_foto" value="true"> 📷 Pedir foto</label>
+    </div>
 
-  <p style="margin-top:1rem"><button type="submit">Crear reto</button></p>
-</form>
+    <p style="margin-top:1rem"><button type="submit" class="grande">Crear reto</button></p>
+  </form>
+</details>
 
 <h2>Retos disponibles</h2>
 {% if not retos %}
-  <p class="vacio">Todavía no creaste ninguno.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/brujula.svg" alt="">
+    <strong>Todavía no creaste ninguno</strong>
+    <p>Mientras tanto, la aplicación propone cada día un desafío de las cartas.</p>
+  </div>
 {% else %}
-  {% for r in retos %}
-  <article class="tarjeta">
-    <h3>{{ r.titulo }}</h3>
-    <p class="meta">
-      {% if r.area %}<span>{{ r.area.icono }} {{ r.area.nombre }}</span>{% endif %}
-      <span>{{ r.puntaje }} pts</span>
-      <span>{{ 'de carta' if r.tipo == 'carta' else 'propio' }}</span>
-      {% if r.pide_foto %}<span>pide foto</span>{% endif %}
-    </p>
-    <p>{{ r.consigna }}</p>
-    <form method="post" action="/retos/{{ r.id }}/archivar">
-      <button type="submit" class="secundario">Archivar</button>
-    </form>
-  </article>
-  {% endfor %}
+  <div class="rejilla">
+    {% for r in retos %}
+    <article class="tarjeta">
+      <div class="encabezado-tarjeta">
+        <span class="burbuja chica" aria-hidden="true"
+              {% if r.area %}style="--tono: {{ r.area.color }}22"{% endif %}>{{ r.area.icono if r.area else '🎯' }}</span>
+        <div>
+          <h3>{{ r.titulo }}</h3>
+          <p class="meta">
+            {% if r.area %}<span>{{ r.area.nombre }}</span>{% endif %}
+            <span>{{ r.puntaje }} pts</span>
+            <span>{{ 'de carta' if r.tipo == 'carta' else 'propio' }}</span>
+          </p>
+        </div>
+      </div>
+      <p>{{ r.consigna }}</p>
+      <p class="chips">
+        {% if r.pide_texto %}<span class="chip">📝 pide relato</span>{% endif %}
+        {% if r.pide_foto %}<span class="chip">📷 pide foto</span>{% endif %}
+      </p>
+      <form method="post" action="/retos/{{ r.id }}/archivar" class="acciones">
+        <button type="submit" class="secundario">Archivar</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
 {% endif %}
 {% endblock %}

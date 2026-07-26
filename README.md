@@ -49,6 +49,9 @@ app/
     puntajes.py      tablero de patrullas y rachas
     progresion.py    cartas elegidas y avance de cada joven
     medios.py        compresión de fotos y enlaces de video
+  static/
+    estilos.css      la hoja de estilos, sin framework ni build
+    img/             las ilustraciones (SVG hechos a mano, ver abajo)
 datos/
   cartas_exploracion.json   las 53 competencias y sus 376 desafíos
 scripts/
@@ -82,6 +85,23 @@ automático deja de aparecer.
 **Los puntos quedan en la patrulla donde se ganaron.** Cada entrega guarda una
 copia del `patrulla_id` del momento; si el joven se cambia de patrulla después,
 el historial no se mueve con él.
+
+## La pantalla
+
+Quien usa esto tiene entre 10 y 14 años y entra desde el celular, así que la
+navegación de verdad es la **barra de abajo** con las siete secciones; en
+pantalla ancha esa misma lista se muestra arriba como pestañas. Sale de un solo
+listado en `base.html`, así que no hay dos menús que mantener sincronizados.
+
+Las ilustraciones son **SVG escritos a mano** en `app/static/img/`: el campamento
+de las cabeceras, un dibujo por área de desarrollo (`img/areas/{codigo}.svg`, el
+nombre sale del `codigo` del área en la base) y los de las páginas vacías. Pesan
+unos pocos kB, se ven bien en cualquier pantalla y no dependen de ningún CDN:
+la aplicación no pide un solo byte a un servidor ajeno.
+
+No hay framework de CSS ni paso de build: `estilos.css` es un archivo, y las
+plantillas usan sus clases. Los emojis hacen de íconos, igual que en el resto
+del programa —cada área ya tenía el suyo en la base de datos—.
 
 ## La progresión personal
 

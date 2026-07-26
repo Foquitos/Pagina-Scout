@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 170" role="img" aria-label="Una brújula">
+  <ellipse cx="110" cy="152" rx="66" ry="10" fill="#3E8E5A" fill-opacity=".12"/>
+  <circle cx="110" cy="82" r="62" fill="#3E8E5A" fill-opacity=".12"/>
+  <circle cx="110" cy="82" r="50" fill="#fff" stroke="#3E8E5A" stroke-width="6"/>
+  <g stroke="#3E8E5A" stroke-opacity=".4" stroke-width="4" stroke-linecap="round">
+    <path d="M110 42v8M110 114v8M70 82h8M142 82h8"/>
+  </g>
+  <path fill="#D64550" d="m134 58-14 28 -28 14 14-28z"/>
+  <path fill="#2c6a42" d="m86 106 14-28 28-14-14 28z"/>
+  <circle cx="110" cy="82" r="6" fill="#fff" stroke="#2c6a42" stroke-width="4"/>
+</svg>

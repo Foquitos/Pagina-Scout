@@ -2,30 +2,51 @@
 {% block titulo %}Bitácora de Aventura{% endblock %}
 
 {% block contenido %}
-<h1>Bitácora de Aventura</h1>
-<p class="sub">Tu registro personal: qué aprendiste, qué te costó, quién te ayudó y cómo te sentiste.
-Esto es tuyo, no se puntúa.</p>
+<div class="portada cielo">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>📓 Bitácora de Aventura</h1>
+  <p class="sub">Tu registro personal. Esto es tuyo y no se puntúa.</p>
+  {% if entradas %}
+    <div class="pastillas">
+      <span class="pastilla"><span aria-hidden="true">✍️</span> <span class="valor">{{ entradas|length }}</span> <small>entrada{{ 's' if entradas|length != 1 }}</small></span>
+    </div>
+  {% endif %}
+</div>
 
-<form method="post" action="/bitacora" class="tarjeta">
-  <label for="titulo">Título</label>
-  <input type="text" id="titulo" name="titulo" placeholder="Campamento de patrulla, nudo margarita…">
+<details class="tarjeta" {{ 'open' if not entradas }}>
+  <summary>✍️ Escribir una entrada nueva</summary>
+  <form method="post" action="/bitacora">
+    <label for="titulo">Título</label>
+    <input type="text" id="titulo" name="titulo" placeholder="Campamento de patrulla, nudo margarita…">
 
-  <label for="texto">Qué querés registrar</label>
-  <textarea id="texto" name="texto" required
-    placeholder="¿Qué cosas aprendí? ¿Qué desafíos superé? ¿Qué ayuda recibí? ¿Cómo me siento?"></textarea>
+    <label for="texto">Qué querés registrar</label>
+    <textarea id="texto" name="texto" required
+      placeholder="¿Qué aprendí? ¿Qué desafíos superé? ¿Quién me ayudó? ¿Cómo me siento?"></textarea>
 
-  <p style="margin-top:1rem"><button type="submit">Guardar</button></p>
-</form>
+    <p class="chips">
+      <span class="chip">🌟 Qué aprendí</span>
+      <span class="chip">💪 Qué me costó</span>
+      <span class="chip">🤝 Quién me ayudó</span>
+      <span class="chip">😃 Cómo me siento</span>
+    </p>
+
+    <p style="margin-top:1.2rem"><button type="submit" class="grande">Guardar en mi bitácora</button></p>
+  </form>
+</details>
 
 {% if entradas %}
   {% for e in entradas %}
   <article class="tarjeta">
-    {% if e.titulo %}<h3>{{ e.titulo }}</h3>{% endif %}
-    <p class="meta">{{ e.creada_en.strftime('%d/%m/%Y') }}</p>
-    <p>{{ e.texto }}</p>
+    <span class="cinta-fecha"><span aria-hidden="true">📅</span> {{ e.creada_en.strftime('%d/%m/%Y') }}</span>
+    {% if e.titulo %}<h3 style="margin-top:.5rem">{{ e.titulo }}</h3>{% endif %}
+    <p class="texto-libro">{{ e.texto }}</p>
   </article>
   {% endfor %}
 {% else %}
-  <p class="vacio">Tu bitácora está vacía. La primera entrada puede ser hoy.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/bitacora.svg" alt="">
+    <strong>Tu bitácora está en blanco</strong>
+    <p>La primera entrada puede ser hoy. Nadie más la lee.</p>
+  </div>
 {% endif %}
 {% endblock %}

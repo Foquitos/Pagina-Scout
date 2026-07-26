@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 170" role="img" aria-label="Cartas de exploración">
+  <ellipse cx="110" cy="152" rx="80" ry="11" fill="#2E86AB" fill-opacity=".12"/>
+  <g stroke="#fff" stroke-width="4">
+    <rect x="34" y="46" width="72" height="98" rx="12" fill="#2E86AB" fill-opacity=".55" transform="rotate(-12 70 95)"/>
+    <rect x="74" y="38" width="72" height="98" rx="12" fill="#E0A526" fill-opacity=".8"/>
+    <rect x="114" y="46" width="72" height="98" rx="12" fill="#3E8E5A" transform="rotate(12 150 95)"/>
+  </g>
+  <g fill="#fff" fill-opacity=".85">
+    <rect x="88" y="58" width="44" height="7" rx="3.5"/>
+    <rect x="88" y="74" width="32" height="6" rx="3"/>
+    <rect x="88" y="88" width="38" height="6" rx="3"/>
+  </g>
+  <circle cx="110" cy="116" r="12" fill="#fff" fill-opacity=".9"/>
+  <path fill="none" stroke="#E0A526" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="m104 116 4 5 8-10"/>
+</svg>

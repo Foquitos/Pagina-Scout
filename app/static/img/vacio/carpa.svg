@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 170" role="img" aria-label="Una carpa armada">
+  <ellipse cx="110" cy="150" rx="86" ry="12" fill="#3E8E5A" fill-opacity=".12"/>
+  <g fill="#2c6a42" fill-opacity=".35">
+    <path d="m184 148-16 0 16-32 16 32zM40 148l-13 0 13-26 13 26z"/>
+  </g>
+  <path fill="#3E8E5A" fill-opacity=".2" d="M110 34 66 148h88z"/>
+  <path fill="#3E8E5A" d="M110 34 154 148h-24l-20-52z"/>
+  <path fill="#2c6a42" d="M110 96 90 148h40z"/>
+  <path fill="none" stroke="#2c6a42" stroke-width="5" stroke-linecap="round"
+        d="M110 26v10M154 148l22 8M66 148l-22 8"/>
+  <circle cx="110" cy="22" r="6" fill="#E0A526"/>
+</svg>

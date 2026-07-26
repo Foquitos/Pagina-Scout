@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Salud y bienestar">
+  <circle cx="80" cy="80" r="72" fill="#D64550" fill-opacity=".12"/>
+  <path fill="#D64550" d="M80 130 42 92a24 24 0 0 1 38-29 24 24 0 0 1 38 29z"/>
+  <path fill="#fff" fill-opacity=".28" d="M80 63a24 24 0 0 0-38 29l10 10a24 24 0 0 1 28-39z"/>
+  <path fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"
+        d="M48 94h16l7-14 11 26 8-12h22"/>
+</svg>

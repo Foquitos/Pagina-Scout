@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Ambiente">
+  <circle cx="80" cy="80" r="72" fill="#3E8E5A" fill-opacity=".12"/>
+  <path fill="#3E8E5A" fill-opacity=".25" d="M8 118c26-16 44 6 66-6s38 4 78-10v34H8z"/>
+  <rect x="74" y="96" width="12" height="30" rx="5" fill="#7a5a34"/>
+  <path fill="#3E8E5A" d="M80 26 106 66H54z"/>
+  <path fill="#4aa86c" d="M80 48 112 96H48z"/>
+  <path fill="#3E8E5A" d="M80 68 118 118H42z"/>
+  <path fill="#2c6a42" d="M80 68 118 118H80z" fill-opacity=".35"/>
+</svg>

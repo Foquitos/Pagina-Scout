@@ -2,32 +2,62 @@
 {% block titulo %}Tablero de patrullas{% endblock %}
 
 {% block contenido %}
-<h1>Tablero de patrullas</h1>
-<p class="sub">El puntaje es siempre de la patrulla. No hay marcador individual.</p>
+<div class="portada sol">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>🏆 Tablero de patrullas</h1>
+  <p class="sub">El puntaje es siempre de la patrulla. No hay marcador individual.</p>
+</div>
 
 {% if not filas %}
-  <p class="vacio">Todavía no hay patrullas cargadas.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/patrulla.svg" alt="">
+    <strong>Todavía no hay patrullas cargadas</strong>
+    <p>Cuando el equipo de educadores las cree, el tablero se llena solo.</p>
+  </div>
 {% else %}
+  {% set medallas = ['🥇', '🥈', '🥉'] %}
+
+  <div class="podio">
+    {% for f in filas[:3] %}
+      <div class="lugar {{ 'primero' if loop.index == 1 }}" style="--color: {{ f.patrulla.color }}">
+        <div class="medalla" aria-hidden="true">{{ medallas[loop.index0] }}</div>
+        <div class="nombre">{{ f.patrulla.nombre }}</div>
+        <div class="puntos">{{ f.puntos }}</div>
+        <small>puntos · {{ f.acciones }} acci{{ 'ones' if f.acciones != 1 else 'ón' }}</small>
+        <div class="chips" style="justify-content:center">
+          {% if f.racha %}<span class="chip">🔥 {{ f.racha }} día{{ 's' if f.racha != 1 }}</span>{% endif %}
+          {% if usuario.patrulla_id == f.patrulla.id %}<span class="chip activo">tu patrulla</span>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
   {% set maximo = filas[0].puntos if filas[0].puntos > 0 else 1 %}
-  <table class="tablero">
-    <thead>
-      <tr><th></th><th>Patrulla</th><th>Puntos</th><th>Acciones</th><th>Racha</th></tr>
-    </thead>
-    <tbody>
-      {% for f in filas %}
-      <tr>
-        <td class="puesto">{{ loop.index }}</td>
-        <td>
-          <strong>{{ f.patrulla.nombre }}</strong>
-          {% if f.patrulla.lema %}<div class="meta">{{ f.patrulla.lema }}</div>{% endif %}
-          <div class="barra"><div style="width: {{ (f.puntos / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div></div>
-        </td>
-        <td>{{ f.puntos }}</td>
-        <td>{{ f.acciones }}</td>
-        <td>{{ f.racha }} día{{ 's' if f.racha != 1 }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% if filas|length > 3 %}
+  <h2>Y también</h2>
+  {% endif %}
+  {% for f in filas[3:] %}
+    <div class="fila-patrulla {{ 'propia' if usuario.patrulla_id == f.patrulla.id }}"
+         style="--color: {{ f.patrulla.color }}">
+      <span class="puesto">{{ loop.index }}º</span>
+      <div class="cuerpo">
+        <strong>{{ f.patrulla.nombre }}</strong>
+        {% if usuario.patrulla_id == f.patrulla.id %}<span class="chip activo">tu patrulla</span>{% endif %}
+        {% if f.patrulla.lema %}<div class="meta">«{{ f.patrulla.lema }}»</div>{% endif %}
+        <div class="barra-avance">
+          <div style="width: {{ (f.puntos / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div>
+        </div>
+        <p class="meta" style="margin:0">
+          <span>{{ f.acciones }} acci{{ 'ones validadas' if f.acciones != 1 else 'ón validada' }}</span>
+          <span>🔥 racha de {{ f.racha }} día{{ 's' if f.racha != 1 }}</span>
+        </p>
+      </div>
+      <span class="cifra">{{ f.puntos }}</span>
+    </div>
+  {% endfor %}
+
+  <p class="meta centrado" style="margin-top:1.4rem">
+    Los puntos quedan en la patrulla donde se ganaron. Acompañarse no es competir.
+  </p>
 {% endif %}
 {% endblock %}

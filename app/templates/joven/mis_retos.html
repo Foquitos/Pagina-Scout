@@ -2,29 +2,52 @@
 {% block titulo %}Mis retos{% endblock %}
 
 {% block contenido %}
-<h1>Mis retos</h1>
-<p class="sub">Todo lo que fuiste haciendo. No hay puntaje personal: lo que sumás va a tu patrulla.</p>
+{% set validados = entregas|selectattr('estado', 'equalto', 'aprobada')|list|length %}
+
+<div class="portada">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>✅ Mis retos</h1>
+  <p class="sub">Todo lo que fuiste haciendo.</p>
+  <div class="pastillas">
+    <span class="pastilla"><span aria-hidden="true">📨</span> <span class="valor">{{ entregas|length }}</span> <small>entrega{{ 's' if entregas|length != 1 }}</small></span>
+    <span class="pastilla"><span aria-hidden="true">🎉</span> <span class="valor">{{ validados }}</span> <small>validada{{ 's' if validados != 1 }}</small></span>
+  </div>
+</div>
 
 {% if not entregas %}
-  <p class="vacio">Todavía no entregaste ningún reto. Empezá por el de <a href="/hoy">hoy</a>.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/carpa.svg" alt="">
+    <strong>Todavía no entregaste ningún reto</strong>
+    <p>Lo que sumás va a tu patrulla, no a un puntaje personal.</p>
+    <a class="boton grande" href="/hoy">Ver el reto de hoy</a>
+  </div>
 {% else %}
-  {% for e in entregas %}
-  <article class="tarjeta">
-    <h3>{{ e.asignacion.reto.titulo }}</h3>
-    <p class="meta">
-      <span>{{ e.asignacion.fecha.strftime('%d/%m/%Y') }}</span>
-      {% if e.asignacion.reto.area %}<span>{{ e.asignacion.reto.area.nombre }}</span>{% endif %}
-      <span class="etiqueta {{ e.estado }}">
-        {% if e.estado == 'aprobada' %}Validado
-        {% elif e.estado == 'requiere_revision' %}En revisión
-        {% elif e.estado == 'rechazada' %}Sin validar
-        {% else %}Enviado{% endif %}
-      </span>
-    </p>
-    {% if e.texto %}<p>{{ e.texto }}</p>{% endif %}
-    {% if e.devolucion %}<p class="meta">Devolución: {{ e.devolucion }}</p>{% endif %}
-    <p><a href="/reto/{{ e.asignacion_id }}">Ver</a></p>
-  </article>
-  {% endfor %}
+  <div class="linea">
+    {% for e in entregas %}
+    <article class="tarjeta hito {{ e.estado }}">
+      <div class="encabezado-tarjeta">
+        <div>
+          <h3>{{ e.asignacion.reto.titulo }}</h3>
+          <p class="meta">
+            <span>{{ e.asignacion.fecha.strftime('%d/%m/%Y') }}</span>
+            {% if e.asignacion.reto.area %}<span>{{ e.asignacion.reto.area.icono }} {{ e.asignacion.reto.area.nombre }}</span>{% endif %}
+          </p>
+        </div>
+        <span class="etiqueta {{ e.estado }}">
+          {% if e.estado == 'aprobada' %}🎉 Validado
+          {% elif e.estado == 'requiere_revision' %}⏳ En revisión
+          {% elif e.estado == 'rechazada' %}↩️ Sin validar
+          {% else %}📨 Enviado{% endif %}
+        </span>
+      </div>
+
+      {% if e.texto %}<p>{{ e.texto }}</p>{% endif %}
+      {% if e.devolucion %}
+        <div class="comentario">{{ e.devolucion }}<footer class="meta">Devolución de tu educador/a</footer></div>
+      {% endif %}
+      <div class="acciones"><a class="boton secundario" href="/reto/{{ e.asignacion_id }}">Ver el reto</a></div>
+    </article>
+    {% endfor %}
+  </div>
 {% endif %}
 {% endblock %}

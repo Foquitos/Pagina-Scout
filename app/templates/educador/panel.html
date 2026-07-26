@@ -2,67 +2,99 @@
 {% block titulo %}Panel{% endblock %}
 
 {% block contenido %}
-<h1>Panel de la Unidad</h1>
-<p class="sub">{{ fecha.strftime('%d/%m/%Y') }}{% if usuario.unidad %} · {{ usuario.unidad.nombre }}{% endif %}</p>
+<div class="portada">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>🏕️ Panel de la Unidad</h1>
+  <p class="sub">{{ fecha.strftime('%d/%m/%Y') }}{% if usuario.unidad %} · {{ usuario.unidad.nombre }}{% endif %}</p>
+</div>
 
-<div class="fila">
+<div class="rejilla angosta">
   <div class="tarjeta">
-    <h3>{{ pendientes }}</h3>
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(180,83,31,.14)">📥</span>
+    <p class="numero-grande" style="margin:.5rem 0 0">{{ pendientes }}</p>
     <p class="meta">entregas esperando tu mirada</p>
-    <p><a class="boton {{ 'secundario' if not pendientes }}" href="/validaciones">Revisar</a></p>
+    <div class="acciones">
+      <a class="boton {{ 'secundario' if not pendientes }}" href="/validaciones">Revisar</a>
+    </div>
   </div>
   <div class="tarjeta">
-    <h3>{{ asignaciones_hoy|length }}</h3>
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(62,142,90,.14)">🎯</span>
+    <p class="numero-grande" style="margin:.5rem 0 0">{{ asignaciones_hoy|length }}</p>
     <p class="meta">retos activos hoy</p>
-    <p><a class="boton secundario" href="/asignar">Asignar otro</a></p>
+    <div class="acciones"><a class="boton secundario" href="/asignar">Asignar otro</a></div>
   </div>
   <div class="tarjeta">
-    <h3>{{ jovenes_sin_patrulla }}</h3>
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(46,134,171,.14)">🧭</span>
+    <p class="numero-grande" style="margin:.5rem 0 0">{{ jovenes_sin_patrulla }}</p>
     <p class="meta">jóvenes sin patrulla</p>
-    <p><a class="boton secundario" href="/jovenes">Ver</a></p>
+    <div class="acciones"><a class="boton secundario" href="/jovenes">Ver</a></div>
   </div>
   <div class="tarjeta">
-    <h3>{{ megas_usados }} MB</h3>
-    <p class="meta">{{ fotos_guardadas }} fotos guardadas. Cada una se comprime al
-      subirla; los videos no ocupan lugar porque van por enlace.</p>
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(224,165,38,.18)">💾</span>
+    <p class="numero-grande" style="margin:.5rem 0 0">{{ megas_usados }} MB</p>
+    <p class="meta">{{ fotos_guardadas }} fotos guardadas. Cada una se comprime al subirla;
+      los videos no ocupan lugar porque van por enlace.</p>
   </div>
 </div>
 
-<h2>Retos de hoy</h2>
+<h2>🎯 Retos de hoy</h2>
 {% if not asignaciones_hoy %}
-  <p class="vacio">No cargaste retos para hoy. La aplicación propone uno de las cartas
-    automáticamente hasta que asignes el tuyo.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/carpa.svg" alt="">
+    <strong>No cargaste retos para hoy</strong>
+    <p>La aplicación propone uno de las cartas hasta que asignes el tuyo.</p>
+    <a class="boton grande" href="/asignar">Asignar un reto</a>
+  </div>
 {% else %}
-  {% for a in asignaciones_hoy %}
-  <article class="tarjeta">
-    <h3>{{ a.reto.titulo }}</h3>
-    <p class="meta">
-      <span>{{ a.alcance }}{% if a.patrulla %}: {{ a.patrulla.nombre }}{% elif a.joven %}: {{ a.joven.nombre }}{% endif %}</span>
-      <span>{{ a.reto.puntaje }} puntos</span>
-      {% if a.automatica %}<span>propuesto automáticamente</span>{% endif %}
-      <span>{{ a.entregas|length }} entregas</span>
-    </p>
-  </article>
-  {% endfor %}
+  <div class="rejilla">
+    {% for a in asignaciones_hoy %}
+    <article class="tarjeta">
+      <div class="encabezado-tarjeta">
+        <span class="burbuja chica" aria-hidden="true"
+              {% if a.reto.area %}style="--tono: {{ a.reto.area.color }}22"{% endif %}>{{ a.reto.area.icono if a.reto.area else '🎯' }}</span>
+        <div>
+          <h3>{{ a.reto.titulo }}</h3>
+          <p class="meta">
+            <span>{{ a.alcance }}{% if a.patrulla %}: {{ a.patrulla.nombre }}{% elif a.joven %}: {{ a.joven.nombre }}{% endif %}</span>
+            <span>{{ a.reto.puntaje }} pts</span>
+          </p>
+        </div>
+      </div>
+      <p class="chips">
+        <span class="chip">📨 {{ a.entregas|length }} entrega{{ 's' if a.entregas|length != 1 }}</span>
+        {% if a.automatica %}<span class="chip">🤖 propuesto automáticamente</span>{% endif %}
+      </p>
+    </article>
+    {% endfor %}
+  </div>
 {% endif %}
 
-<h2>Tablero</h2>
+<h2>🏆 Tablero</h2>
 {% if not filas %}
-  <p class="vacio">Creá las patrullas para empezar. <a href="/patrullas">Ir a patrullas</a></p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/patrulla.svg" alt="">
+    <strong>Todavía no hay patrullas</strong>
+    <p>Creá las patrullas para empezar.</p>
+    <a class="boton grande" href="/patrullas">Ir a patrullas</a>
+  </div>
 {% else %}
-<table>
-  <thead><tr><th>Patrulla</th><th>Integrantes</th><th>Puntos</th><th>Acciones</th><th>Racha</th></tr></thead>
-  <tbody>
-    {% for f in filas %}
-    <tr>
-      <td>{{ f.patrulla.nombre }}</td>
-      <td>{{ f.integrantes }}</td>
-      <td>{{ f.puntos }}</td>
-      <td>{{ f.acciones }}</td>
-      <td>{{ f.racha }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  {% set maximo = filas[0].puntos if filas[0].puntos > 0 else 1 %}
+  {% for f in filas %}
+    <div class="fila-patrulla" style="--color: {{ f.patrulla.color }}">
+      <span class="puesto">{{ loop.index }}º</span>
+      <div class="cuerpo">
+        <strong>{{ f.patrulla.nombre }}</strong>
+        <div class="barra-avance">
+          <div style="width: {{ (f.puntos / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div>
+        </div>
+        <p class="meta" style="margin:0">
+          <span>{{ f.integrantes }} integrante{{ 's' if f.integrantes != 1 }}</span>
+          <span>{{ f.acciones }} acci{{ 'ones' if f.acciones != 1 else 'ón' }}</span>
+          <span>🔥 racha {{ f.racha }}</span>
+        </p>
+      </div>
+      <span class="cifra">{{ f.puntos }}</span>
+    </div>
+  {% endfor %}
 {% endif %}
 {% endblock %}

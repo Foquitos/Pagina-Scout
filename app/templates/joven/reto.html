@@ -2,18 +2,27 @@
 {% block titulo %}{{ asignacion.reto.titulo }}{% endblock %}
 
 {% block contenido %}
-<p class="meta"><a href="/hoy">← Volver</a></p>
-<h1>{{ asignacion.reto.titulo }}</h1>
-<p class="meta">
-  {% if asignacion.reto.area %}<span>{{ asignacion.reto.area.icono }} {{ asignacion.reto.area.nombre }}</span>{% endif %}
-  <span>{{ asignacion.fecha.strftime('%d/%m/%Y') }}</span>
-  <span>{{ asignacion.reto.puntaje }} puntos para la patrulla</span>
-</p>
+{% set area = asignacion.reto.area %}
+<p class="miga"><a href="/hoy">← Volver a hoy</a></p>
 
-<div class="tarjeta acento">
+<div class="encabezado-tarjeta" style="margin-bottom:1rem">
+  <span class="burbuja" aria-hidden="true"
+        {% if area %}style="--tono: {{ area.color }}22"{% endif %}>{{ area.icono if area else '🎯' }}</span>
+  <div>
+    <h1>{{ asignacion.reto.titulo }}</h1>
+    <p class="meta">
+      {% if area %}<span>{{ area.nombre }}</span>{% endif %}
+      <span>{{ asignacion.fecha.strftime('%d/%m/%Y') }}</span>
+      <span>⭐ {{ asignacion.reto.puntaje }} puntos para la patrulla</span>
+    </p>
+  </div>
+</div>
+
+<div class="tarjeta acento" {% if area %}style="border-left-color: {{ area.color }}"{% endif %}>
+  <h3>Qué hay que hacer</h3>
   <p>{{ asignacion.reto.consigna }}</p>
   {% if asignacion.reto.desafio %}
-  <details>
+  <details style="margin-top:.6rem">
     <summary>De qué carta viene</summary>
     <p class="meta">Carta {{ asignacion.reto.desafio.competencia.numero }} —
       {{ asignacion.reto.desafio.competencia.titulo }}</p>
@@ -24,27 +33,31 @@
 
 {% if entrega and entrega.estado == 'aprobada' %}
   <div class="aviso ok">
-    <strong>Validado.</strong> {{ entrega.devolucion }}
+    <span class="icono" aria-hidden="true">🎉</span>
+    <div><strong>¡Validado!</strong> Sumaste {{ entrega.puntaje_otorgado }} puntos para tu patrulla.
+      {% if entrega.devolucion %}<p>{{ entrega.devolucion }}</p>{% endif %}</div>
   </div>
 {% elif entrega %}
   <div class="aviso">
-    <span class="etiqueta {{ entrega.estado }}">
-      {% if entrega.estado == 'requiere_revision' %}Esperando al educador
-      {% elif entrega.estado == 'rechazada' %}Sin validar
-      {% else %}Enviado{% endif %}
+    <span class="icono" aria-hidden="true">
+      {% if entrega.estado == 'requiere_revision' %}⏳{% elif entrega.estado == 'rechazada' %}↩️{% else %}📨{% endif %}
     </span>
-    {% if entrega.devolucion %}<p>{{ entrega.devolucion }}</p>{% endif %}
+    <div>
+      {% if entrega.estado == 'requiere_revision' %}<strong>Lo está mirando tu educador/a.</strong>
+      {% elif entrega.estado == 'rechazada' %}<strong>Todavía sin validar.</strong>
+      {% else %}<strong>Entrega enviada.</strong>{% endif %}
+      {% if entrega.devolucion %}<p>{{ entrega.devolucion }}</p>{% endif %}
+    </div>
   </div>
 {% endif %}
 
 {% if entrega and entrega.archivo_foto %}
-  <p><img src="/fotos/{{ entrega.archivo_foto }}" alt="Foto de la entrega"
-          style="max-width:100%; border-radius:12px"></p>
+  <img class="foto" src="/fotos/{{ entrega.archivo_foto }}" alt="La foto que subiste">
 {% endif %}
 
 {% if not entrega or entrega.estado != 'aprobada' %}
 <form method="post" action="/reto/{{ asignacion.id }}" enctype="multipart/form-data" class="tarjeta">
-  <h3>{% if entrega %}Corregir mi entrega{% else %}Contá qué hiciste{% endif %}</h3>
+  <h3>{% if entrega %}✏️ Corregir mi entrega{% else %}📝 Contá qué hiciste{% endif %}</h3>
 
   {% if asignacion.reto.pide_texto %}
   <label for="texto">Tu relato</label>
@@ -52,11 +65,11 @@
             required>{{ entrega.texto if entrega else '' }}</textarea>
   {% endif %}
 
-  <label for="foto">Foto {% if not asignacion.reto.pide_foto %}(opcional){% endif %}</label>
+  <label for="foto">📷 Foto {% if not asignacion.reto.pide_foto %}(opcional){% endif %}</label>
   <input type="file" id="foto" name="foto" accept="image/*"
          {% if asignacion.reto.pide_foto and not (entrega and entrega.archivo_foto) %}required{% endif %}>
 
-  <p style="margin-top:1rem"><button type="submit">Enviar</button></p>
+  <p style="margin-top:1.2rem"><button type="submit" class="grande bloque">Enviar mi entrega ✅</button></p>
 </form>
 {% endif %}
 {% endblock %}

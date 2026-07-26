@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-label="Habilidades para la vida">
+  <circle cx="80" cy="80" r="72" fill="#E0A526" fill-opacity=".14"/>
+  <circle cx="80" cy="80" r="50" fill="none" stroke="#E0A526" stroke-width="7"/>
+  <g stroke="#c98d16" stroke-width="5" stroke-linecap="round">
+    <path d="M80 22v9M80 129v9M22 80h9M129 80h9"/>
+  </g>
+  <!-- Rosa de los vientos: mitad clara, mitad oscura. -->
+  <path fill="#E0A526" d="M80 30 92 68l38 12-38 12-12 38-12-38-38-12 38-12z"/>
+  <path fill="#c98d16" d="M80 30 92 68l38 12-50 0z"/>
+  <path fill="#c98d16" d="M80 130 68 92l-38-12 50 0z"/>
+  <circle cx="80" cy="80" r="7" fill="#fff"/>
+</svg>

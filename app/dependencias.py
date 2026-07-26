@@ -18,6 +18,30 @@ plantillas.env.globals["ETAPAS_NOMBRE"] = ETAPAS_NOMBRE
 plantillas.env.globals["video"] = video_guardado
 
 
+# Paleta de los avatares. Son los colores del programa: el avatar de alguien es
+# siempre el mismo porque sale de su nombre, no de un sorteo.
+_COLORES_AVATAR = ("#3E8E5A", "#2E86AB", "#E0A526", "#D64550", "#7d5ba6", "#E2673A")
+
+
+def color_de(texto: str) -> str:
+    """Un color estable a partir de un texto, para los avatares."""
+    return _COLORES_AVATAR[sum(map(ord, texto or "?")) % len(_COLORES_AVATAR)]
+
+
+def iniciales(nombre: str) -> str:
+    """«Ana Paula Díaz» → «AP». Lo que va adentro del círculo del avatar."""
+    partes = (nombre or "").split()
+    if not partes:
+        return "?"
+    if len(partes) == 1:
+        return partes[0][:2].upper()
+    return (partes[0][0] + partes[1][0]).upper()
+
+
+plantillas.env.globals["color_de"] = color_de
+plantillas.env.globals["iniciales"] = iniciales
+
+
 class RedireccionAIngreso(Exception):
     """Se levanta cuando una página web necesita sesión y no la hay."""
 

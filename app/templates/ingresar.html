@@ -2,12 +2,19 @@
 {% block titulo %}Ingresar{% endblock %}
 
 {% block contenido %}
-<h1>Retos de Unidad</h1>
-<p class="sub">Un reto por día para seguir explorando con tu patrulla.</p>
+<div class="portada centrado">
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>Retos de Unidad</h1>
+  <p class="sub">Un reto por día para seguir explorando con tu patrulla.</p>
+</div>
 
-{% if error %}<div class="aviso">{{ error }}</div>{% endif %}
+{% if error %}
+  <div class="aviso"><span class="icono" aria-hidden="true">⚠️</span><div>{{ error }}</div></div>
+{% endif %}
 
-<form method="post" action="/ingresar" class="tarjeta" style="max-width: 26rem">
+<form method="post" action="/ingresar" class="tarjeta" style="max-width: 26rem; margin-inline: auto">
+  <h3>Entrá con tu usuario</h3>
+
   <label for="usuario">Usuario</label>
   <input type="text" id="usuario" name="usuario" value="{{ usuario_ingresado or '' }}"
          autocomplete="username" autocapitalize="none" required autofocus>
@@ -15,6 +22,25 @@
   <label for="clave">Contraseña</label>
   <input type="password" id="clave" name="clave" autocomplete="current-password" required>
 
-  <p style="margin-top:1rem"><button type="submit">Entrar</button></p>
+  <p style="margin-top:1.2rem"><button type="submit" class="bloque grande">Entrar 🏕️</button></p>
+  <p class="meta centrado">¿No tenés usuario? Pedíselo a tu educador/a.</p>
 </form>
+
+<div class="pasos" style="margin-top:2rem">
+  <div class="paso">
+    <span class="emoji" aria-hidden="true">🎯</span>
+    <strong>Hacé el reto del día</strong>
+    <span class="texto">Contá qué hiciste y subí una foto.</span>
+  </div>
+  <div class="paso">
+    <span class="emoji" aria-hidden="true">🤝</span>
+    <strong>Sumá para tu patrulla</strong>
+    <span class="texto">Los puntos son de todo el equipo, nunca de una sola persona.</span>
+  </div>
+  <div class="paso">
+    <span class="emoji" aria-hidden="true">🧭</span>
+    <strong>Recorré tus cartas</strong>
+    <span class="texto">Elegís vos qué querés aprender esta etapa.</span>
+  </div>
+</div>
 {% endblock %}

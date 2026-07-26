@@ -2,12 +2,16 @@
 {% block titulo %}Asignar retos{% endblock %}
 
 {% block contenido %}
-<h1>Asignar un reto</h1>
-<p class="sub">Elegí para qué día y para quiénes. Si no asignás nada, la aplicación propone
-un desafío de las cartas para toda la Unidad.</p>
+<h1>📅 Asignar un reto</h1>
+<p class="sub">Elegí para qué día y para quiénes. Si no asignás nada, la aplicación
+  propone un desafío de las cartas para toda la Unidad.</p>
 
 {% if not retos %}
-  <div class="aviso">Primero creá al menos un reto en <a href="/retos">Retos</a>.</div>
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">🎯</span>
+    <div><strong>Primero creá al menos un reto.</strong>
+      <p><a href="/retos">Ir a Retos</a></p></div>
+  </div>
 {% else %}
 <form method="post" action="/asignar" class="tarjeta">
   <label for="reto_id">Reto</label>
@@ -47,26 +51,32 @@ un desafío de las cartas para toda la Unidad.</p>
     </div>
   </div>
 
-  <p style="margin-top:1rem"><button type="submit">Asignar</button></p>
+  <p style="margin-top:1.2rem"><button type="submit" class="grande">Asignar</button></p>
 </form>
 {% endif %}
 
-<h2>Asignaciones de hoy en adelante</h2>
+<h2>Agenda de hoy en adelante</h2>
 {% if not proximas %}
-  <p class="vacio">No hay nada agendado.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/mapa.svg" alt="">
+    <strong>No hay nada agendado</strong>
+    <p>Podés dejar los retos de toda la semana cargados de una vez.</p>
+  </div>
 {% else %}
-<table>
-  <thead><tr><th>Fecha</th><th>Reto</th><th>Para</th><th>Entregas</th></tr></thead>
-  <tbody>
-    {% for a in proximas %}
-    <tr>
-      <td>{{ a.fecha.strftime('%d/%m') }}</td>
-      <td>{{ a.reto.titulo }}</td>
-      <td>{% if a.patrulla %}{{ a.patrulla.nombre }}{% elif a.joven %}{{ a.joven.nombre }}{% else %}Unidad{% endif %}</td>
-      <td>{{ a.entregas|length }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="tabla-envoltura">
+  <table>
+    <thead><tr><th>Fecha</th><th>Reto</th><th>Para</th><th>Entregas</th></tr></thead>
+    <tbody>
+      {% for a in proximas %}
+      <tr>
+        <td><strong>{{ a.fecha.strftime('%d/%m') }}</strong></td>
+        <td>{{ a.reto.titulo }}</td>
+        <td>{% if a.patrulla %}{{ a.patrulla.nombre }}{% elif a.joven %}{{ a.joven.nombre }}{% else %}Unidad{% endif %}</td>
+        <td>{{ a.entregas|length }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endblock %}

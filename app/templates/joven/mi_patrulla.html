@@ -2,43 +2,73 @@
 {% block titulo %}Mi patrulla{% endblock %}
 
 {% block contenido %}
-<h1>{% if usuario.patrulla %}Patrulla {{ usuario.patrulla.nombre }}{% else %}Mi patrulla{% endif %}</h1>
-{% if usuario.patrulla and usuario.patrulla.lema %}
-  <p class="sub">«{{ usuario.patrulla.lema }}»</p>
-{% endif %}
+<div class="portada"
+     {% if usuario.patrulla %}style="background: linear-gradient(135deg, {{ usuario.patrulla.color }} 0%, {{ usuario.patrulla.color }}bb 100%)"{% endif %}>
+  <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+  <h1>🤝 {% if usuario.patrulla %}Patrulla {{ usuario.patrulla.nombre }}{% else %}Mi patrulla{% endif %}</h1>
+  {% if usuario.patrulla and usuario.patrulla.lema %}
+    <p class="sub">«{{ usuario.patrulla.lema }}»</p>
+  {% endif %}
+  {% if integrantes %}
+    <div class="pastillas">
+      <span class="pastilla"><span aria-hidden="true">👥</span> <span class="valor">{{ integrantes|length }}</span> <small>integrantes</small></span>
+    </div>
+  {% endif %}
+</div>
 
 {% if not integrantes %}
-  <p class="vacio">Todavía no estás en una patrulla. Pedile a tu educador/a que te sume a una.</p>
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/patrulla.svg" alt="">
+    <strong>Todavía no estás en una patrulla</strong>
+    <p>Pedile a tu educador/a que te sume a una.</p>
+  </div>
 {% else %}
-  <p class="sub">En qué anda cada quien con sus Cartas de Exploración. Están por
-    nombre: no es una competencia, cada recorrido es propio.</p>
+  <p class="sub-titulo">En qué anda cada quien con sus cartas. Están por nombre:
+    no es una competencia, cada recorrido es propio.</p>
 
-  {% for joven, avances in integrantes %}
-    {% set logradas = avances|selectattr('elegida.lograda')|list|length %}
-    <article class="tarjeta">
-      <h3>{{ joven.nombre }}{% if joven.id == usuario.id %} <span class="chip">vos</span>{% endif %}</h3>
-      <p class="meta">
-        <span>Etapa {{ joven.etapa_nombre }}</span>
-        <span>{{ avances|length }} cartas elegidas</span>
-        {% if logradas %}<span>{{ logradas }} lograda{{ 's' if logradas != 1 }}</span>{% endif %}
-      </p>
-      {% if avances %}
-        <div class="chips">
-          {% for a in avances %}
-            <span class="chip" title="{{ a.competencia.titulo }}"
-              style="border-color: {{ a.competencia.area.color }}">
-              {{ a.competencia.area.icono }} {{ a.competencia.numero }} ·
-              {{ a.requeridos_hechos }}/{{ a.requeridos }}
-            </span>
-          {% endfor %}
+  <div class="rejilla">
+    {% for joven, avances in integrantes %}
+      {% set logradas = avances|selectattr('elegida.lograda')|list|length %}
+      <article class="tarjeta">
+        <div class="encabezado-tarjeta">
+          <span class="avatar" style="--color: {{ color_de(joven.nombre) }}" aria-hidden="true">{{ iniciales(joven.nombre) }}</span>
+          <div>
+            <h3>{{ joven.nombre }}{% if joven.id == usuario.id %} <span class="chip activo">vos</span>{% endif %}</h3>
+            <p class="meta">
+              <span>Etapa {{ joven.etapa_nombre }}</span>
+              <span>{{ avances|length }} carta{{ 's' if avances|length != 1 }}</span>
+              {% if logradas %}<span>🏅 {{ logradas }} lograda{{ 's' if logradas != 1 }}</span>{% endif %}
+            </p>
+          </div>
         </div>
-      {% else %}
-        <p class="meta">Todavía no eligió cartas para esta etapa.</p>
-      {% endif %}
-      <p style="margin-top:.7rem">
-        <a class="boton secundario" href="/cartas-de/{{ joven.id }}">Ver su recorrido</a>
-      </p>
-    </article>
-  {% endfor %}
+
+        {% if avances %}
+          <p class="chips">
+            {% for a in avances %}
+              <span class="chip" title="{{ a.competencia.titulo }}"
+                    style="border-color: {{ a.competencia.area.color }}">
+                {{ a.competencia.area.icono }} {{ a.competencia.numero }} · {{ a.requeridos_hechos }}/{{ a.requeridos }}
+              </span>
+            {% endfor %}
+          </p>
+        {% else %}
+          <p class="meta">Todavía no eligió cartas para esta etapa.</p>
+        {% endif %}
+
+        <div class="acciones">
+          <a class="boton secundario" href="/cartas-de/{{ joven.id }}">Ver su recorrido →</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+  <h2>📖 La memoria de la patrulla</h2>
+  <a class="tarjeta enlazada" href="/libro-de-oro" style="display:flex; gap:.9rem; align-items:center; text-decoration:none; color:inherit">
+    <span class="burbuja" aria-hidden="true" style="--tono: rgba(200,169,81,.22)">📖</span>
+    <span>
+      <strong>Libro de Oro</strong>
+      <span class="meta" style="display:block">Campamentos, salidas, la primera fogata: lo que quieran recordar.</span>
+    </span>
+  </a>
 {% endif %}
 {% endblock %}

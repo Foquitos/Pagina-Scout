@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 170" role="img" aria-label="Un grupo de personas">
+  <ellipse cx="110" cy="150" rx="86" ry="12" fill="#3E8E5A" fill-opacity=".12"/>
+  <g>
+    <circle cx="56" cy="72" r="20" fill="#2E86AB"/>
+    <path fill="#2E86AB" d="M20 142a36 36 0 0 1 72 0z"/>
+  </g>
+  <g>
+    <circle cx="164" cy="72" r="20" fill="#E0A526"/>
+    <path fill="#E0A526" d="M128 142a36 36 0 0 1 72 0z"/>
+  </g>
+  <g>
+    <circle cx="110" cy="56" r="24" fill="#3E8E5A"/>
+    <path fill="#3E8E5A" d="M68 142a42 42 0 0 1 84 0z"/>
+    <path fill="#fff" fill-opacity=".85" d="m110 96 5 11 12 2-9 8 2 12-10-6-10 6 2-12-9-8 12-2z"/>
+  </g>
+</svg>

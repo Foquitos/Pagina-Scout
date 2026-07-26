@@ -116,7 +116,7 @@ def main() -> int:
 
     # --- validación automática ----------------------------------------------
     r = joven.post(f"/reto/{asignacion}", data={"texto": "listo"})
-    check("evidencia floja queda para el educador", "Esperando al educador" in r.text)
+    check("evidencia floja queda para el educador", "mirando tu educador" in r.text)
     check(
         "el estado se ve en la API",
         joven.get("/api/hoy").json()["retos"][0]["estado_entrega"] == "requiere_revision",

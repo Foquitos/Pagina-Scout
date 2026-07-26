@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 170" role="img" aria-label="Libro abierto">
+  <ellipse cx="110" cy="150" rx="84" ry="11" fill="#c8a951" fill-opacity=".18"/>
+  <path fill="#c8a951" d="M110 52c-18-14-40-18-66-14v82c26-4 48 0 66 14 18-14 40-18 66-14V38c-26-4-48 0-66 14z"/>
+  <path fill="#fff" fill-opacity=".55" d="M110 52c-18-14-40-18-66-14v82c26-4 48 0 66 14z"/>
+  <path fill="none" stroke="#8a6f25" stroke-width="4" stroke-linecap="round" d="M110 52v82"/>
+  <g stroke="#8a6f25" stroke-opacity=".45" stroke-width="4" stroke-linecap="round">
+    <path d="M58 60h34M58 76h34M58 92h24M128 60h34M128 76h34M128 92h24"/>
+  </g>
+  <path fill="#E0A526" d="m110 14 7 15 16 2-12 11 3 16-14-8-14 8 3-16-12-11 16-2z"/>
+</svg>

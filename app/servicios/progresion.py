@@ -16,6 +16,11 @@ acompañamiento es personalizado y en que hay razones legítimas para cerrar alg
 que el papel muestra incompleto; lo que no puede pasar es que ocurra sin que
 nadie lo haya mirado.
 
+Cambiar de etapa no borra nada. Las cartas y las marcas viven atadas a la etapa
+en la que se trabajaron, así que al cambiar quedan enteras y salen por el
+historial. Las que llegó a lograr, además, no vuelven al catálogo: una
+competencia desarrollada no se vuelve a elegir.
+
 Lo que sí es visible para otros es el recorrido, nunca un número comparable
 entre personas: `/mi-patrulla` lista a la patrulla por nombre, no por avance.
 """
@@ -72,6 +77,10 @@ class AvanceCarta:
     opcionales: int
     opcionales_hechos: int
     comentarios: int
+    # Las marcas de la etapa de esta carta, por id de desafío. Van adentro
+    # porque el historial mezcla cartas de etapas distintas en una misma
+    # pantalla, y cada una tiene que leerse con las marcas que le tocan.
+    marcas: dict[int, AvanceDesafio]
 
     @property
     def hechos(self) -> int:
@@ -107,12 +116,28 @@ class AvanceCarta:
         return self.completa and not self.elegida.lograda
 
 
-def marcas_de(sesion: Session, joven: Usuario) -> dict[int, AvanceDesafio]:
-    """Lo marcado por un joven en su etapa actual, por id de desafío."""
+def marcas_de(
+    sesion: Session, joven: Usuario, etapa: str | None = None
+) -> dict[int, AvanceDesafio]:
+    """Lo marcado por un joven en una etapa —la actual salvo que se pida otra—."""
     consulta = select(AvanceDesafio).where(
-        AvanceDesafio.joven_id == joven.id, AvanceDesafio.etapa == joven.etapa
+        AvanceDesafio.joven_id == joven.id,
+        AvanceDesafio.etapa == (etapa or joven.etapa),
     )
     return {a.desafio_id: a for a in sesion.scalars(consulta)}
+
+
+def marcas_por_etapa(sesion: Session, joven: Usuario) -> dict[str, dict[int, AvanceDesafio]]:
+    """Todo lo que escribió alguna vez, agrupado por etapa.
+
+    Es el insumo del historial: una carta de una etapa vieja tiene que contarse
+    con las marcas de esa etapa, no con las de ahora.
+    """
+    marcas: dict[str, dict[int, AvanceDesafio]] = {}
+    consulta = select(AvanceDesafio).where(AvanceDesafio.joven_id == joven.id)
+    for avance in sesion.scalars(consulta):
+        marcas.setdefault(avance.etapa, {})[avance.desafio_id] = avance
+    return marcas
 
 
 def _contar(competencia: Competencia, marcas: dict[int, AvanceDesafio]) -> tuple[int, ...]:
@@ -148,6 +173,7 @@ def avance_de_carta(
         opcionales=opc,
         opcionales_hechos=opc_hechos,
         comentarios=comentarios,
+        marcas=marcas,
     )
 
 
@@ -190,6 +216,114 @@ def carta_elegida(
             CompetenciaElegida.etapa == joven.etapa,
         )
     )
+
+
+# --- Lo que quedó de las etapas anteriores -----------------------------------
+
+
+@dataclass
+class EtapaCumplida:
+    """Una etapa ya recorrida, con las cartas que quedaron de ella."""
+
+    etapa: str
+    logradas: list[AvanceCarta]
+    sin_cerrar: list[AvanceCarta]
+
+    @property
+    def nombre(self) -> str:
+        return ETAPAS_NOMBRE.get(self.etapa, self.etapa)
+
+    @property
+    def cartas(self) -> list[AvanceCarta]:
+        return self.logradas + self.sin_cerrar
+
+    @property
+    def anotaciones(self) -> int:
+        return sum(a.comentarios for a in self.cartas)
+
+
+def logradas_de_otras_etapas(
+    sesion: Session, joven: Usuario
+) -> dict[int, CompetenciaElegida]:
+    """Las competencias que ya logró en otra etapa, por id de competencia.
+
+    Una competencia lograda no se vuelve a elegir: ya la desarrolló. Por eso
+    estas salen del catálogo en vez de quedar ahí ofreciéndose de nuevo, y por
+    eso el historial existe: lo que sale de la vista tiene que estar en algún
+    lado.
+    """
+    filas = sesion.scalars(
+        select(CompetenciaElegida).where(
+            CompetenciaElegida.joven_id == joven.id,
+            CompetenciaElegida.etapa != joven.etapa,
+            CompetenciaElegida.lograda.is_(True),
+        )
+    )
+    return {f.competencia_id: f for f in filas}
+
+
+def carta_de_otra_etapa(
+    sesion: Session, joven: Usuario, competencia_id: int
+) -> CompetenciaElegida | None:
+    """La carta lograda en otra etapa, si esa competencia ya la tiene cerrada.
+
+    Si hay más de una —volvió a una etapa anterior y la logró en las dos—, la
+    más reciente: es la que cuenta como cierre de esa competencia.
+    """
+    return sesion.scalar(
+        select(CompetenciaElegida)
+        .where(
+            CompetenciaElegida.joven_id == joven.id,
+            CompetenciaElegida.competencia_id == competencia_id,
+            CompetenciaElegida.etapa != joven.etapa,
+            CompetenciaElegida.lograda.is_(True),
+        )
+        .order_by(CompetenciaElegida.lograda_en.desc(), CompetenciaElegida.id.desc())
+    )
+
+
+def _orden_de_etapa(etapa: str) -> int:
+    """Para ordenar el historial como se recorrió, no como salió de la base."""
+    return ETAPAS.index(etapa) if etapa in ETAPAS else len(ETAPAS)
+
+
+def historial_de_cartas(sesion: Session, joven: Usuario) -> list[EtapaCumplida]:
+    """Las cartas de las otras etapas, con todo lo que escribió en cada desafío.
+
+    Cambiar de etapa no borra nada: las cartas viven atadas a la etapa en la que
+    se trabajaron, así que acá siguen enteras. Van las logradas —lo que el
+    historial viene a guardar— y también las que quedaron sin cerrar, porque
+    ahí también hay trabajo hecho y no tiene por qué desaparecer de la pantalla.
+    """
+    filas = list(
+        sesion.scalars(
+            select(CompetenciaElegida)
+            .where(
+                CompetenciaElegida.joven_id == joven.id,
+                CompetenciaElegida.etapa != joven.etapa,
+            )
+            .order_by(CompetenciaElegida.elegida_en, CompetenciaElegida.id)
+        )
+    )
+    if not filas:
+        return []
+
+    marcas = marcas_por_etapa(sesion, joven)
+    por_etapa: dict[str, list[CompetenciaElegida]] = {}
+    for fila in filas:
+        por_etapa.setdefault(fila.etapa, []).append(fila)
+
+    historial = []
+    for etapa in sorted(por_etapa, key=_orden_de_etapa):
+        avances = [avance_de_carta(f, marcas.get(etapa, {})) for f in por_etapa[etapa]]
+        historial.append(
+            EtapaCumplida(
+                etapa=etapa,
+                logradas=[a for a in avances if a.elegida.lograda],
+                sin_cerrar=[a for a in avances if not a.elegida.lograda],
+            )
+        )
+    return historial
 
 
 # --- Cómo viene la etapa -----------------------------------------------------

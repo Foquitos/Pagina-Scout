@@ -7,7 +7,7 @@
 
 <details class="tarjeta" {{ 'open' if not retos }}>
   <summary>➕ Crear un reto nuevo</summary>
-  <form method="post" action="/retos">
+  <form method="post" action="/retos" data-sin-recarga="Reto creado.">
     <label for="titulo">Título</label>
     <input type="text" id="titulo" name="titulo" required
            placeholder="Hacé un nudo margarita y explicá para qué sirve">
@@ -80,7 +80,8 @@
         {% if r.pide_texto %}<span class="chip">📝 pide relato</span>{% endif %}
         {% if r.pide_foto %}<span class="chip">📷 pide foto</span>{% endif %}
       </p>
-      <form method="post" action="/retos/{{ r.id }}/archivar" class="acciones">
+      <form method="post" action="/retos/{{ r.id }}/archivar" class="acciones"
+            data-sin-recarga="Reto archivado.">
         <button type="submit" class="secundario">Archivar</button>
       </form>
     </article>

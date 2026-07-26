@@ -9,7 +9,7 @@
 
 <details class="tarjeta" {{ 'open' if not jovenes }}>
   <summary>➕ Dar de alta</summary>
-  <form method="post" action="/jovenes">
+  <form method="post" action="/jovenes" data-sin-recarga="Cuenta creada.">
     <div class="fila">
       <div>
         <label for="nombre">Nombre</label>
@@ -66,7 +66,7 @@
         </div>
       </div>
 
-      <form method="post" action="/jovenes/{{ j.id }}">
+      <form method="post" action="/jovenes/{{ j.id }}" data-autoguardar>
         <label for="patrulla-{{ j.id }}">Patrulla</label>
         <select id="patrulla-{{ j.id }}" name="patrulla_id">
           <option value="">— sin patrulla —</option>
@@ -75,7 +75,8 @@
           {% endfor %}
         </select>
         <div class="acciones">
-          <button type="submit" class="secundario">Guardar</button>
+          <button type="submit" class="secundario boton-guardar">Guardar</button>
+          <span class="estado-guardado" data-estado=""></span>
           <a class="boton" href="/progresion/{{ j.id }}">🧭 Progresión →</a>
           <a class="boton secundario" href="/cartas-de/{{ j.id }}">Ver sus cartas</a>
         </div>

@@ -15,7 +15,7 @@
 
 <details class="tarjeta" {{ 'open' if not entradas }}>
   <summary>✍️ Escribir una entrada nueva</summary>
-  <form method="post" action="/bitacora">
+  <form method="post" action="/bitacora" data-sin-recarga="Guardado en tu bitácora.">
     <label for="titulo">Título</label>
     <input type="text" id="titulo" name="titulo" placeholder="Campamento de patrulla, nudo margarita…">
 

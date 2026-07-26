@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titulo %}Mis cartas{% endblock %}
 
-{% set cantidad = elegidas|length %}
+{% set cantidad = avances|length %}
 {% set logradas = avances|selectattr('elegida.lograda')|list|length %}
 
 {% block contenido %}
@@ -10,31 +10,14 @@
   <h1>🧭 Mis Cartas de Exploración</h1>
   <p class="sub">Etapa {{ usuario.etapa_nombre }} · elegís entre {{ min_cartas }} y {{ max_cartas }} cartas</p>
   <div class="pastillas">
-    <span class="pastilla"><span aria-hidden="true">🃏</span> <span class="valor">{{ cantidad }}</span> <small>elegidas</small></span>
-    <span class="pastilla"><span aria-hidden="true">🏅</span> <span class="valor">{{ logradas }}</span> <small>logradas</small></span>
-    <span class="pastilla"><span aria-hidden="true">📚</span> <span class="valor">{{ total_cartas }}</span> <small>para explorar</small></span>
+    <span class="pastilla"><span aria-hidden="true">🃏</span> <span class="valor" data-cuenta="elegidas">{{ cantidad }}</span> <small>elegidas</small></span>
+    <span class="pastilla"><span aria-hidden="true">🏅</span> <span class="valor" data-cuenta="logradas">{{ logradas }}</span> <small>logradas</small></span>
+    <span class="pastilla"><span aria-hidden="true">📚</span> <span class="valor">{{ en_catalogo }}</span> <small>para explorar</small></span>
+    {% if logradas_antes %}
+      <span class="pastilla"><span aria-hidden="true">📜</span> <span class="valor">{{ logradas_antes }}</span> <small>de etapas anteriores</small></span>
+    {% endif %}
   </div>
 </div>
-
-{% if cantidad < min_cartas %}
-  <div class="aviso">
-    <span class="icono" aria-hidden="true">🎒</span>
-    <div><strong>Te faltan {{ min_cartas - cantidad }} cartas para completar tu elección.</strong>
-      <p>Elegí de las cuatro áreas, según lo que tengas ganas de explorar.</p></div>
-  </div>
-{% elif cantidad > max_cartas %}
-  <div class="aviso">
-    <span class="icono" aria-hidden="true">🤔</span>
-    <div><strong>Elegiste más de {{ max_cartas }}.</strong>
-      <p>Conversalo con tu educador/a antes de seguir.</p></div>
-  </div>
-{% else %}
-  <div class="aviso ok">
-    <span class="icono" aria-hidden="true">🎉</span>
-    <div><strong>Tu elección está completa.</strong>
-      <p>Compartila con tu patrulla en el Consejo.</p></div>
-  </div>
-{% endif %}
 
 <div class="pasos">
   <div class="paso">
@@ -55,7 +38,7 @@
   </div>
 </div>
 
-<details class="tarjeta">
+<details class="tarjeta" id="que-son">
   <summary>📖 Contame un poco más</summary>
   <p>Las cartas son {{ total_cartas }} <strong>competencias</strong> repartidas en cuatro
     <strong>áreas de desarrollo</strong>. Cada una trae sus desafíos.</p>
@@ -70,58 +53,71 @@
     decide el equipo de educadores con vos, mirando cómo venís con estas cartas.</p>
 </details>
 
-<h2 id="elegidas">🃏 Las cartas que elegí</h2>
-{% if not avances %}
-  <div class="vacio">
-    <img src="/estaticos/img/vacio/cartas.svg" alt="">
-    <strong>Todavía no elegiste ninguna</strong>
-    <p>Mirá el catálogo de abajo y tocá «Elegir esta carta».</p>
-    <a class="boton grande" href="#catalogo">Ver las {{ total_cartas }} cartas</a>
-  </div>
-{% else %}
-  <p class="sub-titulo">Entrá a cada una para ir marcando los desafíos y contar cómo te fue.</p>
-  <div class="rejilla">
-    {% for a in avances %}
-      {% set area = a.competencia.area %}
-      <article class="tarjeta carta {{ 'elegida' if not a.elegida.lograda }} {{ 'lograda' if a.elegida.lograda }}"
-               style="--color: {{ area.color }}; --tono: {{ area.color }}22">
-        <div class="anillo" style="--p: {{ a.porcentaje }}; --c: {{ area.color }}"
-             title="{{ a.porcentaje }}% de los requeridos">
-          <span>{{ a.requeridos_hechos }}/{{ a.requeridos }}</span>
-        </div>
-        <div>
-          <h3><a href="/mis-cartas/{{ a.competencia.id }}">{{ a.competencia.titulo }}</a></h3>
-          <p class="meta">
-            <span>{{ area.icono }} {{ area.nombre }}</span>
-            {% if a.opcionales_hechos %}<span>+{{ a.opcionales_hechos }} opcionales</span>{% endif %}
-            {% if a.comentarios %}<span>{{ a.comentarios }} comentario{{ 's' if a.comentarios != 1 }}</span>{% endif %}
-          </p>
-          {% if a.elegida.lograda %}
-            <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
-          {% elif a.completa %}
-            <p class="meta">✔ Cumpliste todos los requeridos. Conversalo con tu educador/a
-              para cerrarla.</p>
-          {% endif %}
-          <div class="acciones">
-            <a class="boton secundario" href="/mis-cartas/{{ a.competencia.id }}">Trabajar en esta carta →</a>
-          </div>
-        </div>
-      </article>
-    {% endfor %}
-  </div>
+{# Lo único que cambia al elegir o sacar una carta. El JavaScript reemplaza
+   esto adentro y compensa el alto, para que el catálogo no se te mueva. #}
+<div id="eleccion">
+  {% include "joven/_eleccion.html" %}
+</div>
+
+{% if historial %}
+  <h2 id="historial">📜 Mi recorrido anterior</h2>
+  <p class="sub-titulo">Las cartas de tus etapas anteriores, con todo lo que
+    escribiste. Las que lograste ya no vuelven al catálogo: esa competencia
+    la desarrollaste.</p>
+  {% set propia = true %}
+  {% set nombre_corto = usuario.nombre %}
+  {% include "joven/_historial.html" %}
 {% endif %}
 
 <h2 id="catalogo">📚 Todas las cartas</h2>
-<p class="sub-titulo">Las {{ total_cartas }} competencias, por área. Tocá una para elegirla.</p>
+<p class="sub-titulo">
+  {% if en_catalogo == total_cartas %}
+    Las {{ total_cartas }} competencias, por área. Tocá una para elegirla.
+  {% else %}
+    Las {{ en_catalogo }} competencias que te quedan por explorar, por área.
+    Las otras {{ total_cartas - en_catalogo }} ya las lograste y están
+    <a href="#historial">en tu recorrido</a>.
+  {% endif %}
+</p>
+
+{# Filtra en el navegador, sin pedirle nada al servidor: las 53 cartas ya
+   están en la página. Nace escondido porque sin JavaScript no filtraría nada
+   y el catálogo entero se sigue pudiendo leer de arriba abajo. #}
+<div class="filtros" id="filtros-cartas" hidden>
+  <label class="oculto-visual" for="buscar-carta">Buscar una carta</label>
+  <input type="search" id="buscar-carta" autocomplete="off"
+         placeholder="🔍 Buscá una palabra: nudo, emociones, huerta, patrulla…">
+  <p class="chips">
+    <button type="button" class="chip" data-filtro="area" data-valor="" aria-pressed="true">Todas las áreas</button>
+    {% for area in areas %}
+      <button type="button" class="chip" data-filtro="area" data-valor="{{ area.codigo }}"
+              aria-pressed="false">{{ area.icono }} {{ area.nombre }}</button>
+    {% endfor %}
+  </p>
+  <p class="chips">
+    <button type="button" class="chip" data-filtro="estado" data-valor="" aria-pressed="true">Todas</button>
+    <button type="button" class="chip" data-filtro="estado" data-valor="elegidas" aria-pressed="false">🃏 Las que elegí</button>
+    <button type="button" class="chip" data-filtro="estado" data-valor="sin-elegir" aria-pressed="false">Sin elegir</button>
+  </p>
+  <p class="meta" id="cuenta-filtro" role="status"></p>
+</div>
+
+<div class="vacio" id="sin-resultados" hidden>
+  <img src="/estaticos/img/vacio/brujula.svg" alt="">
+  <strong>Ninguna carta dice eso</strong>
+  <p>Probá con otra palabra, o mirá el área entera.</p>
+</div>
 
 {% for area in areas %}
   {% set del_area = competencias|selectattr('area_id', 'equalto', area.id)|list %}
+  <section data-bloque-area="{{ area.codigo }}">
   <div class="franja-area" id="area-{{ area.codigo }}" style="--tono: {{ area.color }}1a; border-color: {{ area.color }}44">
     <img src="/estaticos/img/areas/{{ area.codigo }}.svg" alt="" aria-hidden="true">
     <div>
       <h2 style="color: {{ area.color }}; margin:0">{{ area.nombre }}</h2>
       <p>{{ area.descripcion }}</p>
-      <p class="meta">{{ del_area|length }} cartas · elegiste {{ del_area|selectattr('id', 'in', elegidas)|list|length }}</p>
+      <p class="meta">{{ del_area|length }} cartas · elegiste
+        <span data-cuenta="area-{{ area.id }}">{{ del_area|selectattr('id', 'in', elegidas)|list|length }}</span></p>
     </div>
   </div>
 
@@ -129,12 +125,13 @@
     {% for c in del_area %}
       {% set elegida = elegidas.get(c.id) %}
       {% set requeridos = c.desafios|selectattr('tipo', 'equalto', 'requerido')|list %}
-      <article class="tarjeta carta {{ 'elegida' if elegida }}" id="carta-{{ c.id }}"
+      <article class="tarjeta carta {{ 'elegida' if elegida }}" id="carta-{{ c.id }}" data-carta="{{ c.id }}"
+               data-area="{{ area.codigo }}"
                style="--color: {{ area.color }}; --tono: {{ area.color }}22">
         <span class="numero">{{ c.numero }}</span>
         <div>
           <h3>{{ c.titulo }}</h3>
-          <details>
+          <details id="desafios-{{ c.id }}">
             <summary>{{ c.desafios|length }} desafíos{% if requeridos %} · {{ requeridos|length }} requeridos{% endif %}</summary>
             <ul>
               {% for d in c.desafios %}
@@ -148,7 +145,7 @@
             </ul>
           </details>
           <div class="acciones">
-            <form method="post" action="/mis-cartas/{{ c.id }}">
+            <form method="post" action="/mis-cartas/{{ c.id }}" data-elegir="{{ c.id }}">
               {% if elegida and elegida.lograda %}
                 <span class="etiqueta aprobada">🏅 Lograda</span>
               {% elif elegida %}
@@ -157,11 +154,13 @@
                 <button type="submit">＋ Elegir esta carta</button>
               {% endif %}
             </form>
-            {% if elegida %}<a class="boton secundario" href="/mis-cartas/{{ c.id }}">Trabajar →</a>{% endif %}
+            <a class="boton secundario" data-trabajar href="/mis-cartas/{{ c.id }}"
+               {{ '' if elegida else 'hidden' }}>Trabajar →</a>
           </div>
         </div>
       </article>
     {% endfor %}
   </div>
+  </section>
 {% endfor %}
 {% endblock %}

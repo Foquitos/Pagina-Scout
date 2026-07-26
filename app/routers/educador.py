@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.config import PUNTAJE_POR_DEFECTO
 from app.db import obtener_sesion
-from app.dependencias import redirigir, render, solo_educador
+from app.dependencias import quiere_json, redirigir, render, solo_educador
 from app.models import (
     ALCANCE_JOVEN,
     ALCANCE_PATRULLA,
@@ -428,6 +428,7 @@ def crear_joven(
 @router.post("/jovenes/{joven_id}")
 def actualizar_joven(
     joven_id: int,
+    request: Request,
     patrulla_id: str = Form(""),
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
@@ -441,6 +442,10 @@ def actualizar_joven(
     joven = _joven_de_la_unidad(sesion, joven_id, usuario)
     joven.patrulla_id = int(patrulla_id) if patrulla_id.strip() else None
     sesion.commit()
+    if quiere_json(request):
+        # Acomodar treinta chicos en sus patrullas eran treinta recargas de una
+        # lista de treinta. Ahora el select se guarda solo y no se mueve nada.
+        return {"ok": True}
     return redirigir("/jovenes")
 
 
@@ -479,7 +484,10 @@ def ver_progresion(
         resumen=resumen,
         avances=resumen.avances,
         marcas=progresion.marcas_de(sesion, joven),
-        historial=progresion.historial_de_etapas(sesion, joven),
+        cambios=progresion.historial_de_etapas(sesion, joven),
+        historial=progresion.historial_de_cartas(sesion, joven),
+        propia=False,
+        nombre_corto=joven.nombre,
         etapas=ETAPAS,
         min_cartas=progresion.MIN_CARTAS,
         max_cartas=progresion.MAX_CARTAS,

@@ -20,6 +20,8 @@
       {% if joven.patrulla %}<span>Patrulla {{ joven.patrulla.nombre }}</span>{% endif %}
       <span>{{ avances|length }} de {{ min_cartas }} a {{ max_cartas }} cartas</span>
       {% if logradas %}<span>🏅 {{ logradas }} lograda{{ 's' if logradas != 1 }}</span>{% endif %}
+      {% set antes = historial|map(attribute='logradas')|map('length')|sum %}
+      {% if antes %}<span>📜 {{ antes }} de etapas anteriores</span>{% endif %}
     </p>
   </div>
 </div>
@@ -111,5 +113,13 @@
       </div>
     </article>
   {% endfor %}
+{% endif %}
+
+{% if historial %}
+  <h2 id="historial">📜 {% if propia %}Mi recorrido anterior{% else %}Su recorrido anterior{% endif %}</h2>
+  <p class="sub-titulo">Las cartas de las etapas anteriores quedan enteras, con lo
+    que se escribió en cada desafío. Las logradas ya no vuelven al catálogo.</p>
+  {% set nombre_corto = joven.nombre %}
+  {% include "joven/_historial.html" %}
 {% endif %}
 {% endblock %}

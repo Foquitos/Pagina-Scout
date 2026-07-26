@@ -7,8 +7,14 @@
   <title>{% block titulo %}Retos de Unidad{% endblock %} · Retos de Unidad</title>
   <link rel="stylesheet" href="/estaticos/estilos.css">
   <link rel="icon" href="/estaticos/img/areas/habilidades_vida.svg">
+  {# Se marca antes de pintar nada: si no, el botón «Guardar» que el
+     guardado automático reemplaza aparecería un instante y desaparecería. #}
+  <script>document.documentElement.classList.add('js')</script>
+  <script src="/estaticos/app.js" defer></script>
 </head>
-<body>
+{# El id de quien está usando la página: la cola de reintentos guarda lo que no
+   pudo mandar en este celular, y no puede entregárselo a la sesión de otro. #}
+<body{% if usuario %} data-usuario="{{ usuario.id }}"{% endif %}>
 
 {# Un solo listado de secciones: lo usan la barra de arriba y la de abajo. #}
 {% set ruta = request.url.path %}
@@ -92,6 +98,13 @@
   {% endfor %}
 </nav>
 {% endif %}
+
+{# Acá aterrizan los «guardado», «no hay señal» y demás. Es role=status
+   para que un lector de pantalla también se entere de que algo pasó. #}
+<div id="avisos" class="avisos" role="status" aria-live="polite"></div>
+
+{# Lo que quedó esperando señal. Se queda a la vista hasta que se manda. #}
+<div id="pendientes" class="pendientes" role="status" aria-live="polite" hidden></div>
 
 </body>
 </html>

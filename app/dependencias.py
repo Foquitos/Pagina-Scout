@@ -91,6 +91,26 @@ def render(request: Request, plantilla: str, **contexto):
     return plantillas.TemplateResponse(request, plantilla, contexto)
 
 
+def quiere_json(request: Request) -> bool:
+    """El pedido lo hizo `app.js` y espera datos, no una página entera.
+
+    La cabecera la manda solo el JavaScript; un formulario común nunca la
+    trae. Así la misma ruta atiende a los dos sin duplicarse, y si mañana
+    alguien entra sin JavaScript sigue funcionando como el primer día.
+    """
+    return request.headers.get("x-sin-recarga") == "json"
+
+
+def fragmento(plantilla: str, **contexto) -> str:
+    """Arma un pedazo de página para que el JavaScript lo pegue en su lugar.
+
+    El HTML lo sigue escribiendo Jinja. El listado que se repinta sin
+    recargar y el que se ve al entrar salen de la misma plantilla, así que
+    no hay forma de que se despeguen.
+    """
+    return plantillas.get_template(plantilla).render(**contexto)
+
+
 def redirigir(destino: str) -> RedirectResponse:
     """Redirección tras un POST: 303 para que el navegador use GET."""
     return RedirectResponse(destino, status_code=status.HTTP_303_SEE_OTHER)

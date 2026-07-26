@@ -56,7 +56,8 @@
 {% endif %}
 
 {% if not entrega or entrega.estado != 'aprobada' %}
-<form method="post" action="/reto/{{ asignacion.id }}" enctype="multipart/form-data" class="tarjeta">
+<form method="post" action="/reto/{{ asignacion.id }}" enctype="multipart/form-data" class="tarjeta"
+      data-sin-recarga="Entrega enviada.">
   <h3>{% if entrega %}✏️ Corregir mi entrega{% else %}📝 Contá qué hiciste{% endif %}</h3>
 
   {% if asignacion.reto.pide_texto %}

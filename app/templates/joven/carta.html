@@ -12,51 +12,28 @@
     <p class="meta">
       <span>Carta {{ competencia.numero }}</span>
       <span>{{ area.nombre }}</span>
-      <span>etapa {{ usuario.etapa_nombre }}</span>
+      <span>etapa {{ ETAPAS_NOMBRE[de_otra_etapa.etapa] if de_otra_etapa else usuario.etapa_nombre }}</span>
     </p>
   </div>
 </div>
 
-{% if not elegida %}
-  <div class="aviso info">
-    <span class="icono" aria-hidden="true">🧭</span>
-    <div><strong>Esta carta no está en tu elección de esta etapa.</strong>
-      <p>Elegila para poder ir marcando sus desafíos.</p></div>
-  </div>
-  <form method="post" action="/mis-cartas/{{ competencia.id }}">
-    <button type="submit" class="grande">＋ Elegir esta carta</button>
-  </form>
-{% else %}
-  <div class="tarjeta">
-    <div class="encabezado-tarjeta">
-      <div class="anillo" style="--p: {{ avance.porcentaje }}; --c: {{ area.color }}">
-        <span>{{ avance.porcentaje }}%</span>
-      </div>
-      <div>
-        <h3>Cómo venís</h3>
-        <p class="meta">
-          <span>{{ avance.requeridos_hechos }} de {{ avance.requeridos }} requeridos</span>
-          {% if avance.opcionales_hechos %}<span>+{{ avance.opcionales_hechos }} opcionales</span>{% endif %}
-        </p>
-        {% if elegida.lograda %}
-          <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
-          {% if elegida.nota_cierre %}
-            <blockquote class="comentario">{{ elegida.nota_cierre }}
-              <footer class="meta">{{ elegida.lograda_por.nombre if elegida.lograda_por else 'El equipo de educadores' }}
-                {% if elegida.lograda_en %} · {{ elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}</footer>
-            </blockquote>
-          {% endif %}
-        {% elif avance.completa %}
-          <p class="meta">🎉 Ya cumpliste todos los requeridos. El cierre se conversa:
-            contale a tu educador/a y a tu patrulla, y ellos la dan por lograda.</p>
-        {% endif %}
-      </div>
-    </div>
+{% if de_otra_etapa %}
+  {# Lograda en una etapa anterior: no se vuelve a elegir ni a marcar, pero lo
+     que escribió entonces sigue acá, tal cual lo dejó. #}
+  <div class="aviso ok">
+    <span class="icono" aria-hidden="true">🏅</span>
+    <div><strong>Esta carta ya la lograste en la etapa {{ ETAPAS_NOMBRE[de_otra_etapa.etapa] }}.</strong>
+      <p>Queda en tu recorrido con todo lo que escribiste. Una competencia que ya
+        desarrollaste no se vuelve a elegir.</p></div>
   </div>
 
+  {% with titulo_resumen = 'Cómo la dejaste' %}
+    {% include "joven/_resumen_carta.html" %}
+  {% endwith %}
+
   <h2>🎯 Los desafíos</h2>
-  <p class="sub-titulo">Marcá lo que hiciste y contá cómo te fue. Lo pueden leer tu
-    patrulla y el equipo de educadores.</p>
+  <p class="sub-titulo">Así los dejaste. De acá no se toca nada:
+    <a href="/mis-cartas#historial">está guardado en tu recorrido</a>.</p>
 
   {% for d in desafios %}
     {% set marca = marcas.get(d.id) %}
@@ -67,7 +44,45 @@
           <span class="chip {{ d.tipo }}">{{ d.tipo_nombre|lower }}</span>
         {% endif %}
       </p>
-      <form method="post" action="/mis-cartas/{{ competencia.id }}/desafios/{{ d.id }}">
+      {% if marca and marca.comentario %}
+        <blockquote class="comentario">{{ marca.comentario }}
+          <footer class="meta">Vos · {{ marca.actualizado_en.strftime('%d/%m/%Y') }}</footer>
+        </blockquote>
+      {% endif %}
+    </article>
+  {% endfor %}
+
+{% elif not elegida %}
+  <div class="aviso info">
+    <span class="icono" aria-hidden="true">🧭</span>
+    <div><strong>Esta carta no está en tu elección de esta etapa.</strong>
+      <p>Elegila para poder ir marcando sus desafíos.</p></div>
+  </div>
+  <form method="post" action="/mis-cartas/{{ competencia.id }}"
+        data-sin-recarga="Carta agregada a tu elección.">
+    {# Elegirla desde su propia página te deja acá, con los desafíos ya abiertos. #}
+    <input type="hidden" name="quedarse" value="1">
+    <button type="submit" class="grande">＋ Elegir esta carta</button>
+  </form>
+{% else %}
+  <div id="resumen-carta">
+    {% include "joven/_resumen_carta.html" %}
+  </div>
+
+  <h2>🎯 Los desafíos</h2>
+  <p class="sub-titulo">Marcá lo que hiciste y contá cómo te fue. Lo pueden leer tu
+    patrulla y el equipo de educadores.<span class="solo-js"> Se guarda solo.</span></p>
+
+  {% for d in desafios %}
+    {% set marca = marcas.get(d.id) %}
+    <article class="tarjeta desafio {{ 'hecho' if marca and marca.hecho }}" id="desafio-{{ d.id }}">
+      <p class="texto-desafio">
+        {{ d.texto }}
+        {% if d.tipo and d.tipo != 'requerido' %}
+          <span class="chip {{ d.tipo }}">{{ d.tipo_nombre|lower }}</span>
+        {% endif %}
+      </p>
+      <form method="post" action="/mis-cartas/{{ competencia.id }}/desafios/{{ d.id }}" data-autoguardar>
         <label class="casilla">
           <input type="checkbox" name="hecho" value="true" {{ 'checked' if marca and marca.hecho }}>
           Lo hice
@@ -76,8 +91,8 @@
         <textarea id="comentario-{{ d.id }}" name="comentario" rows="2"
           placeholder="Qué hiciste, con quién, qué aprendiste o qué te costó.">{{ marca.comentario if marca }}</textarea>
         <div class="acciones">
-          <button type="submit" class="secundario">Guardar</button>
-          {% if marca %}<span class="meta">guardado el {{ marca.actualizado_en.strftime('%d/%m/%Y') }}</span>{% endif %}
+          <button type="submit" class="secundario boton-guardar">Guardar</button>
+          <span class="estado-guardado" data-estado="">{% if marca %}guardado el {{ marca.actualizado_en.strftime('%d/%m/%Y') }}{% endif %}</span>
         </div>
       </form>
     </article>

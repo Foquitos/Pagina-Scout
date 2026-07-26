@@ -1,0 +1,47 @@
+{# Cómo va la elección de cartas: el aviso de arriba y las cartas elegidas.
+
+   Vive aparte porque es lo único que cambia al elegir o sacar una carta:
+   `/mis-cartas` lo pinta al entrar y la misma ruta lo devuelve ya armado
+   cuando el JavaScript pide el cambio, sin volver a mandar las 53 cartas.
+
+   Espera `avances`, `min_cartas` y `max_cartas`. Nada más: tiene que poder
+   renderizarse suelto, sin `request` ni `usuario`. #}
+{% set cantidad = avances|length %}
+{% set logradas = avances|selectattr('elegida.lograda')|list|length %}
+
+{% if cantidad < min_cartas %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">🎒</span>
+    <div><strong>Te faltan {{ min_cartas - cantidad }} cartas para completar tu elección.</strong>
+      <p>Elegí de las cuatro áreas, según lo que tengas ganas de explorar.</p></div>
+  </div>
+{% elif cantidad > max_cartas %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">🤔</span>
+    <div><strong>Elegiste más de {{ max_cartas }}.</strong>
+      <p>Conversalo con tu educador/a antes de seguir.</p></div>
+  </div>
+{% else %}
+  <div class="aviso ok">
+    <span class="icono" aria-hidden="true">🎉</span>
+    <div><strong>Tu elección está completa.</strong>
+      <p>Compartila con tu patrulla en el Consejo.</p></div>
+  </div>
+{% endif %}
+
+<h2 id="elegidas">🃏 Las cartas que elegí</h2>
+{% if not avances %}
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/cartas.svg" alt="">
+    <strong>Todavía no elegiste ninguna</strong>
+    <p>Mirá el catálogo de abajo y tocá el botón para elegir la que quieras.</p>
+    <a class="boton grande" href="#catalogo">Ver el catálogo</a>
+  </div>
+{% else %}
+  <p class="sub-titulo">Entrá a cada una para ir marcando los desafíos y contar cómo te fue.</p>
+  <div class="rejilla">
+    {% for a in avances %}
+      {% include "joven/_carta_elegida.html" %}
+    {% endfor %}
+  </div>
+{% endif %}

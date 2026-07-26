@@ -13,7 +13,7 @@
       <p><a href="/retos">Ir a Retos</a></p></div>
   </div>
 {% else %}
-<form method="post" action="/asignar" class="tarjeta">
+<form method="post" action="/asignar" class="tarjeta" data-sin-recarga="Reto asignado.">
   <label for="reto_id">Reto</label>
   <select id="reto_id" name="reto_id" required>
     {% for r in retos %}<option value="{{ r.id }}">{{ r.titulo }} ({{ r.puntaje }} pts)</option>{% endfor %}

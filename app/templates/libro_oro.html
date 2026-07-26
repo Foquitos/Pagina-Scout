@@ -21,7 +21,8 @@
 
 <details class="tarjeta" {{ 'open' if not entradas }}>
   <summary>✍️ Escribir una página</summary>
-  <form method="post" action="/libro-de-oro/{{ patrulla.id }}" enctype="multipart/form-data">
+  <form method="post" action="/libro-de-oro/{{ patrulla.id }}" enctype="multipart/form-data"
+        data-sin-recarga="Página agregada al libro.">
     <label for="titulo">Título</label>
     <input type="text" id="titulo" name="titulo" required maxlength="200"
            placeholder="Campamento de invierno: la carpa que voló">
@@ -90,9 +91,12 @@
       {% if e.texto %}<p class="texto-libro">{{ e.texto }}</p>{% endif %}
 
       {% if usuario.es_educador or e.autor_id == usuario.id %}
+        {# El `onsubmit` es el plan B de quien no tiene JavaScript; con
+           JavaScript se pregunta acá adentro y no en un cartel del navegador. #}
         <form method="post" action="/libro-de-oro/{{ patrulla.id }}/{{ e.id }}/borrar"
               onsubmit="return confirm('¿Borrar esta página del libro? No se puede deshacer.')"
-              class="acciones">
+              data-confirmar="¿Borrar esta página? No se puede deshacer."
+              data-sin-recarga="Página borrada." class="acciones">
           <button type="submit" class="secundario">Borrar página</button>
         </form>
       {% endif %}

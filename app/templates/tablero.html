@@ -2,10 +2,14 @@
 {% block titulo %}Tablero de patrullas{% endblock %}
 
 {% block contenido %}
-<div class="portada sol">
+{# `data-refrescar`: durante una reunión el tablero se pone al día solo, cada
+   tantos segundos, sin que nadie tenga que recargar. Solo repinta si algo
+   cambió de verdad. #}
+<div class="portada sol" data-refrescar="30">
   <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
   <h1>🏆 Tablero de patrullas</h1>
-  <p class="sub">El puntaje es siempre de la patrulla. No hay marcador individual.</p>
+  <p class="sub">El puntaje es siempre de la patrulla. No hay marcador individual.
+    <span class="solo-js">Se actualiza solo.</span></p>
 </div>
 
 {% if not filas %}

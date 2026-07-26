@@ -56,7 +56,7 @@
   la mueven solos.</p>
 
 {% if confirmar == 'etapa' %}
-  <div class="aviso alerta">
+  <div class="aviso alerta" data-aviso="El cambio de etapa está sin confirmar.">
     <span class="icono" aria-hidden="true">✋</span>
     <div><strong>Falta confirmar el cambio.</strong>
       <p>{{ resumen.motivo_pendiente or 'Ese cambio no es el paso esperado de la etapa.' }}
@@ -65,7 +65,7 @@
 {% endif %}
 
 <div class="tarjeta">
-  <form method="post" action="/progresion/{{ joven.id }}/etapa">
+  <form method="post" action="/progresion/{{ joven.id }}/etapa" data-sin-recarga="Etapa cambiada.">
     <div class="fila">
       <div>
         <label for="etapa">Etapa</label>
@@ -106,11 +106,11 @@
   </form>
 </div>
 
-{% if historial %}
+{% if cambios %}
   <details class="tarjeta">
-    <summary>📜 Cómo fue su recorrido ({{ historial|length }} cambio{{ 's' if historial|length != 1 }})</summary>
+    <summary>🧭 Cómo fue su recorrido ({{ cambios|length }} cambio{{ 's' if cambios|length != 1 }} de etapa)</summary>
     <ul class="lista-desafios">
-      {% for c in historial %}
+      {% for c in cambios %}
         <li>
           <span class="tilde" aria-hidden="true">{{ '⚠' if c.con_pendientes else '✔' }}</span>
           <div>
@@ -174,7 +174,8 @@
           {% if elegida.nota_cierre %}
             <blockquote class="comentario">{{ elegida.nota_cierre }}</blockquote>
           {% endif %}
-          <form method="post" action="/progresion/{{ joven.id }}/cartas/{{ a.competencia.id }}">
+          <form method="post" action="/progresion/{{ joven.id }}/cartas/{{ a.competencia.id }}"
+                data-sin-recarga="Carta reabierta.">
             <input type="hidden" name="accion" value="reabrir">
             <div class="acciones">
               <button type="submit" class="secundario">Reabrir la carta</button>
@@ -193,14 +194,15 @@
           {% endif %}
 
           {% if confirmar == a.competencia.id|string %}
-            <div class="aviso alerta">
+            <div class="aviso alerta" data-aviso="La carta está sin cerrar: falta confirmar.">
               <span class="icono" aria-hidden="true">✋</span>
               <div><strong>Falta confirmar.</strong>
                 <p>Para darla por lograda con requeridos sin marcar, marcá la casilla.</p></div>
             </div>
           {% endif %}
 
-          <details class="tarjeta" {{ 'open' if confirmar == a.competencia.id|string }}>
+          <details class="tarjeta" id="cerrar-{{ a.competencia.id }}"
+                   {{ 'open' if confirmar == a.competencia.id|string }}>
             <summary>🏅 Dar esta carta por lograda</summary>
 
             {% if a.completa %}
@@ -223,7 +225,8 @@
               </div>
             {% endif %}
 
-            <form method="post" action="/progresion/{{ joven.id }}/cartas/{{ a.competencia.id }}">
+            <form method="post" action="/progresion/{{ joven.id }}/cartas/{{ a.competencia.id }}"
+                  data-sin-recarga="Carta dada por lograda.">
               <input type="hidden" name="accion" value="cerrar">
               <label for="nota-{{ a.competencia.id }}">Qué se conversó (opcional)</label>
               <textarea id="nota-{{ a.competencia.id }}" name="nota" rows="2"
@@ -240,7 +243,7 @@
             </form>
           </details>
 
-          <details>
+          <details id="desafios-{{ a.competencia.id }}">
             <summary>Ver los {{ a.total }} desafíos</summary>
             <ul class="lista-desafios">
               {% for d in a.competencia.desafios %}
@@ -261,5 +264,12 @@
       </div>
     </article>
   {% endfor %}
+{% endif %}
+
+{% if historial %}
+  <h2 id="historial">📜 Lo que quedó de las etapas anteriores</h2>
+  <p class="sub-titulo">No se toca desde acá: es el registro de lo que ya recorrió.
+    Las cartas logradas no vuelven a ofrecérsele en el catálogo.</p>
+  {% include "joven/_historial.html" %}
 {% endif %}
 {% endblock %}

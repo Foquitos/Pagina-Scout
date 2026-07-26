@@ -9,11 +9,19 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import obtener_sesion
-from app.dependencias import redirigir, render, solo_joven, usuario_actual
+from app.dependencias import (
+    fragmento,
+    quiere_json,
+    redirigir,
+    render,
+    solo_joven,
+    usuario_actual,
+)
 from app.models import (
     ALCANCE_JOVEN,
     ALCANCE_PATRULLA,
     ESTADO_APROBADA,
+    ETAPAS_NOMBRE,
     ROL_JOVEN,
     Area,
     Asignacion,
@@ -217,29 +225,42 @@ def mis_cartas(
     areas = list(sesion.scalars(select(Area).order_by(Area.id)))
     competencias = list(sesion.scalars(select(Competencia).order_by(Competencia.numero)))
     avances = progresion.cartas_elegidas(sesion, usuario)
+
+    # Lo ya logrado en otra etapa sale del catálogo: esa competencia la
+    # desarrolló, no hay nada que volver a elegir. Sigue estando en el historial.
+    logradas_antes = progresion.logradas_de_otras_etapas(sesion, usuario)
+    catalogo = [c for c in competencias if c.id not in logradas_antes]
+
     return render(
         request,
         "joven/mis_cartas.html",
         usuario=usuario,
         areas=areas,
-        competencias=competencias,
+        competencias=catalogo,
         avances=avances,
         elegidas={a.elegida.competencia_id: a.elegida for a in avances},
+        historial=progresion.historial_de_cartas(sesion, usuario),
         min_cartas=MIN_CARTAS,
         max_cartas=MAX_CARTAS,
         total_cartas=len(competencias),
+        en_catalogo=len(catalogo),
+        logradas_antes=len(logradas_antes),
     )
 
 
 @router.post("/mis-cartas/{competencia_id}")
 def alternar_carta(
     competencia_id: int,
+    request: Request,
+    quedarse: bool = Form(False),
     usuario: Usuario = Depends(solo_joven),
     sesion: Session = Depends(obtener_sesion),
 ):
-    # Vuelve al ancla de la carta: elegir la número 47 no debería devolverte
-    # al principio de una lista de 53.
-    destino = f"/mis-cartas#carta-{competencia_id}"
+    # Sin JavaScript vuelve al ancla de la carta: elegir la número 47 no
+    # debería devolverte al principio de una lista de 53. `quedarse` lo manda
+    # la página de la carta, que es donde ya estabas; no viaja ninguna URL del
+    # navegador, así que no hay a dónde desviar a nadie.
+    destino = f"/mis-cartas/{competencia_id}" if quedarse else f"/mis-cartas#carta-{competencia_id}"
 
     existente = sesion.scalar(
         select(CompetenciaElegida).where(
@@ -255,18 +276,64 @@ def alternar_carta(
         if not existente.lograda:
             sesion.delete(existente)
             sesion.commit()
-        return redirigir(destino)
-
-    if sesion.get(Competencia, competencia_id) is None:
-        raise HTTPException(404, "Esa carta no existe.")
-
-    sesion.add(
-        CompetenciaElegida(
-            joven_id=usuario.id, competencia_id=competencia_id, etapa=usuario.etapa
+    else:
+        if sesion.get(Competencia, competencia_id) is None:
+            raise HTTPException(404, "Esa carta no existe.")
+        # No está en el catálogo, pero el formulario podría llegar igual: de una
+        # pestaña vieja, o del atajo de alguien curioso.
+        ya_lograda = progresion.carta_de_otra_etapa(sesion, usuario, competencia_id)
+        if ya_lograda is not None:
+            raise HTTPException(
+                400,
+                f"Esa carta ya la lograste en la etapa "
+                f"{ETAPAS_NOMBRE.get(ya_lograda.etapa, ya_lograda.etapa)}. "
+                f"Está guardada en tu historial.",
+            )
+        sesion.add(
+            CompetenciaElegida(
+                joven_id=usuario.id, competencia_id=competencia_id, etapa=usuario.etapa
+            )
         )
-    )
-    sesion.commit()
+        sesion.commit()
+
+    if quiere_json(request):
+        return _eleccion_al_dia(sesion, usuario, competencia_id)
     return redirigir(destino)
+
+
+def _eleccion_al_dia(sesion: Session, joven: Usuario, competencia_id: int) -> dict:
+    """Lo que cambia en /mis-cartas al elegir o sacar una carta.
+
+    Se devuelve el pedazo de página ya armado por Jinja y los contadores
+    sueltos. Volver a mandar las 53 cartas para cambiar un botón sería tirar
+    a la basura casi todo lo que se transmite.
+    """
+    avances = progresion.cartas_elegidas(sesion, joven)
+    cuentas: dict[str, int] = {
+        "elegidas": len(avances),
+        "logradas": sum(1 for a in avances if a.elegida.lograda),
+    }
+    # Todas las áreas, no solo las que tienen cartas elegidas: si un área
+    # queda en cero, ese cero también tiene que llegar a la pantalla.
+    for area_id in sesion.scalars(select(Area.id)):
+        cuentas[f"area-{area_id}"] = sum(
+            1 for a in avances if a.competencia.area_id == area_id
+        )
+
+    elegida = any(a.elegida.competencia_id == competencia_id for a in avances)
+    return {
+        "elegida": elegida,
+        "aviso": "Carta agregada a tu elección." if elegida else "Carta sacada de tu elección.",
+        "cuentas": cuentas,
+        "fragmentos": {
+            "#eleccion": fragmento(
+                "joven/_eleccion.html",
+                avances=avances,
+                min_cartas=MIN_CARTAS,
+                max_cartas=MAX_CARTAS,
+            )
+        },
+    }
 
 
 @router.get("/mis-cartas/{competencia_id}")
@@ -276,7 +343,12 @@ def trabajar_carta(
     usuario: Usuario = Depends(solo_joven),
     sesion: Session = Depends(obtener_sesion),
 ):
-    """La página de trabajo de una carta: marcar desafíos y comentarlos."""
+    """La página de trabajo de una carta: marcar desafíos y comentarlos.
+
+    Si la carta la logró en una etapa anterior, la misma página la muestra
+    cerrada y de solo lectura, con lo que había escrito entonces: no se puede
+    volver a elegir ni a marcar, pero tampoco desaparece.
+    """
     competencia = sesion.get(Competencia, competencia_id)
     if competencia is None:
         raise HTTPException(404, "Esa carta no existe.")
@@ -288,7 +360,11 @@ def trabajar_carta(
             CompetenciaElegida.etapa == usuario.etapa,
         )
     )
-    marcas = progresion.marcas_de(sesion, usuario)
+    de_otra_etapa = None if elegida else progresion.carta_de_otra_etapa(sesion, usuario, competencia_id)
+    if de_otra_etapa is not None:
+        elegida = de_otra_etapa
+    marcas = progresion.marcas_de(sesion, usuario, elegida.etapa if elegida else None)
+
     return render(
         request,
         "joven/carta.html",
@@ -298,6 +374,7 @@ def trabajar_carta(
         elegida=elegida,
         marcas=marcas,
         avance=progresion.avance_de_carta(elegida, marcas) if elegida else None,
+        de_otra_etapa=de_otra_etapa,
     )
 
 
@@ -305,6 +382,7 @@ def trabajar_carta(
 def marcar_desafio(
     competencia_id: int,
     desafio_id: int,
+    request: Request,
     hecho: bool = Form(False),
     comentario: str = Form(""),
     usuario: Usuario = Depends(solo_joven),
@@ -315,7 +393,7 @@ def marcar_desafio(
         raise HTTPException(404, "Ese desafío no existe.")
 
     elegida = sesion.scalar(
-        select(CompetenciaElegida.id).where(
+        select(CompetenciaElegida).where(
             CompetenciaElegida.joven_id == usuario.id,
             CompetenciaElegida.competencia_id == competencia_id,
             CompetenciaElegida.etapa == usuario.etapa,
@@ -339,6 +417,17 @@ def marcar_desafio(
     avance.hecho = hecho
     avance.comentario = comentario.strip()
     sesion.commit()
+
+    if quiere_json(request):
+        # No se manda la hora: el servidor guarda en UTC y no tiene por qué
+        # saber en qué huso está quien escribe. La pone el navegador.
+        de_la_carta = progresion.avance_de_carta(elegida, progresion.marcas_de(sesion, usuario))
+        return {
+            "hecho": avance.hecho,
+            "fragmentos": {
+                "#resumen-carta": fragmento("joven/_resumen_carta.html", avance=de_la_carta)
+            },
+        }
     return redirigir(f"/mis-cartas/{competencia_id}#desafio-{desafio_id}")
 
 
@@ -395,6 +484,7 @@ def cartas_de(
         joven=joven,
         avances=progresion.cartas_elegidas(sesion, joven),
         marcas=progresion.marcas_de(sesion, joven),
+        historial=progresion.historial_de_cartas(sesion, joven),
         propia=joven.id == usuario.id,
         min_cartas=MIN_CARTAS,
         max_cartas=MAX_CARTAS,

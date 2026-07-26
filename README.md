@@ -57,6 +57,7 @@ app/
     medios.py        compresión de fotos y enlaces de video
   static/
     estilos.css      la hoja de estilos, sin framework ni build
+    app.js           guardado automático y acciones sin recargar (ver abajo)
     img/             las ilustraciones (SVG hechos a mano, ver abajo)
 datos/
   cartas_exploracion.json   las 53 competencias y sus 376 desafíos
@@ -109,16 +110,88 @@ No hay framework de CSS ni paso de build: `estilos.css` es un archivo, y las
 plantillas usan sus clases. Los emojis hacen de íconos, igual que en el resto
 del programa —cada área ya tenía el suyo en la base de datos—.
 
+## El JavaScript
+
+`app/static/app.js` es un archivo, sin framework, sin build y sin dependencias.
+Todo lo que hace es **mejora progresiva**: si no carga, la aplicación funciona
+igual, con sus formularios y sus recargas. Eso no es prolijidad de manual —esto
+se usa desde el celular en un campamento, y una señal que se corta no puede
+dejar a nadie sin poder marcar lo que hizo—. Las pruebas recorren los dos
+caminos: el mismo POST, con y sin la cabecera que manda el JavaScript.
+
+Una plantilla se engancha con un atributo:
+
+| Atributo | Qué hace |
+|---|---|
+| `data-autoguardar` | El formulario se guarda solo al marcar algo o al dejar de escribir. El botón «Guardar» se esconde por CSS y vuelve si algo falló. |
+| `data-sin-recarga="Listo"` | El formulario se envía por detrás y se repinta `<main>` en el lugar, sin saltar arriba ni cerrar lo que estaba desplegado. El texto es el aviso que aparece al terminar. |
+| `data-elegir` | El botón de elegir una carta, que tiene su propio camino en JSON. |
+| `data-cuenta="…"` | Un número que se actualiza solo (cartas elegidas, logradas, por área). |
+| `data-aviso="…"` | Lo que la página nueva quiere decir en lugar del mensaje del formulario: sirve para que «se guardó» no se muestre cuando lo que volvió fue un pedido de confirmación. |
+| `data-confirmar="…"` | Pregunta adentro de la tarjeta en vez de abrir el cartel del navegador. El `onsubmit="return confirm(…)"` se deja en la plantilla como plan B y lo saca `app.js` al arrancar. |
+| `data-refrescar="30"` | La página se pone al día sola cada tantos segundos. |
+| `data-atajos` / `data-entrega` | La lista se puede recorrer y resolver con el teclado. |
+| `.solo-js` | Texto que solo tiene sentido con JavaScript andando. |
+
+**El HTML lo sigue armando el servidor.** No hay plantillas en JavaScript.
+Cuando algo tiene que repintarse, la ruta devuelve el pedazo ya renderizado por
+Jinja (`fragmento()` en `dependencias.py`) y el navegador lo pega en su lugar,
+así que lo que se ve al entrar y lo que se ve después de tocar un botón salen
+de la misma plantilla y no se pueden despegar. Los parciales son los archivos
+que empiezan con `_`.
+
+Del lado de las rutas hay un solo cambio: `quiere_json(request)` mira una
+cabecera que solo manda `app.js`. Un formulario común nunca la trae, así que la
+misma ruta atiende a los dos casos sin duplicarse.
+
+Detalles que se notan en la pantalla:
+
+- Al elegir una carta se **compensa el alto** de lo que cambió arriba, así que
+  el catálogo no se te mueve bajo el dedo. Sin JavaScript eso lo resuelve el
+  ancla `#carta-N` de la redirección.
+- Las fotos se suben con `XMLHttpRequest` y no con `fetch`, porque es lo único
+  que informa cuánto va subiendo. Con señal de campamento, ver que algo avanza
+  es la diferencia entre esperar y volver a apretar el botón.
+- **El buscador del catálogo no consulta nada**: las cartas ya están en la
+  página, así que el índice se arma del propio HTML (título y desafíos) y se
+  compara sin acentos ni mayúsculas. Un área que se queda sin resultados
+  desaparece entera, con su franja.
+- **La foto se achica en el celular** antes de subirla: 1600 px y calidad 82,
+  los mismos números que `config.py`. Una de 4 MB sale como 300 kB. Si el
+  navegador no la supo abrir, o si achicarla no la hubiera hecho más chica,
+  sube la original. La compresión del servidor sigue igual: esto ahorra los
+  datos de quien sube, no reemplaza la garantía de allá.
+- **Lo que no salió por falta de señal** queda en `localStorage` y se manda
+  solo cuando vuelve la conexión, con un cartel a la vista mientras tanto. La
+  cola va por usuario (`localStorage["retos-pendientes-{id}"]`, y de ahí el
+  `data-usuario` en el `<body>`): lo que quedó a medias en un teléfono no
+  puede terminar entrando en la sesión de otra persona. Solo entra ahí lo de
+  `data-autoguardar`, que es idempotente; una entrega o una página del libro
+  no se reintentan solas porque reintentarlas sería crearlas dos veces. Un
+  rechazo del servidor tampoco se encola: reintentar un «no» es un lazo
+  infinito.
+- **Los atajos de validación** (`J`/`K` para moverse, `A`/`D`/`R` para
+  resolver) se anuncian solo donde hay teclado de verdad —`pointer: fine`—, y
+  se apagan mientras el foco está en un campo de texto.
+- **El tablero se repinta solo** cada 30 s, pero solo si el HTML cambió, solo
+  con la pestaña a la vista, y nunca por encima de alguien que está
+  escribiendo, mirando una foto o a punto de confirmar algo.
+
 ## La progresión personal
 
 Cada joven elige de 12 a 14 cartas para su etapa. Eso vive en `/mis-cartas`, que
-tiene dos partes separadas: arriba **las que eligió**, con su avance y el acceso
-a trabajarlas; abajo el **catálogo** de las 53 para seguir eligiendo. Elegir una
-carta te devuelve al ancla de esa carta, no al principio de la lista.
+tiene tres partes separadas: arriba **las que eligió**, con su avance y el acceso
+a trabajarlas; en el medio el **historial** de las etapas anteriores; abajo el
+**catálogo** de las que le quedan por explorar. Elegir una carta no mueve la
+página: el botón cambia ahí mismo y la lista de arriba se repinta sola. Sin
+JavaScript te devuelve al ancla de esa carta, no al principio de la lista.
 
 En `/mis-cartas/{id}` marca cada desafío como hecho y escribe cómo le fue. Eso
 es `AvanceDesafio`, y va por etapa: si saca una carta de su elección y después la
-vuelve a poner, el trabajo sigue ahí.
+vuelve a poner, el trabajo sigue ahí. **No hay que apretar nada para guardar**:
+tildar una casilla guarda al instante y el comentario se guarda solo al dejar de
+escribir. Si algo no salió, aparece el botón «Guardar» para reintentar a mano, y
+si se cierra la pestaña con algo a medio escribir se manda igual (`sendBeacon`).
 
 **El avance se cuenta sobre los requeridos**, que son los mínimos de la carta.
 Los opcionales suman y se muestran, pero no mueven la meta.
@@ -161,7 +234,32 @@ educadores.
 lo decidió y cuántas cartas tenía elegidas y logradas en ese momento. Ese número
 hay que guardarlo sí o sí: las cartas viven atadas a su etapa, así que al día
 siguiente del cambio la etapa nueva arranca en cero y ya no se puede recalcular.
-Lo trabajado en la etapa anterior no se pierde, queda guardado ahí.
+
+## Lo que queda de las etapas anteriores
+
+Cambiar de etapa no borra nada, y ahora tampoco lo esconde. Las cartas y las
+marcas viven atadas a la etapa en la que se trabajaron, así que al cambiar
+quedan enteras y salen por el **historial**: una sección por etapa recorrida,
+con cada carta y con lo que escribió en cada desafío. Está en `/mis-cartas`, en
+`/cartas-de/{joven_id}` y en la progresión del educador, y sale de una sola
+plantilla —`joven/_historial.html`— para que las tres cuenten lo mismo.
+
+Van las logradas, que es lo que el historial viene a guardar, y también las que
+quedaron sin cerrar: ahí adentro hay trabajo hecho y no tiene por qué
+desaparecer de la pantalla.
+
+**Una carta lograda no vuelve al catálogo.** Esa competencia ya la desarrolló:
+ofrecérsela de nuevo en la etapa siguiente sería pedirle que la vuelva a hacer.
+Sale del catálogo de `/mis-cartas` —el subtítulo dice cuántas se fueron y enlaza
+al historial— y el servidor rechaza el pedido si llega igual, desde una pestaña
+vieja o del atajo de alguien curioso. Su página, `/mis-cartas/{id}`, sigue
+abriendo: en solo lectura, con la etapa en la que la logró y lo que escribió
+entonces.
+
+Nada de esto es una tabla nueva: es la misma `CompetenciaElegida` y el mismo
+`AvanceDesafio` de siempre, leídos por etapa. `AvanceCarta` lleva adentro las
+marcas de *su* etapa, porque el historial pone cartas de etapas distintas en una
+misma pantalla y cada una tiene que contarse con las suyas.
 
 **La etapa no se toca desde el listado de jóvenes.** Ahí solo se cambia la
 patrulla. Son dos decisiones distintas: mover a alguien de patrulla es organizar

@@ -1,0 +1,32 @@
+{# «Cómo venís» dentro de una carta. Se repinta cada vez que se marca un
+   desafío, así que vive aparte y se renderiza suelto. Espera `avance`; el
+   título se puede cambiar con `titulo_resumen` —una carta de una etapa vieja
+   no «viene», ya quedó como quedó—. #}
+{% set elegida = avance.elegida %}
+{% set area = avance.competencia.area %}
+<div class="tarjeta">
+  <div class="encabezado-tarjeta">
+    <div class="anillo" style="--p: {{ avance.porcentaje }}; --c: {{ area.color }}">
+      <span>{{ avance.porcentaje }}%</span>
+    </div>
+    <div>
+      <h3>{{ titulo_resumen | default('Cómo venís') }}</h3>
+      <p class="meta">
+        <span>{{ avance.requeridos_hechos }} de {{ avance.requeridos }} requeridos</span>
+        {% if avance.opcionales_hechos %}<span>+{{ avance.opcionales_hechos }} opcionales</span>{% endif %}
+      </p>
+      {% if elegida.lograda %}
+        <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
+        {% if elegida.nota_cierre %}
+          <blockquote class="comentario">{{ elegida.nota_cierre }}
+            <footer class="meta">{{ elegida.lograda_por.nombre if elegida.lograda_por else 'El equipo de educadores' }}
+              {% if elegida.lograda_en %} · {{ elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}</footer>
+          </blockquote>
+        {% endif %}
+      {% elif avance.completa %}
+        <p class="meta">🎉 Ya cumpliste todos los requeridos. El cierre se conversa:
+          contale a tu educador/a y a tu patrulla, y ellos la dan por lograda.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>

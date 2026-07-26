@@ -509,6 +509,13 @@ details[open] > summary::after { transform: rotate(180deg); }
 details ul { margin: .4rem 0; padding-left: 1.2rem; }
 details li { margin: .3rem 0; }
 
+/* Una etapa ya recorrida. Se lee como lo que es —un archivo, no lo de ahora—,
+   pero con el dorado del Libro de Oro: es algo que se logró, no algo viejo. */
+.etapa-vieja { border-left: 6px solid #c8a951; background: #fbf8ef; }
+.etapa-vieja > summary { font-weight: 800; }
+.etapa-vieja .carta { background: #fff; }
+.etapa-vieja .carta.lograda { background: #f5fbf7; }
+
 /* --- Cómo funciona (tarjetitas explicativas) ----------------- */
 
 .pasos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .8rem; margin: 1rem 0 1.4rem; }
@@ -735,9 +742,206 @@ th, td { text-align: left; padding: .7rem .8rem; border-bottom: 1px solid var(--
 th { background: #f3efe4; font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; }
 tr:last-child td { border-bottom: 0; }
 
+/* --- Guardado automático ------------------------------------- */
+
+/* Con JavaScript el formulario se guarda solo, así que el botón sobra.
+   Vuelve si algo falló: ahí sí hace falta poder reintentar a mano. */
+html.js form[data-autoguardar] .boton-guardar { display: none; }
+html.js form[data-autoguardar].con-error .boton-guardar { display: inline-flex; }
+
+.estado-guardado {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  min-height: 1.2em;
+}
+.estado-guardado[data-estado="escribiendo"] { opacity: .6; }
+.estado-guardado[data-estado="guardando"] { color: var(--cielo); }
+.estado-guardado[data-estado="guardado"] { color: var(--ok); }
+.estado-guardado[data-estado="guardado"]::before { content: "✔ "; }
+.estado-guardado[data-estado="error"] { color: #8c3b3b; }
+
+button[disabled], .boton[disabled] { opacity: .55; cursor: progress; box-shadow: none; }
+button[disabled]:hover { background: var(--verde); }
+
+/* La barra de la foto que se está subiendo: en el celular, con señal de
+   campamento, saber que algo avanza es la diferencia con volver a tocar. */
+.barra-avance.subida { margin-top: .8rem; }
+.barra-avance.subida > div { background: var(--cielo); }
+
+/* --- Avisos flotantes ---------------------------------------- */
+
+.avisos {
+  position: fixed;
+  left: 50%;
+  bottom: 1.2rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  pointer-events: none;
+}
+.globo {
+  background: var(--tinta);
+  color: #fff;
+  font-weight: 700;
+  font-size: .92rem;
+  padding: .6rem 1.1rem;
+  border-radius: 999px;
+  box-shadow: var(--sombra-alta);
+  max-width: min(92vw, 34rem);
+  text-align: center;
+  animation: globo-entra .18s ease-out;
+}
+.globo.bien { background: var(--ok); }
+.globo.mal { background: #8c3b3b; }
+.globo.yendose { opacity: 0; transition: opacity .6s; }
+
+@keyframes globo-entra {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Lo que quedó esperando señal. No se va solo: se queda hasta que sale, y va
+   arriba y no abajo para no pelearse con los avisos que sí pasan. */
+.pendientes {
+  position: fixed;
+  left: 50%;
+  top: 4.2rem;
+  transform: translateX(-50%);
+  z-index: 55;
+  background: var(--alerta);
+  color: #fff;
+  font-weight: 700;
+  font-size: .88rem;
+  padding: .45rem 1rem;
+  border-radius: 999px;
+  box-shadow: var(--sombra-alta);
+}
+.pendientes::before { content: "📡 "; }
+
+/* --- Buscar en el catálogo ----------------------------------- */
+
+.filtros {
+  position: sticky;
+  top: 3.4rem;
+  z-index: 10;
+  background: var(--papel);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: .9rem 1rem;
+  margin-bottom: 1.2rem;
+  box-shadow: var(--sombra);
+}
+.filtros input[type=search] { margin-bottom: .2rem; }
+.filtros .chips { margin-top: .5rem; }
+.filtros .meta { margin: .5rem 0 0; }
+
+/* Un chip que además es botón: hay que apagarle lo que trae de botón. */
+button.chip {
+  box-shadow: none;
+  font-weight: 600;
+  padding: .2rem .7rem;
+}
+button.chip:hover { background: #fbf9f4; border-color: var(--verde); color: var(--verde-oscuro); }
+button.chip[aria-pressed="true"] {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #fff;
+}
+button.chip[aria-pressed="true"]:hover { background: var(--verde-oscuro); color: #fff; }
+
+/* --- La foto antes de subirla -------------------------------- */
+
+.vista-previa {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  margin-top: .6rem;
+  padding: .6rem;
+  border: 2px dashed var(--borde-fuerte);
+  border-radius: var(--radio-chico);
+  background: #fbf9f4;
+}
+.vista-previa img {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: var(--radio-chico);
+  background: #ece7db;
+  flex: none;
+}
+.vista-previa p { margin: 0; }
+
+/* --- Ver una foto en grande ---------------------------------- */
+
+.visor {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: 96vw;
+  max-height: 96vh;
+  overflow: visible;
+}
+.visor::backdrop { background: rgba(15, 18, 17, .82); }
+.visor img {
+  display: block;
+  max-width: 96vw;
+  max-height: 82vh;
+  border-radius: var(--radio-chico);
+  background: #000;
+}
+.visor form { margin-top: .8rem; text-align: center; }
+
+/* --- Confirmar sin salir de la página ------------------------ */
+
+.confirmacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  margin-top: .6rem;
+  padding: .6rem .8rem;
+  border: 2px solid #e6cdb6;
+  background: #fbf1e8;
+  border-radius: var(--radio-chico);
+  font-weight: 700;
+  font-size: .92rem;
+}
+.confirmacion span { flex: 1 1 12rem; }
+
+/* --- Atajos de teclado para validar -------------------------- */
+
+.enfocada { outline: 3px solid var(--sol); outline-offset: 3px; }
+.atajos { display: flex; flex-wrap: wrap; gap: .4rem 1rem; }
+.atajos kbd {
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 800;
+  background: #fff;
+  border: 1px solid var(--borde-fuerte);
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  padding: 0 .35rem;
+}
+
 /* --- Utilidades ---------------------------------------------- */
 
 .numero-grande { font-size: 2.2rem; font-weight: 800; line-height: 1.1; letter-spacing: -.03em; }
+
+/* `hidden` tiene que ganarle a cualquier `display` que venga de una clase:
+   sin esto un `.boton` escondido se sigue viendo, porque el estilo del
+   navegador para [hidden] pierde contra cualquier regla de la hoja. */
+[hidden] { display: none !important; }
+
+/* Texto que solo tiene sentido con JavaScript andando, y al revés. */
+.solo-js { display: none; }
+html.js .solo-js { display: inline; }
+html.js .solo-sin-js { display: none; }
+
 .oculto-visual {
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap;
@@ -790,6 +994,12 @@ tr:last-child td { border-bottom: 0; }
     white-space: nowrap;
   }
 
+  /* Por encima de la barra de navegación del pulgar. */
+  .avisos { bottom: 5.2rem; }
+  /* En el celular la pantalla es toda para el contenido: el buscador se queda
+     donde está y no se lleva dos centímetros de alto todo el tiempo. */
+  .filtros { position: static; }
+
   main { padding: 1rem .9rem 2rem; }
   .portada { padding: 1.3rem 1.1rem 1.2rem; }
   .tarjeta { padding: 1rem; }
@@ -808,5 +1018,5 @@ tr:last-child td { border-bottom: 0; }
 }
 
 @media print {
-  .encabezado, .barra-movil, .acciones, form { display: none; }
+  .encabezado, .barra-movil, .acciones, .avisos, form { display: none; }
 }

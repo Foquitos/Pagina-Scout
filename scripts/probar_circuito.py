@@ -36,6 +36,7 @@ from app.main import app  # noqa: E402
 from app.models import (  # noqa: E402
     DESAFIO_ESPECIALIDAD,
     DESAFIO_REQUERIDO,
+    Area,
     AvanceDesafio,
     CambioEtapa,
     CompetenciaElegida,
@@ -189,6 +190,105 @@ def main() -> int:
         in joven.post("/bitacora", data={"titulo": "Primer nudo", "texto": "Me costó."}).text,
     )
 
+    # --- la capa de JavaScript -----------------------------------------------
+    # Todo esto tiene que seguir andando sin JavaScript, así que se prueban las
+    # dos formas: con la cabecera que manda app.js y sin ella.
+
+    check("app.js se sirve", joven.get("/estaticos/app.js").status_code == 200)
+
+    catalogo = joven.get("/mis-cartas").text
+    check("las páginas lo cargan", "/estaticos/app.js" in catalogo)
+    # El JavaScript se engancha por estas marcas: si una plantilla las pierde,
+    # la página sigue andando pero en silencio deja de ser fluida.
+    check(
+        "el catálogo marca sus formularios",
+        catalogo.count("data-elegir=") == catalogo.count('id="carta-'),
+        catalogo.count("data-elegir="),
+    )
+    check("y tiene dónde pegar la elección", 'id="eleccion"' in catalogo)
+    check("el buscador del catálogo está en la página", 'id="filtros-cartas"' in catalogo)
+    check(
+        "cada carta dice de qué área es, para poder filtrarla",
+        catalogo.count("data-area=") == catalogo.count('id="carta-'),
+    )
+    check("y cada área es un bloque que se puede esconder entero",
+          catalogo.count("data-bloque-area=") == 4)
+    check("la sesión sabe de quién es, para la cola de reintentos",
+          "data-usuario=" in catalogo and 'id="pendientes"' in catalogo)
+    check(
+        "sin JavaScript el «Trabajar →» de una carta no elegida queda escondido",
+        "[hidden] { display: none !important; }" in joven.get("/estaticos/estilos.css").text,
+    )
+    trabajo = joven.get("/mis-cartas/1").text
+    check("la página de una carta se autoguarda", "data-autoguardar" in trabajo)
+    check("y avisa cómo va cada guardado", 'class="estado-guardado"' in trabajo)
+
+    json_ = {"X-Sin-Recarga": "json"}
+
+    r = joven.post("/mis-cartas/20", headers=json_)
+    check("elegir contesta en JSON", r.headers["content-type"].startswith("application/json"))
+    datos = r.json()
+    check("y dice que quedó elegida", datos["elegida"] is True)
+    check(
+        "con el pedazo de página ya armado",
+        "Trabajar en esta carta" in datos["fragmentos"]["#eleccion"],
+    )
+    # El pedazo se pega adentro de la página que ya tiene las 53 del catálogo:
+    # si trajera esos id, quedarían repetidos en el documento.
+    check(
+        "sin repetir los id del catálogo",
+        'id="carta-' not in datos["fragmentos"]["#eleccion"],
+    )
+    with SesionLocal() as s:
+        areas_totales = s.scalar(select(func.count(Area.id)))
+    contadores_area = [c for c in datos["cuentas"] if c.startswith("area-")]
+    check(
+        "los contadores de las cuatro áreas viajan siempre",
+        len(contadores_area) == areas_totales,
+        f"{len(contadores_area)} de {areas_totales}",
+    )
+
+    with SesionLocal() as s:
+        requerido_20 = s.scalar(
+            select(Desafio.id)
+            .where(Desafio.competencia_id == 20, Desafio.tipo == DESAFIO_REQUERIDO)
+            .order_by(Desafio.orden)
+        )
+    r = joven.post(
+        f"/mis-cartas/20/desafios/{requerido_20}",
+        data={"hecho": "true", "comentario": "Guardado solo, sin apretar nada."},
+        headers=json_,
+    )
+    check("marcar un desafío contesta en JSON", r.json()["hecho"] is True)
+    check(
+        "y devuelve el resumen de la carta al día",
+        "Cómo venís" in r.json()["fragmentos"]["#resumen-carta"],
+    )
+    with SesionLocal() as s:
+        guardado = s.scalar(
+            select(AvanceDesafio).where(AvanceDesafio.desafio_id == requerido_20)
+        )
+        check("el comentario quedó guardado igual que sin JavaScript",
+              guardado is not None and guardado.comentario.startswith("Guardado solo"))
+
+    check("sacarla vuelve a decir que no está", joven.post("/mis-cartas/20", headers=json_).json()["elegida"] is False)
+
+    # Sin la cabecera nada cambia: sigue siendo un formulario con su redirección.
+    r = joven.post("/mis-cartas/20", follow_redirects=False)
+    check(
+        "sin la cabecera sigue redirigiendo como siempre",
+        r.status_code == 303 and r.headers["location"] == "/mis-cartas#carta-20",
+        r.headers.get("location"),
+    )
+    # Elegirla desde su propia página te deja ahí, no te manda al catálogo.
+    r = joven.post("/mis-cartas/20", data={"quedarse": "1"}, follow_redirects=False)
+    check(
+        "elegirla desde su página te deja en su página",
+        r.headers["location"] == "/mis-cartas/20",
+        r.headers["location"],
+    )
+    joven.post("/mis-cartas/20")  # queda como estaba
+
     # --- quién ve la progresión ----------------------------------------------
     companiera = TestClient(app, follow_redirects=True)
     companiera.post("/ingresar", data={"usuario": "bruno", "clave": "scout1907"})
@@ -241,6 +341,11 @@ def main() -> int:
 
     r = edu.get("/validaciones")
     check("la entrega aparece en la cola", "Nudo margarita" in r.text)
+    check(
+        "la cola se puede recorrer con el teclado",
+        'data-atajos="validaciones"' in r.text and "data-entrega=" in r.text,
+    )
+    check("el tablero se pone al día solo", "data-refrescar=" in edu.get("/tablero").text)
     entrega_id = int(re.search(r'action="/validaciones/(\d+)"', r.text).group(1))
 
     edu.post(
@@ -255,6 +360,15 @@ def main() -> int:
     r = edu.get(f"/cartas-de/{ana_id}")
     check("el educador ve las cartas elegidas y los comentarios", comentario in r.text)
     check("el listado de jóvenes enlaza la progresión", f"/progresion/{ana_id}" in edu.get("/jovenes").text)
+    # Mover a alguien de patrulla no recarga la lista entera de la Unidad.
+    with SesionLocal() as s:
+        patrulla_de_ana = s.scalar(select(Usuario.patrulla_id).where(Usuario.id == ana_id))
+    r = edu.post(
+        f"/jovenes/{ana_id}",
+        data={"patrulla_id": str(patrulla_de_ana)},
+        headers={"X-Sin-Recarga": "json"},
+    )
+    check("cambiar de patrulla contesta en JSON", r.json() == {"ok": True}, r.text[:60])
 
     # --- cerrar cartas: la decisión es del educador --------------------------
     check("un joven no entra a la progresión", joven.get(f"/progresion/{ana_id}").status_code == 403)
@@ -317,6 +431,7 @@ def main() -> int:
     check("el educador puede reabrir un cierre", not elegida_de(ana_id, 7, "senda").lograda)
 
     # --- el paso de etapa ----------------------------------------------------
+    recuerdo_senda = "En Senda armé el botiquín de la patrulla y lo conté en el Consejo."
     with SesionLocal() as s:
         bruno = s.scalar(select(Usuario).where(Usuario.usuario == "bruno"))
         bruno_id, bruno_patrulla = bruno.id, bruno.patrulla_id
@@ -330,6 +445,15 @@ def main() -> int:
                     joven_id=eli_id, competencia_id=numero, etapa="senda", lograda=True
                 )
             )
+        s.add(
+            AvanceDesafio(
+                joven_id=eli_id,
+                desafio_id=requerido_id,
+                etapa="senda",
+                hecho=True,
+                comentario=recuerdo_senda,
+            )
+        )
         s.commit()
 
     r = edu.post(f"/progresion/{bruno_id}/etapa", data={"etapa": "senda"}, follow_redirects=False)
@@ -374,6 +498,35 @@ def main() -> int:
             "la etapa no se cambia desde el listado de jóvenes",
             s.get(Usuario, bruno_id).etapa == "senda",
         )
+
+    # --- lo que quedó de la etapa anterior -----------------------------------
+    elisa = TestClient(app, follow_redirects=True)
+    elisa.post("/ingresar", data={"usuario": "eli", "clave": "scout1907"})
+    pagina = elisa.get("/mis-cartas").text
+
+    check("una carta ya lograda no vuelve al catálogo", 'data-carta="1"' not in pagina)
+    check("las que no logró siguen estando", 'data-carta="13"' in pagina)
+    check("el catálogo dice cuántas quedan", "ya las lograste y están" in pagina)
+    check("el historial guarda la etapa anterior", "Etapa Senda" in pagina)
+    check("con las anotaciones de entonces", recuerdo_senda in pagina)
+
+    r = elisa.post("/mis-cartas/1", follow_redirects=False)
+    check("volver a elegirla se rechaza con su motivo", r.status_code == 400, r.status_code)
+    check("y el motivo dice en qué etapa fue", "Senda" in r.text)
+
+    r = elisa.get("/mis-cartas/1")
+    check("la carta lograda antes se abre de solo lectura", "ya la lograste en la etapa Senda" in r.text)
+    check("y no ofrece marcar nada", 'name="hecho"' not in r.text)
+    check("pero muestra lo que había escrito", recuerdo_senda in r.text)
+
+    check(
+        "la patrulla y el educador ven ese historial",
+        recuerdo_senda in edu.get(f"/cartas-de/{eli_id}").text,
+    )
+    check(
+        "y también desde la progresión",
+        "Lo que quedó de las etapas anteriores" in edu.get(f"/progresion/{eli_id}").text,
+    )
 
     # --- Libro de Oro ---------------------------------------------------------
     check("reconoce youtu.be", medios.leer_video("https://youtu.be/dQw4w9WgXcQ").identificador == "dQw4w9WgXcQ")
@@ -439,6 +592,10 @@ def main() -> int:
     check("las fotos piden sesión", anonimo.get(f"/fotos/{nombre_foto}").status_code == 303)
     check("con sesión la foto se sirve", joven.get(f"/fotos/{nombre_foto}").status_code == 200)
 
+    check(
+        "borrar una página pregunta dentro de la tarjeta, y con confirm() si no hay JavaScript",
+        "data-confirmar=" in r.text and "onsubmit=" in r.text,
+    )
     check("la patrulla lee el libro",
           recuerdo in companiera.get(f"/libro-de-oro/{halcones_id}").text)
     check("otra patrulla no entra al libro",

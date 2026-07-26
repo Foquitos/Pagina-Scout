@@ -1,0 +1,30 @@
+{# Una carta de la elección propia. La usan la página entera y el pedazo que
+   se repinta al elegir o sacar una carta, para que sean siempre la misma.
+   Sin `id="carta-…"`: ese id es del catálogo, y una carta está en los dos
+   lados a la vez. Espera `a` (un AvanceCarta). #}
+{% set area = a.competencia.area %}
+<article class="tarjeta carta {{ 'elegida' if not a.elegida.lograda }} {{ 'lograda' if a.elegida.lograda }}"
+         data-carta-elegida="{{ a.competencia.id }}"
+         style="--color: {{ area.color }}; --tono: {{ area.color }}22">
+  <div class="anillo" style="--p: {{ a.porcentaje }}; --c: {{ area.color }}"
+       title="{{ a.porcentaje }}% de los requeridos">
+    <span>{{ a.requeridos_hechos }}/{{ a.requeridos }}</span>
+  </div>
+  <div>
+    <h3><a href="/mis-cartas/{{ a.competencia.id }}">{{ a.competencia.titulo }}</a></h3>
+    <p class="meta">
+      <span>{{ area.icono }} {{ area.nombre }}</span>
+      {% if a.opcionales_hechos %}<span>+{{ a.opcionales_hechos }} opcionales</span>{% endif %}
+      {% if a.comentarios %}<span>{{ a.comentarios }} comentario{{ 's' if a.comentarios != 1 }}</span>{% endif %}
+    </p>
+    {% if a.elegida.lograda %}
+      <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
+    {% elif a.completa %}
+      <p class="meta">✔ Cumpliste todos los requeridos. Conversalo con tu educador/a
+        para cerrarla.</p>
+    {% endif %}
+    <div class="acciones">
+      <a class="boton secundario" href="/mis-cartas/{{ a.competencia.id }}">Trabajar en esta carta →</a>
+    </div>
+  </div>
+</article>

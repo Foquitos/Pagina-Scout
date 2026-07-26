@@ -18,6 +18,17 @@
   {% endfor %}
 </p>
 
+{% if entregas %}
+  {# Revisar veinte entregas seguidas desde una computadora se hace con las
+     manos en el teclado. Nace escondido: sin JavaScript no hay atajos. #}
+  <p class="meta atajos" data-atajos="validaciones" hidden>
+    <span><kbd>J</kbd> <kbd>K</kbd> moverse</span>
+    <span><kbd>A</kbd> validar</span>
+    <span><kbd>D</kbd> pedir que amplíe</span>
+    <span><kbd>R</kbd> no validar</span>
+  </p>
+{% endif %}
+
 {% if not entregas %}
   <div class="vacio" style="margin-top:1rem">
     <img src="/estaticos/img/vacio/carpa.svg" alt="">
@@ -26,7 +37,7 @@
   </div>
 {% else %}
   {% for e in entregas %}
-  <article class="tarjeta">
+  <article class="tarjeta" data-entrega="{{ e.id }}">
     <div class="encabezado-tarjeta">
       <span class="avatar" style="--color: {{ color_de(e.joven.nombre) }}" aria-hidden="true">{{ iniciales(e.joven.nombre) }}</span>
       <div>
@@ -59,7 +70,7 @@
       <div class="comentario">{{ e.devolucion }}<footer class="meta">Devolución actual</footer></div>
     {% endif %}
 
-    <form method="post" action="/validaciones/{{ e.id }}">
+    <form method="post" action="/validaciones/{{ e.id }}" data-sin-recarga="Devolución enviada.">
       <label for="devolucion-{{ e.id }}">Tu devolución</label>
       <textarea id="devolucion-{{ e.id }}" name="devolucion" style="min-height:4rem"
         placeholder="Qué reconocés de lo que hizo y qué le sugerís para seguir."></textarea>

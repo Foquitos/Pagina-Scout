@@ -1,0 +1,82 @@
+{# El recorrido de las etapas anteriores, carta por carta y con lo que escribió
+   en cada desafío.
+
+   Cambiar de etapa no borra nada: las cartas quedan atadas a la etapa en la que
+   se trabajaron y salen por acá. Las logradas además ya no aparecen en el
+   catálogo, así que este es el único lugar donde se las vuelve a encontrar.
+
+   Lo usan /mis-cartas, /cartas-de/{id} y la progresión del educador. Espera
+   `historial`, `propia` y `nombre_corto` —de quién es este recorrido, para
+   firmar lo que escribió—; tiene que poder renderizarse suelto, sin `request`. #}
+{% for etapa in historial %}
+  <details class="tarjeta etapa-vieja" id="etapa-{{ etapa.etapa }}">
+    <summary>
+      🏅 Etapa {{ etapa.nombre }} —
+      {{ etapa.logradas|length }} carta{{ 's' if etapa.logradas|length != 1 }}
+      lograda{{ 's' if etapa.logradas|length != 1 }}
+      {%- if etapa.sin_cerrar %}, {{ etapa.sin_cerrar|length }} sin cerrar{% endif %}
+    </summary>
+
+    {% if not etapa.logradas %}
+      <p class="meta">De esta etapa no quedó ninguna carta cerrada, pero el
+        trabajo que hay adentro sigue acá.</p>
+    {% endif %}
+
+    {% for a in etapa.cartas %}
+      {% set area = a.competencia.area %}
+      <article class="tarjeta carta {{ 'lograda' if a.elegida.lograda }}"
+               style="--color: {{ area.color }}; --tono: {{ area.color }}22">
+        <div class="anillo chico" style="--p: {{ a.porcentaje }}; --c: {{ area.color }}">
+          <span>{{ a.requeridos_hechos }}/{{ a.requeridos }}</span>
+        </div>
+        <div>
+          <h3>{{ a.competencia.titulo }}</h3>
+          <p class="meta">
+            <span>{{ area.icono }} {{ area.nombre }}</span>
+            <span>carta {{ a.competencia.numero }}</span>
+            {% if a.opcionales_hechos %}<span>+{{ a.opcionales_hechos }} opcionales</span>{% endif %}
+          </p>
+
+          {% if a.elegida.lograda %}
+            <p><span class="etiqueta aprobada">🏅 Lograda</span></p>
+            {% if a.elegida.nota_cierre %}
+              <blockquote class="comentario">{{ a.elegida.nota_cierre }}
+                <footer class="meta">{{ a.elegida.lograda_por.nombre if a.elegida.lograda_por else 'El equipo de educadores' }}
+                  {% if a.elegida.lograda_en %} · {{ a.elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}</footer>
+              </blockquote>
+            {% endif %}
+          {% else %}
+            <p class="meta">Quedó sin cerrar al terminar la etapa.</p>
+          {% endif %}
+
+          {% if not a.sin_empezar %}
+            <details>
+              <summary>Ver los {{ a.total }} desafíos{% if a.comentarios %}
+                · {{ a.comentarios }} anotación{{ 'es' if a.comentarios != 1 }}{% endif %}</summary>
+              <ul class="lista-desafios">
+                {% for d in a.competencia.desafios %}
+                  {% set marca = a.marcas.get(d.id) %}
+                  <li class="{{ 'hecho' if marca and marca.hecho }}">
+                    <span class="tilde" aria-hidden="true">{{ '✔' if marca and marca.hecho else '·' }}</span>
+                    <div>
+                      {{ d.texto }}
+                      {% if d.tipo and d.tipo != 'requerido' %}
+                        <span class="chip {{ d.tipo }}">{{ d.tipo_nombre|lower }}</span>
+                      {% endif %}
+                      {% if marca and marca.comentario %}
+                        <blockquote class="comentario">{{ marca.comentario }}
+                          <footer class="meta">{{ 'Vos' if propia else nombre_corto }}
+                            · {{ marca.actualizado_en.strftime('%d/%m/%Y') }}</footer>
+                        </blockquote>
+                      {% endif %}
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            </details>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </details>
+{% endfor %}

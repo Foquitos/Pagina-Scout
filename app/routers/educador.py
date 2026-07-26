@@ -19,6 +19,7 @@ from app.models import (
     ESTADO_RECHAZADA,
     ESTADO_REVISION,
     ETAPAS,
+    ROL_EDUCADOR,
     ROL_JOVEN,
     TIPO_CARTA,
     TIPO_PERSONALIZADO,
@@ -31,8 +32,7 @@ from app.models import (
     Reto,
     Usuario,
 )
-from app.seguridad import hashear_clave
-from app.servicios import medios, progresion, puntajes, retos
+from app.servicios import cuentas, medios, progresion, puntajes, retos
 
 router = APIRouter()
 
@@ -72,6 +72,13 @@ def panel(
             Usuario.activo.is_(True),
         )
     )
+    educadores = sesion.scalar(
+        select(func.count(Usuario.id)).where(
+            Usuario.unidad_id == unidad_id,
+            Usuario.rol == ROL_EDUCADOR,
+            Usuario.activo.is_(True),
+        )
+    )
 
     fotos, bytes_usados = medios.espacio_usado()
     return render(
@@ -82,6 +89,7 @@ def panel(
         pendientes=pendientes or 0,
         asignaciones_hoy=asignaciones_hoy,
         jovenes_sin_patrulla=jovenes_sin_patrulla or 0,
+        educadores=educadores or 0,
         filas=puntajes.tablero_de_unidad(sesion, unidad_id, fecha),
         fotos_guardadas=fotos,
         megas_usados=round(bytes_usados / (1024 * 1024), 1),
@@ -397,30 +405,35 @@ def listar_jovenes(
 def crear_joven(
     nombre: str = Form(...),
     usuario_nuevo: str = Form(...),
-    clave: str = Form(...),
     patrulla_id: str = Form(""),
     etapa: str = Form("pistas"),
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
+    """Da de alta a un joven. La contraseña no se pide: es su nombre de usuario.
+
+    Antes había un campo «contraseña inicial» y era el peor de los dos mundos: el
+    educador tenía que inventar algo, dictarlo, y quedaba sabiendo con qué entra
+    otra persona. Ahora el alta se cuenta en una frase —«tu usuario es `ana` y tu
+    contraseña también»— y la contraseña de verdad la elige el joven al entrar.
+    """
     unidad_id = _unidad_de(usuario)
-    login = usuario_nuevo.strip().lower()
-    if sesion.scalar(select(Usuario.id).where(Usuario.usuario == login)) is not None:
-        raise HTTPException(400, f"El usuario «{login}» ya existe.")
     if etapa not in ETAPAS:
         raise HTTPException(400, "Etapa desconocida.")
 
-    sesion.add(
-        Usuario(
-            usuario=login,
-            nombre=nombre.strip(),
-            hash_clave=hashear_clave(clave),
-            rol=ROL_JOVEN,
+    try:
+        cuentas.alta(
+            sesion,
+            usuario_nuevo,
+            nombre,
+            ROL_JOVEN,
             unidad_id=unidad_id,
             patrulla_id=int(patrulla_id) if patrulla_id.strip() else None,
             etapa=etapa,
         )
-    )
+    except cuentas.DatoInvalido as error:
+        raise HTTPException(400, error.motivo) from error
+
     sesion.commit()
     return redirigir("/jovenes")
 
@@ -447,6 +460,104 @@ def actualizar_joven(
         # lista de treinta. Ahora el select se guarda solo y no se mueve nada.
         return {"ok": True}
     return redirigir("/jovenes")
+
+
+@router.post("/jovenes/{joven_id}/blanquear")
+def blanquear_joven(
+    joven_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """«Me olvidé la contraseña». Vuelve a ser su nombre de usuario.
+
+    Es todo el sistema de recuperación que hay, y alcanza: el educador está en la
+    misma reunión que el joven. La contraseña vieja no se muestra en ningún lado
+    —nadie la sabe, ni acá ni en la base— y la nueva la vuelve a elegir el joven
+    en cuanto entre.
+    """
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
+    cuentas.blanquear(joven)
+    sesion.commit()
+    return redirigir("/jovenes")
+
+
+# --- Equipo de educadores ----------------------------------------------------
+#
+# No hay un rol de administrador aparte: cualquier educador de la Unidad puede
+# sumar a otro. El equipo son tres o cuatro personas que se conocen y comparten
+# la responsabilidad del programa; inventar una jerarquía adentro sería inventar
+# un cargo que en la Unidad no existe. Lo que sí queda cerrado es el borde de
+# afuera: solo se ve y se toca el equipo de la propia Unidad.
+
+
+@router.get("/educadores")
+def listar_educadores(
+    request: Request,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    unidad_id = _unidad_de(usuario)
+    return render(
+        request,
+        "educador/educadores.html",
+        usuario=usuario,
+        educadores=list(
+            sesion.scalars(
+                select(Usuario)
+                .where(Usuario.unidad_id == unidad_id, Usuario.rol == ROL_EDUCADOR)
+                .order_by(Usuario.nombre)
+            )
+        ),
+    )
+
+
+@router.post("/educadores")
+def crear_educador(
+    nombre: str = Form(...),
+    usuario_nuevo: str = Form(...),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Suma a alguien al equipo, en la misma Unidad de quien lo da de alta.
+
+    Entra con su nombre de usuario como contraseña y lo primero que hace es
+    cambiarla, igual que un joven. Que el alta la pueda hacer cualquiera del
+    equipo es lo que saca el `scripts/crear_educador.py` del camino: la consola
+    del servidor queda solo para el primer educador de todos.
+    """
+    try:
+        cuentas.alta(
+            sesion, usuario_nuevo, nombre, ROL_EDUCADOR, unidad_id=_unidad_de(usuario)
+        )
+    except cuentas.DatoInvalido as error:
+        raise HTTPException(400, error.motivo) from error
+
+    sesion.commit()
+    return redirigir("/educadores")
+
+
+@router.post("/educadores/{educador_id}/blanquear")
+def blanquear_educador(
+    educador_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Blanquea la contraseña de otro educador del equipo.
+
+    La propia no: para eso está «Cambiar mi contraseña», que pide la actual.
+    Blanquearse a sí mismo no serviría para recuperar nada —hay que estar dentro
+    de la sesión para poder pedirlo— y dejaría la cuenta con la contraseña más
+    fácil de adivinar que existe.
+    """
+    otro = sesion.get(Usuario, educador_id)
+    if otro is None or otro.rol != ROL_EDUCADOR or otro.unidad_id != _unidad_de(usuario):
+        raise HTTPException(404, "Esa persona no está en el equipo de tu Unidad.")
+    if otro.id == usuario.id:
+        raise HTTPException(400, "La tuya se cambia desde «Cambiar mi contraseña».")
+
+    cuentas.blanquear(otro)
+    sesion.commit()
+    return redirigir("/educadores")
 
 
 # --- Progresión personal -----------------------------------------------------

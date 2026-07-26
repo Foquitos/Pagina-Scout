@@ -11,7 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import CLAVE_SECRETA, COOKIES_SEGURAS, DIR_ESTATICOS, DIR_SUBIDAS
 from app.db import SesionLocal
-from app.dependencias import RedireccionAIngreso, plantillas, usuario_actual
+from app.dependencias import Redireccion, plantillas, usuario_actual
 from app.models import Usuario
 from app.routers import api, auth, educador, joven
 
@@ -46,8 +46,13 @@ app.include_router(educador.router)
 app.include_router(api.router)
 
 
-@app.exception_handler(RedireccionAIngreso)
-def _sin_sesion(request: Request, exc: RedireccionAIngreso):
+@app.exception_handler(Redireccion)
+def _antes_hay_que_pasar_por(request: Request, exc: Redireccion):
+    """Sin sesión, a `/ingresar`; con la contraseña del alta puesta, a `/clave`.
+
+    Un solo manejador para las dos: Starlette busca por la jerarquía de la
+    excepción, así que alcanza con registrar la clase de arriba.
+    """
     return RedirectResponse(exc.destino, status_code=303)
 
 

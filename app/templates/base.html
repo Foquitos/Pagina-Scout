@@ -16,7 +16,15 @@
    pudo mandar en este celular, y no puede entregárselo a la sesión de otro. #}
 <body{% if usuario %} data-usuario="{{ usuario.id }}"{% endif %}>
 
-{# Un solo listado de secciones: lo usan la barra de arriba y la de abajo. #}
+{# Mientras la contraseña siga siendo la del alta no hay a dónde ir: todas las
+   demás páginas devuelven a /clave, así que mostrar la navegación sería ofrecer
+   siete puertas que dan al mismo lugar. #}
+{% set navegar = usuario and not usuario.debe_cambiar_clave %}
+
+{# Un solo listado de secciones: lo usan la barra de arriba y la de abajo.
+   `solo_escritorio` deja una fuera de la barra del celular: ahí entran siete y
+   el equipo de educadores son ocho. A «Equipo» se llega desde el panel, que es
+   donde se lo busca. #}
 {% set ruta = request.url.path %}
 {% if usuario and usuario.es_educador %}
   {% set enlaces = [
@@ -26,7 +34,8 @@
     {'href': '/asignar',      'icono': '📅',  'texto': 'Asignar',   'prefijos': ['/asignar']},
     {'href': '/patrullas',    'icono': '🤝',  'texto': 'Patrullas', 'prefijos': ['/patrullas', '/libro-de-oro']},
     {'href': '/jovenes',      'icono': '🧭',  'texto': 'Jóvenes',   'prefijos': ['/jovenes', '/cartas-de', '/progresion']},
-    {'href': '/tablero',      'icono': '🏆',  'texto': 'Tablero',   'prefijos': ['/tablero']}
+    {'href': '/tablero',      'icono': '🏆',  'texto': 'Tablero',   'prefijos': ['/tablero']},
+    {'href': '/educadores',   'icono': '👥',  'texto': 'Equipo',    'prefijos': ['/educadores'], 'solo_escritorio': true}
   ] %}
 {% else %}
   {% set enlaces = [
@@ -58,7 +67,7 @@
       </svg>
       <span>Retos de Unidad</span>
     </a>
-    {% if usuario %}
+    {% if navegar %}
     <nav aria-label="Secciones">
       {% for e in enlaces %}
         <a href="{{ e.href }}" class="{{ clase_activa(e, ruta) }}">
@@ -67,6 +76,8 @@
       {% endfor %}
       <a href="/salir" class="salir">Salir</a>
     </nav>
+    {% elif usuario %}
+    <nav aria-label="Secciones"><a href="/salir" class="salir">Salir</a></nav>
     {% endif %}
   </div>
 </header>
@@ -84,13 +95,16 @@
       {% if usuario.patrulla %} · Patrulla {{ usuario.patrulla.nombre }}{% endif %}
       {% if not usuario.es_educador %} · Etapa {{ usuario.etapa_nombre }}{% endif %}
     </span>
+    {# Acá y no en la navegación: la contraseña es de la cuenta, y la cuenta es
+       esta línea de abajo con el nombre. Vale para jóvenes y para educadores. #}
+    {% if navegar %}<a class="mi-cuenta" href="/clave">🔑 Cambiar mi contraseña</a>{% endif %}
   </div>
   {% endif %}
 </footer>
 
-{% if usuario %}
+{% if navegar %}
 <nav class="barra-movil" aria-label="Secciones">
-  {% for e in enlaces %}
+  {% for e in enlaces if not e.solo_escritorio %}
     <a href="{{ e.href }}" class="{{ clase_activa(e, ruta) }}">
       <span class="icono" aria-hidden="true">{{ e.icono }}</span>
       <span class="texto">{{ e.texto }}</span>

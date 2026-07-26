@@ -1,13 +1,17 @@
-"""Da de alta un educador desde la consola.
+"""Da de alta el primer educador desde la consola.
 
-    python scripts/crear_educador.py educador "Nombre y Apellido" "la-contraseña"
+    python scripts/crear_educador.py educador "Nombre y Apellido"
 
-Existe para romper un círculo: los jóvenes los da de alta un educador desde la
-pantalla, pero al primer educador no lo puede crear nadie. En una base recién
-inicializada no hay ninguna cuenta, así que sin esto no se puede ni entrar.
+Existe para romper un círculo: los jóvenes y los demás educadores se dan de alta
+desde la pantalla, pero al primero no lo puede crear nadie. En una base recién
+inicializada no hay ninguna cuenta, así que sin esto no se puede ni entrar. Una
+vez adentro, el resto del equipo se suma desde `/educadores` y esta consola no
+hace falta nunca más.
 
-También sirve para sumar el resto del equipo de educadores, que tampoco tiene
-un alta propia en la aplicación.
+La contraseña no se pide: como toda cuenta, arranca siendo el mismo nombre de
+usuario y la aplicación obliga a cambiarla al entrar. Se puede pasar otra como
+tercer argumento —por si el usuario es demasiado obvio en un servidor expuesto—
+y sigue siendo provisoria igual.
 
 Si no existe ninguna Unidad todavía la crea, porque un usuario sin Unidad no
 puede ver nada. Si el nombre de usuario ya está tomado no lo pisa: avisa y sale
@@ -31,26 +35,24 @@ sys.path.insert(0, str(RAIZ))
 from sqlalchemy import select  # noqa: E402
 
 from app.db import SesionLocal  # noqa: E402
-from app.models import ROL_EDUCADOR, Unidad, Usuario  # noqa: E402
-from app.seguridad import hashear_clave  # noqa: E402
+from app.models import ROL_EDUCADOR, Unidad  # noqa: E402
+from app.servicios import cuentas  # noqa: E402
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Da de alta un educador.")
     parser.add_argument("usuario", help="con qué nombre ingresa")
     parser.add_argument("nombre", help="cómo se llama, para mostrar en pantalla")
-    parser.add_argument("clave", help="su contraseña")
+    parser.add_argument(
+        "clave",
+        nargs="?",
+        help="opcional: contraseña provisoria. Por defecto, el mismo nombre de usuario",
+    )
     parser.add_argument("--unidad", default="Unidad Scout", help="solo si hay que crearla")
     parser.add_argument("--grupo", default="Grupo Scout", help="solo si hay que crearla")
     args = parser.parse_args()
 
-    login = args.usuario.strip().lower()
-
     with SesionLocal() as sesion:
-        if sesion.scalar(select(Usuario.id).where(Usuario.usuario == login)) is not None:
-            print(f"El usuario «{login}» ya existe. No se tocó nada.")
-            return 1
-
         unidad = sesion.scalar(select(Unidad))
         if unidad is None:
             unidad = Unidad(nombre=args.unidad, grupo=args.grupo)
@@ -58,18 +60,22 @@ def main() -> int:
             sesion.flush()
             print(f"Se creó la Unidad «{unidad.nombre}» del {unidad.grupo}.")
 
-        sesion.add(
-            Usuario(
-                usuario=login,
-                nombre=args.nombre.strip(),
-                hash_clave=hashear_clave(args.clave),
-                rol=ROL_EDUCADOR,
-                unidad_id=unidad.id,
+        try:
+            educador = cuentas.alta(
+                sesion, args.usuario, args.nombre, ROL_EDUCADOR, unidad_id=unidad.id
             )
-        )
-        sesion.commit()
+        except cuentas.DatoInvalido as error:
+            print(f"{error.motivo} No se tocó nada.")
+            return 1
 
-    print(f"Educador «{login}» dado de alta. Ya puede entrar.")
+        if args.clave:
+            cuentas.establecer_provisoria(educador, args.clave)
+        sesion.commit()
+        login = educador.usuario
+
+    provisoria = "la que pasaste" if args.clave else f"«{login}», su mismo usuario"
+    print(f"Educador «{login}» dado de alta. Entra con {provisoria}.")
+    print("Al entrar la aplicación le va a pedir que elija una contraseña propia.")
     return 0
 
 

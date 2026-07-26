@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block titulo %}Equipo{% endblock %}
+
+{% block contenido %}
+<h1>👥 Equipo de educadores</h1>
+<p class="sub">Quienes acompañan a esta Unidad. Cualquiera del equipo puede sumar a
+  otro: no hay un jefe de la aplicación, igual que no lo hay en la reunión. Cada
+  uno entra con su usuario y su contraseña, y todo lo que se decide —una carta
+  cerrada, un cambio de etapa, una entrega aprobada— queda firmado con el nombre
+  de quien lo hizo.</p>
+
+<details class="tarjeta" {{ 'open' if educadores|length < 2 }}>
+  <summary>➕ Sumar a alguien al equipo</summary>
+  <form method="post" action="/educadores" data-sin-recarga="Educador dado de alta.">
+    <div class="fila">
+      <div>
+        <label for="nombre">Nombre y apellido</label>
+        <input type="text" id="nombre" name="nombre" required>
+      </div>
+      <div>
+        <label for="usuario_nuevo">Usuario</label>
+        <input type="text" id="usuario_nuevo" name="usuario_nuevo" required
+               autocapitalize="none" autocomplete="off">
+      </div>
+    </div>
+    <p class="meta">La contraseña no se elige acá: arranca siendo el mismo nombre de
+      usuario y la persona pone la suya la primera vez que entra. Decile «tu usuario
+      y tu contraseña son los dos <em>lo-que-pusiste</em>» y listo.</p>
+    <p style="margin-top:1.2rem"><button type="submit" class="grande">Dar de alta</button></p>
+  </form>
+</details>
+
+<div class="rejilla">
+  {% for e in educadores %}
+  <article class="tarjeta">
+    <div class="encabezado-tarjeta">
+      <span class="avatar" style="--color: {{ color_de(e.nombre) }}" aria-hidden="true">{{ iniciales(e.nombre) }}</span>
+      <div>
+        <h3>{{ e.nombre }}
+          {% if e.id == usuario.id %}<span class="etiqueta">vos</span>{% endif %}
+          {% if not e.activo %}<span class="etiqueta">inactivo</span>{% endif %}
+        </h3>
+        <p class="meta">
+          <span>usuario: {{ e.usuario }}</span>
+          <span>desde el {{ e.creado_en.strftime('%d/%m/%Y') }}</span>
+        </p>
+      </div>
+    </div>
+
+    {% if e.debe_cambiar_clave %}
+      <p class="chips"><span class="chip">🔑 todavía no cambió su contraseña inicial</span></p>
+    {% endif %}
+
+    {% if e.id == usuario.id %}
+      <div class="acciones">
+        <a class="boton secundario" href="/clave">🔑 Cambiar mi contraseña</a>
+      </div>
+    {% else %}
+      {# El `onsubmit` es el plan B de quien no tiene JavaScript; con JavaScript
+         se pregunta acá adentro y no en un cartel del navegador. #}
+      <form method="post" action="/educadores/{{ e.id }}/blanquear"
+            onsubmit="return confirm('¿Blanquear la contraseña de {{ e.nombre }}? Va a volver a ser «{{ e.usuario }}».')"
+            data-confirmar="¿Blanquear su contraseña? Va a volver a ser «{{ e.usuario }}»."
+            data-sin-recarga="Contraseña blanqueada." class="acciones">
+        <button type="submit" class="secundario">🔑 Blanquear contraseña</button>
+      </form>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

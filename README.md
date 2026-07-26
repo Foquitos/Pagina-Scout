@@ -25,7 +25,10 @@ aplicación igual levanta, con los valores por defecto del código. Para generar
 una clave: `python -c "import secrets; print(secrets.token_hex(32))"`.
 
 Sin `--demo` se crean las tablas y se cargan las cartas, pero ningún usuario:
-para producción hay que dar de alta el primer educador a mano.
+para producción hay que dar de alta el primer educador a mano
+(`python scripts/crear_educador.py educador "Nombre y Apellido"`). El resto del
+equipo se suma después desde la aplicación; ver [Cuentas y
+contraseñas](#cuentas-y-contraseñas).
 
 Si ya tenías una base andando, ese mismo comando le agrega las columnas que
 falten antes de tocar nada más. Es idempotente y no borra datos; mientras no
@@ -50,12 +53,13 @@ app/
   seguridad.py       hash de contraseñas (scrypt, sin dependencias)
   dependencias.py    usuario de sesión y guardas por rol
   routers/
-    auth.py          ingreso y salida
+    auth.py          ingreso, salida y la contraseña propia
     joven.py         hoy, reto, mis retos, mis cartas, bitácora
     educador.py      panel, validaciones, retos, asignar, patrullas, jóvenes,
-                     progresión
+                     progresión, equipo de educadores
     api.py           la misma lógica en JSON
   servicios/
+    cuentas.py       altas, contraseñas iniciales y blanqueos
     retos.py         qué reto ve cada joven hoy
     validacion.py    contrato de validación de evidencias
     puntajes.py      tablero de patrullas y rachas
@@ -69,6 +73,8 @@ datos/
   cartas_exploracion.json   las 53 competencias y sus 376 desafíos
 scripts/
   inicializar_db.py     crea tablas y carga las cartas (idempotente)
+  crear_educador.py     el primer educador, el único que no se da de alta desde
+                        la aplicación
   probar_circuito.py    prueba de punta a punta sobre una base temporal
 ```
 
@@ -98,6 +104,48 @@ automático deja de aparecer.
 **Los puntos quedan en la patrulla donde se ganaron.** Cada entrega guarda una
 copia del `patrulla_id` del momento; si el joven se cambia de patrulla después,
 el historial no se mueve con él.
+
+## Cuentas y contraseñas
+
+**La contraseña inicial de toda cuenta es su propio nombre de usuario.** Vale
+igual para un joven y para un educador. Mientras siga siendo esa, la cuenta no
+abre ninguna página que no sea `/clave`: la única forma de usarla es ponerle una
+contraseña propia. La regla entera vive en `app/servicios/cuentas.py` y el corte
+lo hace `usuario_actual` en `dependencias.py`, así que una pantalla nueva queda
+cubierta sin que nadie se acuerde de sumarla.
+
+Antes el educador escribía una contraseña inicial en el formulario de alta, y
+era el peor de los dos mundos: tenía que inventarla, dictarla en la reunión, y
+quedaba sabiendo con qué entra otra persona. Ahora el alta se cuenta en una
+frase —«tu usuario es `ana` y tu contraseña también»— y la de verdad la elige
+cada uno.
+
+| Qué | Dónde | Quién |
+| --- | --- | --- |
+| Dar de alta un joven | `/jovenes` | cualquier educador |
+| Sumar otro educador | `/educadores` | cualquier educador |
+| Cambiar la contraseña propia | `/clave`, desde el pie de página | cada uno |
+| Blanquear la de un joven | `/jovenes` | cualquier educador |
+| Blanquear la de un educador | `/educadores` | otro educador del equipo |
+
+**Blanquear es volver al día uno**, no elegirle una contraseña a otro: la
+devuelve a ser el nombre de usuario y la persona pone la suya al entrar. Es todo
+el sistema de recuperación que hay, y alcanza porque el educador está en la
+misma reunión que el joven: no pedimos direcciones de correo de menores, así que
+no hay «recuperar por mail» ni tiene por qué haberlo. Nadie llega a ver la
+contraseña de nadie —se guarda hasheada con scrypt, ver `seguridad.py`—, ni
+siquiera quien tenga la base de datos en la mano.
+
+**No hay rol de administrador.** Cualquier educador puede sumar a otro y
+blanquear a cualquiera del equipo salvo a sí mismo (para la propia está
+«cambiar mi contraseña», que pide la actual). El equipo de una Unidad son tres o
+cuatro personas que se conocen y comparten la responsabilidad del programa;
+inventar una jerarquía adentro sería inventar un cargo que en la Unidad no
+existe. Lo que sí queda cerrado es el borde de afuera: solo se ve y se toca a la
+gente de la propia Unidad, y todo lo que se decide queda firmado con nombre.
+
+El primer educador de todos sí va por consola —en una base vacía no hay quien dé
+de alta a nadie—, con `scripts/crear_educador.py`. Después de ese, nunca más.
 
 ## La pantalla
 

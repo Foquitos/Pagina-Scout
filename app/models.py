@@ -107,6 +107,11 @@ class Usuario(Base):
     patrulla_id: Mapped[int | None] = mapped_column(ForeignKey("patrullas.id"), nullable=True)
     etapa: Mapped[str] = mapped_column(String(20), default="pistas")
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Toda cuenta nace con su propio nombre de usuario como contraseña, así que
+    # hasta que la persona ponga una suya no sirve para nada más que para
+    # cambiarla: con esto encendido, la única página que abre es /clave. Ver
+    # servicios/cuentas.py.
+    debe_cambiar_clave: Mapped[bool] = mapped_column(Boolean, default=False)
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=_ahora)
 
     unidad: Mapped[Unidad | None] = relationship(back_populates="miembros")

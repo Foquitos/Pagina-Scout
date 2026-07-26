@@ -17,13 +17,13 @@
       </div>
       <div>
         <label for="usuario_nuevo">Usuario</label>
-        <input type="text" id="usuario_nuevo" name="usuario_nuevo" required autocapitalize="none">
-      </div>
-      <div>
-        <label for="clave">Contraseña inicial</label>
-        <input type="text" id="clave" name="clave" required>
+        <input type="text" id="usuario_nuevo" name="usuario_nuevo" required
+               autocapitalize="none" autocomplete="off">
       </div>
     </div>
+    <p class="meta">No hace falta inventarle una contraseña: arranca siendo su mismo
+      nombre de usuario y la cambia sola la primera vez que entra. Vos no llegás a
+      saber cuál eligió, y si se la olvida se la blanqueás desde su tarjeta.</p>
     <div class="fila">
       <div>
         <label for="patrulla_id">Patrulla</label>
@@ -66,6 +66,12 @@
         </div>
       </div>
 
+      {% if j.debe_cambiar_clave %}
+        {# Sirve para el alta y para el blanqueo: mientras esté, la contraseña
+           es su usuario y todavía no entró a ponerse una propia. #}
+        <p class="chips"><span class="chip">🔑 entra con «{{ j.usuario }}» y elige su contraseña</span></p>
+      {% endif %}
+
       <form method="post" action="/jovenes/{{ j.id }}" data-autoguardar>
         <label for="patrulla-{{ j.id }}">Patrulla</label>
         <select id="patrulla-{{ j.id }}" name="patrulla_id">
@@ -81,6 +87,17 @@
           <a class="boton secundario" href="/cartas-de/{{ j.id }}">Ver sus cartas</a>
         </div>
       </form>
+
+      {# Formulario aparte y no un botón más del de arriba: aquel se guarda solo
+         al cambiar el select, y blanquear una contraseña se pide a propósito. #}
+      {% if not j.debe_cambiar_clave %}
+      <form method="post" action="/jovenes/{{ j.id }}/blanquear"
+            onsubmit="return confirm('¿Blanquear la contraseña de {{ j.nombre }}? Va a volver a ser «{{ j.usuario }}».')"
+            data-confirmar="¿Blanquear su contraseña? Va a volver a ser «{{ j.usuario }}»."
+            data-sin-recarga="Contraseña blanqueada." class="acciones">
+        <button type="submit" class="secundario">🔑 Se olvidó la contraseña</button>
+      </form>
+      {% endif %}
     </article>
     {% endfor %}
   </div>

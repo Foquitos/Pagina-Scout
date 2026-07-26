@@ -370,6 +370,112 @@ def main() -> int:
     )
     check("cambiar de patrulla contesta en JSON", r.json() == {"ok": True}, r.text[:60])
 
+    # --- cuentas y contraseñas -----------------------------------------------
+    # Toda cuenta nace con su nombre de usuario como contraseña, y con esa puesta
+    # lo único que abre es /clave. Es la mitad del alta que le toca a la persona.
+    with SesionLocal() as s:
+        una_patrulla = s.scalar(select(Patrulla.id).order_by(Patrulla.id))
+    r = edu.post(
+        "/jovenes",
+        data={
+            "nombre": "Nadia",
+            "usuario_nuevo": "nadia",
+            "patrulla_id": str(una_patrulla),
+            "etapa": "pistas",
+        },
+    )
+    check(
+        "el alta de un joven no pide contraseña",
+        "nadia" in r.text and 'name="clave"' not in r.text,
+    )
+    check(
+        "un usuario con espacios se rechaza",
+        edu.post(
+            "/jovenes", data={"nombre": "Otra", "usuario_nuevo": "na dia", "etapa": "pistas"}
+        ).status_code == 400,
+    )
+    check(
+        "un usuario repetido se rechaza",
+        edu.post(
+            "/jovenes", data={"nombre": "Otra", "usuario_nuevo": "nadia", "etapa": "pistas"}
+        ).status_code == 400,
+    )
+
+    nadia = TestClient(app, follow_redirects=True)
+    r = nadia.post("/ingresar", data={"usuario": "nadia", "clave": "nadia"})
+    check("se entra con el usuario como contraseña", r.url.path == "/clave", r.url.path)
+    check("con la contraseña del alta no hay navegación", "/mis-cartas" not in r.text)
+    check("y ninguna otra página abre", nadia.get("/hoy").url.path == "/clave")
+    check("tampoco la API", nadia.get("/api/yo").url.path == "/clave")
+
+    def cambiar(actual: str, nueva: str, repetida: str | None = None):
+        return nadia.post(
+            "/clave",
+            data={"actual": actual, "nueva": nueva, "repetida": repetida or nueva},
+        )
+
+    check("la nueva no puede ser el propio usuario", "distinta de tu usuario" in cambiar("nadia", "Nadia").text)
+    check("ni más corta que el mínimo", "al menos" in cambiar("nadia", "abc").text)
+    check("las dos escrituras tienen que coincidir", "no coinciden" in cambiar("nadia", "brujula24", "brujula25").text)
+    check("y hay que saber la actual", "actual no es esa" in cambiar("puse-cualquiera", "brujula24").text)
+
+    check("con todo bien, la contraseña se cambia", "Contraseña cambiada" in cambiar("nadia", "brujula24").text)
+    check("recién ahí abre el resto de la aplicación", nadia.get("/hoy").url.path == "/hoy")
+    sin_cambiar = TestClient(app, follow_redirects=True)
+    check(
+        "la contraseña del alta ya no entra",
+        "incorrectos" in sin_cambiar.post("/ingresar", data={"usuario": "nadia", "clave": "nadia"}).text,
+    )
+
+    with SesionLocal() as s:
+        nadia_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "nadia"))
+    check("un joven no blanquea a nadie", joven.post(f"/jovenes/{nadia_id}/blanquear").status_code == 403)
+    edu.post(f"/jovenes/{nadia_id}/blanquear")
+    otra_vez = TestClient(app, follow_redirects=True)
+    check(
+        "blanquear la devuelve a entrar con su usuario",
+        otra_vez.post("/ingresar", data={"usuario": "nadia", "clave": "nadia"}).url.path == "/clave",
+    )
+
+    # --- equipo de educadores ------------------------------------------------
+    check("un joven no entra al equipo", joven.get("/educadores").status_code == 403)
+    r = edu.post("/educadores", data={"nombre": "Sofía Ruiz", "usuario_nuevo": "sofia"})
+    check("un educador da de alta a otro educador", "Sofía Ruiz" in r.text)
+    check(
+        "el alta repetida se rechaza",
+        edu.post("/educadores", data={"nombre": "Otra", "usuario_nuevo": "sofia"}).status_code == 400,
+    )
+
+    with SesionLocal() as s:
+        sofia_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "sofia"))
+        educador_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "educador"))
+    check("nadie se blanquea a sí mismo", edu.post(f"/educadores/{educador_id}/blanquear").status_code == 400)
+    check(
+        "un educador no se blanquea por la puerta de los jóvenes",
+        edu.post(f"/jovenes/{sofia_id}/blanquear").status_code == 404,
+    )
+
+    sofia = TestClient(app, follow_redirects=True)
+    r = sofia.post("/ingresar", data={"usuario": "sofia", "clave": "sofia"})
+    check("el educador nuevo también elige su contraseña", r.url.path == "/clave", r.url.path)
+    check("y el panel no abre hasta entonces", sofia.get("/panel").url.path == "/clave")
+    sofia.post("/clave", data={"actual": "sofia", "nueva": "morse-1907", "repetida": "morse-1907"})
+    check("después entra al panel como cualquier educador", sofia.get("/panel").status_code == 200)
+
+    edu.post(f"/educadores/{sofia_id}/blanquear")
+    de_cero = TestClient(app, follow_redirects=True)
+    check(
+        "un educador blanquea a otro del equipo",
+        de_cero.post("/ingresar", data={"usuario": "sofia", "clave": "sofia"}).url.path == "/clave",
+    )
+
+    # Cambiarla sin que nadie la obligue: el mismo formulario, desde el pie.
+    r = joven.post(
+        "/clave", data={"actual": "scout1907", "nueva": "linterna-77", "repetida": "linterna-77"}
+    )
+    check("cualquiera cambia su contraseña cuando quiere", "Contraseña cambiada" in r.text)
+    check("y la sesión sigue abierta", joven.get("/hoy").status_code == 200)
+
     # --- cerrar cartas: la decisión es del educador --------------------------
     check("un joven no entra a la progresión", joven.get(f"/progresion/{ana_id}").status_code == 403)
     check("el educador abre la progresión", "Las cartas de esta etapa" in edu.get(f"/progresion/{ana_id}").text)

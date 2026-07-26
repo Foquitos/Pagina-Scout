@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block titulo %}Mi contraseña{% endblock %}
+
+{% block contenido %}
+{% if listo %}
+  <div class="portada centrado">
+    <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+    <h1>🔑 Contraseña cambiada</h1>
+    <p class="sub">Desde ahora entrás con la nueva. No la sabe nadie más que vos:
+      si alguna vez te la olvidás, pedile a un educador que te la blanquee y vas a
+      poder poner otra.</p>
+  </div>
+  <p class="centrado" style="margin-top:1.5rem">
+    <a class="boton grande" href="/">Seguir 🏕️</a>
+  </p>
+
+{% else %}
+  {% if obligatorio %}
+    {# Primera vez. No hay barra de navegación en toda la pantalla: hasta que la
+       contraseña sea suya, esta es la única página que abre. #}
+    <div class="portada centrado">
+      <img class="paisaje" src="/estaticos/img/campamento.svg" alt="" aria-hidden="true">
+      <h1>🔑 Elegí tu contraseña</h1>
+      <p class="sub">Entraste con la contraseña que te dieron al darte de alta, que es
+        tu propio nombre de usuario. Esa la sabe quien te dio de alta, así que antes de
+        entrar poné una tuya.</p>
+    </div>
+  {% else %}
+    <h1>🔑 Cambiar mi contraseña</h1>
+    <p class="sub">Se cambia cuando quieras y no hace falta avisarle a nadie. Los
+      educadores no pueden ver tu contraseña; lo único que pueden hacer es blanquearla
+      si te la olvidás.</p>
+  {% endif %}
+
+  {% if error %}
+    <div class="aviso"><span class="icono" aria-hidden="true">⚠️</span><div>{{ error }}</div></div>
+  {% endif %}
+
+  {# Sin data-sin-recarga a propósito: un formulario con contraseñas se manda y se
+     recarga, no se guarda solo ni queda esperando señal en ningún lado. #}
+  <form method="post" action="/clave" class="tarjeta" style="max-width:26rem;margin-inline:auto">
+    <label for="actual">{{ 'La contraseña con la que acabás de entrar' if obligatorio else 'Contraseña actual' }}</label>
+    <input type="password" id="actual" name="actual" autocomplete="current-password"
+           required autofocus>
+    {% if obligatorio %}
+      <p class="meta">Es tu usuario: <strong>{{ usuario.usuario }}</strong></p>
+    {% endif %}
+
+    <label for="nueva">Contraseña nueva</label>
+    <input type="password" id="nueva" name="nueva" autocomplete="new-password"
+           minlength="{{ largo_minimo }}" required>
+    <p class="meta">Al menos {{ largo_minimo }} caracteres, y distinta de tu usuario.
+      Que sea fácil de recordar para vos y difícil de adivinar para el resto.</p>
+
+    <label for="repetida">Repetila</label>
+    <input type="password" id="repetida" name="repetida" autocomplete="new-password"
+           minlength="{{ largo_minimo }}" required>
+
+    <p style="margin-top:1.2rem">
+      <button type="submit" class="bloque grande">Guardar mi contraseña</button>
+    </p>
+    {% if obligatorio %}
+      <p class="meta centrado">¿No sos vos? <a href="/salir">Salir</a></p>
+    {% endif %}
+  </form>
+{% endif %}
+{% endblock %}

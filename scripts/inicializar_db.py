@@ -49,6 +49,11 @@ COLUMNAS_NUEVAS = {
         "con_pendientes": "BOOLEAN DEFAULT 0",
         "nota_cierre": "TEXT DEFAULT ''",
     },
+    # Arranca en 0 y eso es lo correcto: las cuentas que ya existían eligieron su
+    # contraseña alguna vez, así que no hay nada que obligarlas a cambiar.
+    "usuarios": {
+        "debe_cambiar_clave": "BOOLEAN DEFAULT 0",
+    },
 }
 
 

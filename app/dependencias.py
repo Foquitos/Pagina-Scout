@@ -10,12 +10,16 @@ from sqlalchemy.orm import Session
 from app.config import DIR_PLANTILLAS
 from app.db import obtener_sesion
 from app.models import ETAPAS_NOMBRE, Usuario
+from app.servicios.cuentas import LARGO_MINIMO
 from app.servicios.medios import video_guardado
 
 plantillas = Jinja2Templates(directory=str(DIR_PLANTILLAS))
 plantillas.env.globals["ETAPAS_NOMBRE"] = ETAPAS_NOMBRE
 # La URL del reproductor la arma el servicio, nunca la plantilla con texto crudo.
 plantillas.env.globals["video"] = video_guardado
+# El largo mínimo lo dice la pantalla y lo aplica el servicio: sale del mismo
+# número para que no puedan contradecirse.
+plantillas.env.globals["largo_minimo"] = LARGO_MINIMO
 
 
 # Paleta de los avatares. Son los colores del programa: el avatar de alguien es
@@ -42,11 +46,30 @@ plantillas.env.globals["color_de"] = color_de
 plantillas.env.globals["iniciales"] = iniciales
 
 
-class RedireccionAIngreso(Exception):
+class Redireccion(Exception):
+    """Antes de esta página hay que pasar por otra. La atiende `app/main.py`."""
+
+    def __init__(self, destino: str):
+        super().__init__(destino)
+        self.destino = destino
+
+
+class RedireccionAIngreso(Redireccion):
     """Se levanta cuando una página web necesita sesión y no la hay."""
 
     def __init__(self, destino: str = "/ingresar"):
-        self.destino = destino
+        super().__init__(destino)
+
+
+class DebeCambiarClave(Redireccion):
+    """Hay sesión, pero la cuenta sigue con la contraseña con la que se dio de alta.
+
+    No es un error: es la mitad del alta que le toca a la persona. Hasta que la
+    haga, todo lo demás la manda a `/clave`.
+    """
+
+    def __init__(self, destino: str = "/clave"):
+        super().__init__(destino)
 
 
 def usuario_opcional(
@@ -62,9 +85,26 @@ def usuario_opcional(
     return usuario
 
 
-def usuario_actual(usuario: Usuario | None = Depends(usuario_opcional)) -> Usuario:
+def usuario_de_sesion(usuario: Usuario | None = Depends(usuario_opcional)) -> Usuario:
+    """Hay sesión, y no se le pide nada más.
+
+    La usa `/clave` y nadie más: es la única página a la que se llega con la
+    contraseña con la que te dieron de alta.
+    """
     if usuario is None:
         raise RedireccionAIngreso()
+    return usuario
+
+
+def usuario_actual(usuario: Usuario = Depends(usuario_de_sesion)) -> Usuario:
+    """Hay sesión y la cuenta ya tiene una contraseña que eligió su dueño.
+
+    El corte está acá, en la dependencia de la que cuelgan todas las demás, y no
+    ruta por ruta: una pantalla nueva queda cubierta sin que nadie se tenga que
+    acordar de sumarla.
+    """
+    if usuario.debe_cambiar_clave:
+        raise DebeCambiarClave()
     return usuario
 
 

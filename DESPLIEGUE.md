@@ -171,9 +171,9 @@ Eso último imprime la dirección. Andá a `https://` + eso.
 
 ### 6. El primer educador
 
-La aplicación no trae ninguna cuenta: el resto —patrullas y jóvenes— se carga
-después desde la propia pantalla del educador, pero el primero hay que crearlo
-por consola.
+La aplicación no trae ninguna cuenta: el resto —patrullas, jóvenes y los demás
+educadores— se carga después desde la propia pantalla del educador, pero el
+primero hay que crearlo por consola.
 
 Con `minReplicas: 0` el contenedor está apagado hasta que alguien entra, así que
 primero abrí la dirección en el navegador y recién después:
@@ -182,18 +182,25 @@ primero abrí la dirección en el navegador y recién después:
 az containerapp exec --name $APP --resource-group $GRUPO --command sh
 ```
 
-Ya adentro, con el nombre y la contraseña que quieras:
+Ya adentro:
 
 ```bash
-python scripts/crear_educador.py educador "Nombre y Apellido" "una-contraseña-buena"
+python scripts/crear_educador.py educador "Nombre y Apellido"
 ```
 
 Si no hay ninguna Unidad todavía la crea de paso, y si el usuario ya existe
-avisa y no pisa nada. El mismo script sirve para el resto del equipo de
-educadores, que tampoco tiene un alta propia en la aplicación.
+avisa y no pisa nada.
 
-**Elegí bien la contraseña la primera vez: la aplicación no tiene pantalla para
-cambiarla.** Cambiarla es volver a entrar por acá.
+**La contraseña no se elige acá: arranca siendo el mismo nombre de usuario y la
+aplicación obliga a cambiarla al entrar.** Entrá con `educador` / `educador`,
+poné la tuya, y de ahí en más el resto del equipo se suma desde `/educadores`
+sin volver a esta consola. Si el servidor está abierto a internet y preferís que
+la provisoria no sea el usuario, pasala como tercer argumento —hay que cambiarla
+al entrar igual—:
+
+```bash
+python scripts/crear_educador.py educador "Nombre y Apellido" "una-provisoria"
+```
 
 > **No sirve pasar el comando con `--command`.** `az containerapp exec
 > --command "python ... 'Nombre y Apellido' ..."` **no** respeta las comillas:

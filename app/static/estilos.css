@@ -139,10 +139,18 @@ main {
 }
 .pie .interior {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: .6rem;
   border-top: 1px solid var(--borde);
   padding-top: 1rem;
+}
+/* La contraseña vive con el nombre de quien está usando la página, no en la
+   navegación: no es una sección, es la propia cuenta. */
+.pie .mi-cuenta {
+  margin-left: auto;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* --- Tipografía ---------------------------------------------- */

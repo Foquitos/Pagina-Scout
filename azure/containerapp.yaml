@@ -1,0 +1,77 @@
+# La aplicación en Container Apps. Se usa así:
+#
+#   az containerapp create --name retos-unidad --resource-group retos-unidad \
+#       --yaml azure/containerapp.yaml
+#
+# Hay cuatro cosas para completar, todas marcadas con PONER-. El paso a paso
+# entero está en DESPLIEGUE.md.
+
+location: brazilsouth                   # la misma del grupo
+type: Microsoft.App/containerApps
+
+properties:
+  # Sale de:
+  #   az containerapp env show -n retos-entorno -g retos-unidad --query id -o tsv
+  managedEnvironmentId: /subscriptions/0f782193-8410-4948-9621-1b3d8e1a09ab/resourceGroups/retos-unidad/providers/Microsoft.App/managedEnvironments/retos-entorno
+
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true                    # visible desde internet
+      targetPort: 8000                  # lo que escucha uvicorn
+      transport: auto
+      allowInsecure: false              # http se redirige a https
+    secrets:
+      # python -c "import secrets; print(secrets.token_hex(32))"
+      # Sin esto las sesiones se caen en cada reinicio.
+      - name: clave-secreta
+        value: PONER-UNA-CADENA-LARGA-Y-ALEATORIA
+
+  template:
+    containers:
+      - name: retos-unidad
+        image: ghcr.io/foquitos/retos-unidad:latest
+        resources:
+          # El escalón más chico. Alcanza de sobra para una Unidad y es con lo
+          # que las 200 horas mensuales gratuitas rinden más.
+          cpu: 0.25
+          memory: 0.5Gi
+        env:
+          - name: CLAVE_SECRETA
+            secretRef: clave-secreta
+          # Todo llega por HTTPS: la cookie de sesión va marcada Secure.
+          - name: COOKIES_SEGURAS
+            value: "1"
+          # Obligatorio sobre Azure Files: WAL necesita memoria compartida entre
+          # procesos y en un recurso de red no existe.
+          - name: SQLITE_JOURNAL
+            value: DELETE
+          - name: ZONA_HORARIA
+            value: America/Argentina/Buenos_Aires
+          - name: VALIDADOR
+            value: simulado
+        volumeMounts:
+          - volumeName: datos
+            mountPath: /datos-persistentes
+
+    scale:
+      # 0: apagado mientras nadie lo usa, que es lo que lo mantiene gratis.
+      # 1 como máximo: la base es SQLite y no admite dos escritores.
+      minReplicas: 0
+      maxReplicas: 1
+
+    volumes:
+      - name: datos
+        storageType: AzureFile
+        # El nombre que se le dio con `az containerapp env storage set`.
+        storageName: datos
+        # Sin esto la aplicación no arranca: SQLite pide bloqueos por rangos de
+        # bytes y sobre SMB fallan, así que hasta un CREATE TABLE en una base
+        # vacía muere con «database is locked». `nobrl` hace que el cliente los
+        # resuelva de su lado en vez de pedírselos al servidor, que es correcto
+        # acá porque hay un solo escritor (de ahí maxReplicas: 1).
+        #
+        # Definir mountOptions reemplaza los valores por omisión, así que los
+        # permisos van explícitos: uid/gid 1000 es el usuario `scout` del
+        # Dockerfile, y sin eso el contenedor no escribe en el volumen.
+        mountOptions: dir_mode=0777,file_mode=0777,uid=1000,gid=1000,nobrl,mfsymlinks

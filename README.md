@@ -11,12 +11,18 @@ se valida y suma puntos **a la patrulla**.
 python -m venv .venv
 .venv\Scripts\activate            # Windows
 pip install -r requirements.txt
+copy .env.example .env             # y poner una CLAVE_SECRETA propia
 python scripts/inicializar_db.py --demo
 python main.py
 ```
 
 En http://127.0.0.1:8000 — usuarios de prueba `educador`, `ana`, `bruno`,
 `cami`, `dante`, `eli`, todos con contraseña `scout1907`.
+
+El `.env` lo lee `app/config.py` al arrancar y no se versiona: ahí van la clave
+secreta y cualquier cosa que no deba viajar en el repositorio. Sin `.env` la
+aplicación igual levanta, con los valores por defecto del código. Para generar
+una clave: `python -c "import secrets; print(secrets.token_hex(32))"`.
 
 Sin `--demo` se crean las tablas y se cargan las cartas, pero ningún usuario:
 para producción hay que dar de alta el primer educador a mano.
@@ -370,12 +376,26 @@ Recorre lo que importa de punta a punta: un joven entra, ve el reto del día,
 entrega, el validador decide, el educador confirma, los puntos aparecen en la
 patrulla. Usa una base de datos temporal, no toca `scout.db`.
 
-## Antes de ponerlo en producción
+## Ponerlo en un servidor
 
-- Definir `CLAVE_SECRETA` (ver `.env.example`). Sin eso las sesiones se
-  invalidan en cada reinicio y el valor por defecto es público.
-- Servir por HTTPS y poner `https_only=True` en el `SessionMiddleware`
-  (`app/main.py`).
+La aplicación entera entra en un contenedor: `Dockerfile` la arma y
+`docker compose up --build` la levanta igual que va a correr afuera. El paso a
+paso para dejarla andando en Azure Container Apps —dentro del nivel gratuito,
+apagándose sola mientras nadie la usa— está en [DESPLIEGUE.md](DESPLIEGUE.md).
+
+Lo único que hay que montar en un volumen es `/datos-persistentes`: ahí viven
+`scout.db` y las fotos. El resto de la imagen se rehace construyéndola de nuevo.
+
+### Antes de ponerlo en producción
+
+- Definir `CLAVE_SECRETA` **en el entorno del servidor, como secreto**, no en un
+  `.env`: el archivo es para desarrollo y no viaja en la imagen. Sin eso las
+  sesiones se invalidan en cada reinicio y el valor por defecto es público.
+- Servir por HTTPS y poner `COOKIES_SEGURAS=1`, que es lo que marca la cookie
+  de sesión como `Secure`.
+- Si la base queda sobre un disco de red (Azure Files, SMB, NFS),
+  `SQLITE_JOURNAL=DELETE`: el modo WAL necesita memoria compartida entre
+  procesos y ahí no existe.
 - Las fotos viven en `uploads/`, fuera de la base. Entran en el backup por
   separado: si copiás solo `scout.db`, el Libro de Oro queda sin imágenes.
 - `/fotos/{nombre}` pide sesión, pero no comprueba a qué patrulla pertenece cada

@@ -1,0 +1,30 @@
+# Para probar la imagen en la máquina, tal como va a correr en el servidor:
+#
+#   docker compose up --build        →  http://localhost:8000
+#   docker compose down              apaga, sin borrar nada
+#   docker compose down -v           apaga y borra la base y las fotos
+#
+# Para cargar los usuarios de prueba la primera vez:
+#   docker compose run --rm web python scripts/inicializar_db.py --demo
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Local nomás: en el servidor esto va como secreto y es una cadena larga
+      # y aleatoria (ver DESPLIEGUE.md).
+      CLAVE_SECRETA: desarrollo-inseguro-cambiar
+      ZONA_HORARIA: America/Argentina/Buenos_Aires
+      VALIDADOR: simulado
+      # Acá el volumen es un disco de verdad, así que WAL anda. Sobre Azure
+      # Files hay que poner DELETE.
+      SQLITE_JOURNAL: WAL
+    volumes:
+      # La base y las fotos, fuera del contenedor: reconstruir la imagen no
+      # se lleva puestos los datos.
+      - datos:/datos-persistentes
+
+volumes:
+  datos:

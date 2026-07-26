@@ -1,0 +1,36 @@
+# Lo que no tiene por qué viajar al servidor que construye la imagen. Importa
+# más de lo que parece: `az containerapp up --source .` sube este directorio
+# entero a la nube antes de construir, y Docs/ solo son 49 MB de PDFs.
+
+.git/
+.gitattributes
+.gitignore
+
+.venv/
+__pycache__/
+*.py[cod]
+
+# Los 10 capítulos de la guía y las cartas en PDF: documentación para quien
+# desarrolla, nada que el servidor necesite.
+Docs/
+
+# La base y las fotos de la máquina de desarrollo. En el servidor viven en el
+# volumen, y copiarlas acá sería pisar los datos de verdad con los de prueba.
+*.db
+*.db-wal
+*.db-shm
+uploads/
+
+.env
+.claude/
+.vscode/
+.idea/
+
+README.md
+CLAUDE.md
+DESPLIEGUE.md
+docker-compose.yml
+requirements-dev.txt
+
+# Recetas para Azure: se leen desde afuera, no van adentro del contenedor.
+azure/

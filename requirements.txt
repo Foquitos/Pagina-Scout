@@ -7,6 +7,9 @@ sqlalchemy>=2.0.44,<2.1
 python-multipart>=0.0.20
 itsdangerous>=2.2.0,<3.0
 tzdata>=2025.2
+# Para leer el .env de la raíz al arrancar. En el servidor las variables llegan
+# del entorno y esto no hace nada, pero en desarrollo evita exportarlas a mano.
+python-dotenv>=1.0,<2.0
 # Para recomprimir las fotos antes de guardarlas. Sin esto, cada foto de
 # celular ocupa 4 MB en el disco en vez de 300 kB.
 pillow>=11.0,<13.0

@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.config import CLAVE_SECRETA, DIR_ESTATICOS, DIR_SUBIDAS
+from app.config import CLAVE_SECRETA, COOKIES_SEGURAS, DIR_ESTATICOS, DIR_SUBIDAS
 from app.db import SesionLocal
 from app.dependencias import RedireccionAIngreso, plantillas, usuario_actual
 from app.models import Usuario
@@ -17,7 +17,7 @@ from app.routers import api, auth, educador, joven
 
 app = FastAPI(title="Método Scout — Retos de Unidad", docs_url="/api/docs")
 
-app.add_middleware(SessionMiddleware, secret_key=CLAVE_SECRETA, https_only=False)
+app.add_middleware(SessionMiddleware, secret_key=CLAVE_SECRETA, https_only=COOKIES_SEGURAS)
 
 DIR_SUBIDAS.mkdir(parents=True, exist_ok=True)
 app.mount("/estaticos", StaticFiles(directory=str(DIR_ESTATICOS)), name="estaticos")

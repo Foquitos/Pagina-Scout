@@ -1,0 +1,4 @@
+# El entrypoint del contenedor corre en Linux: si git lo baja con fin de línea
+# de Windows, `sh` no lo puede leer. El Dockerfile igual lo limpia, pero mejor
+# que no llegue roto.
+*.sh text eol=lf

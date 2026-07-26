@@ -124,9 +124,13 @@ cada uno.
 | --- | --- | --- |
 | Dar de alta un joven | `/jovenes` | cualquier educador |
 | Sumar otro educador | `/educadores` | cualquier educador |
-| Cambiar la contraseña propia | `/clave`, desde el pie de página | cada uno |
+| Cambiar la contraseña propia | `/clave` | cada uno |
 | Blanquear la de un joven | `/jovenes` | cualquier educador |
 | Blanquear la de un educador | `/educadores` | otro educador del equipo |
+
+A `/clave` y a `/educadores` se llega desde el **menú de la cuenta**, arriba a la
+derecha: son cosas de la persona, no secciones del programa (ver [La
+pantalla](#la-pantalla)).
 
 **Blanquear es volver al día uno**, no elegirle una contraseña a otro: la
 devuelve a ser el nombre de usuario y la persona pone la suya al entrar. Es todo
@@ -153,6 +157,17 @@ Quien usa esto tiene entre 10 y 14 años y entra desde el celular, así que la
 navegación de verdad es la **barra de abajo** con las siete secciones; en
 pantalla ancha esa misma lista se muestra arriba como pestañas. Sale de un solo
 listado en `base.html`, así que no hay dos menús que mantener sincronizados.
+
+En esa barra van **solo las secciones del programa**. Lo que es de la persona
+—su contraseña, el equipo de educadores, cerrar sesión— vive en el **menú de la
+cuenta**, arriba a la derecha, detrás del avatar. Están separados porque compiten
+por lugar: siete secciones ya llenan el ancho de un teléfono, y cuando «Equipo» y
+«Salir» estaban en la barra de arriba —la que el celular esconde entera— desde el
+teléfono no había forma de tocarlos.
+
+El menú es un `<details>` y no un botón con JavaScript: abre y cierra igual sin
+JS, que es la regla de toda la aplicación. Lo único que agrega `app.js` es que se
+cierre al tocar afuera o con Escape, que es comodidad y no funcionamiento.
 
 Las ilustraciones son **SVG escritos a mano** en `app/static/img/`: el campamento
 de las cabeceras, un dibujo por área de desarrollo (`img/areas/{codigo}.svg`, el

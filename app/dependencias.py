@@ -42,8 +42,15 @@ def iniciales(nombre: str) -> str:
     return (partes[0][0] + partes[1][0]).upper()
 
 
+def primer_nombre(nombre: str) -> str:
+    """«Ana Paula Díaz» → «Ana». Lo que entra al lado del avatar en el celular."""
+    partes = (nombre or "").split()
+    return partes[0] if partes else ""
+
+
 plantillas.env.globals["color_de"] = color_de
 plantillas.env.globals["iniciales"] = iniciales
+plantillas.env.globals["primer_nombre"] = primer_nombre
 
 
 class Redireccion(Exception):

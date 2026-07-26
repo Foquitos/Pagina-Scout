@@ -316,6 +316,18 @@ def main() -> int:
     r = edu.post("/ingresar", data={"usuario": "educador", "clave": "scout1907"})
     check("un educador entra al panel", r.url.path == "/panel", r.url.path)
 
+    # Lo de la cuenta vive en el menú de arriba a la derecha y **fuera** de
+    # <nav>, que en el celular se esconde entero. Estando afuera se ve siempre,
+    # que es lo que antes no pasaba con «Equipo» y con «Salir».
+    cabecera = r.text.split("</header>")[0]
+    menu = cabecera[cabecera.index('class="menu-usuario"'):]
+    check("el menú de la cuenta no queda adentro de la navegación", "</nav>" not in menu)
+    check(
+        "y desde ahí se llega a la contraseña, al equipo y a salir",
+        all(destino in menu for destino in ("/clave", "/educadores", "/salir")),
+    )
+    check("la barra del celular lleva solo las secciones", "/educadores" not in r.text.split("barra-movil")[1])
+
     r = edu.post(
         "/retos",
         data={

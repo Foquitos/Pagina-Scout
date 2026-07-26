@@ -34,7 +34,8 @@
 
      7. Detalles de pantalla — ver una foto en grande sin salir de la
         página, confirmar un borrado adentro de la tarjeta, el tablero
-        que se actualiza solo y atajos de teclado para validar.
+        que se actualiza solo, atajos de teclado para validar y el menú
+        de la cuenta que se cierra al tocar afuera.
 
    El HTML lo sigue armando el servidor: acá no hay plantillas. Cuando
    algo tiene que repintarse, la ruta devuelve el pedazo ya renderizado
@@ -849,6 +850,24 @@
   });
 
   document.addEventListener("keydown", atajosDeValidacion);
+
+  // El menú de la cuenta se cierra solo al tocar en cualquier otro lado. Sin
+  // esto sigue andando —es un <details>, se cierra tocando el avatar otra vez—,
+  // pero un menú que se queda abierto tapando la página se siente roto.
+  document.addEventListener("click", function (evento) {
+    todos("[data-menu-usuario][open]").forEach(function (menu) {
+      if (!menu.contains(evento.target)) menu.open = false;
+    });
+  });
+
+  document.addEventListener("keydown", function (evento) {
+    if (evento.key !== "Escape") return;
+    todos("[data-menu-usuario][open]").forEach(function (menu) {
+      menu.open = false;
+      var boton = uno("summary", menu);
+      if (boton) boton.focus();
+    });
+  });
 
   window.addEventListener("online", vaciarCola);
 

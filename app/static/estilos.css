@@ -94,11 +94,14 @@ img { max-width: 100%; }
 }
 .marca svg { width: 30px; height: 30px; flex: none; }
 
+/* La marca empuja: así la navegación y el menú de la cuenta quedan pegados a la
+   derecha, juntos, también cuando la barra se parte en dos líneas. */
+.marca { margin-right: auto; }
+
 .encabezado nav {
   display: flex;
   flex-wrap: wrap;
   gap: .3rem;
-  margin-left: auto;
 }
 .encabezado nav a {
   display: inline-flex;
@@ -117,7 +120,75 @@ img { max-width: 100%; }
 .encabezado nav a.activo { background: #fff; color: var(--verde-oscuro); }
 .encabezado nav .icono { font-size: 1rem; }
 
-.salir { opacity: .8; }
+/* --- El menú de la cuenta, arriba a la derecha ----------------
+   Lo que es de la persona y no del programa: su contraseña, el equipo de
+   educadores, cerrar sesión. Está fuera de <nav> a propósito, porque <nav> se
+   esconde en el celular y esto tiene que verse siempre —era justamente lo que
+   antes quedaba sin manera de tocarse desde un teléfono—. */
+
+.menu-usuario { position: relative; flex: none; }
+
+.menu-usuario > summary {
+  gap: .45rem;
+  padding: .25rem .6rem .25rem .3rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  font-size: .93rem;
+  transition: background .15s;
+}
+.menu-usuario > summary:hover { background: rgba(255, 255, 255, .26); }
+.menu-usuario > summary::after { margin-left: 0; color: rgba(255, 255, 255, .8); }
+.menu-usuario[open] > summary { background: rgba(255, 255, 255, .26); }
+/* El avatar tiene su propio color; sobre el verde del encabezado necesita el
+   anillo para no leerse como una mancha. El selector va con `summary` adentro
+   para ganarle a `.avatar.chico`, que está más abajo en esta hoja. */
+.menu-usuario > summary .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: .72rem;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .5);
+}
+.menu-usuario .nombre { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.menu-usuario .desplegable {
+  position: absolute;
+  top: calc(100% + .5rem);
+  right: 0;
+  z-index: 40;
+  min-width: 15.5rem;
+  padding: .4rem;
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: 0 12px 30px rgba(29, 35, 33, .22);
+  animation: aparecer-menu .14s ease-out;
+}
+@keyframes aparecer-menu {
+  from { opacity: 0; transform: translateY(-.35rem); }
+}
+.menu-usuario .quien {
+  padding: .55rem .7rem .6rem;
+  border-bottom: 1px solid var(--borde);
+  margin-bottom: .3rem;
+}
+.menu-usuario .quien strong { display: block; color: var(--tinta); }
+.menu-usuario .quien .meta { display: block; font-size: .8rem; color: var(--tinta-suave); }
+.menu-usuario .desplegable a {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .6rem .7rem;
+  border-radius: 8px;
+  color: var(--tinta);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: .93rem;
+}
+.menu-usuario .desplegable a:hover { background: #eef4ef; }
+.menu-usuario .desplegable .icono { font-size: 1.05rem; }
+.menu-usuario .desplegable .salir { color: #8c3b3b; }
+.menu-usuario .desplegable .salir:hover { background: #f8eded; }
 
 /* Barra inferior: la navegación real en el celular. */
 .barra-movil { display: none; }
@@ -144,13 +215,6 @@ main {
   gap: .6rem;
   border-top: 1px solid var(--borde);
   padding-top: 1rem;
-}
-/* La contraseña vive con el nombre de quien está usando la página, no en la
-   navegación: no es una sección, es la propia cuenta. */
-.pie .mi-cuenta {
-  margin-left: auto;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 /* --- Tipografía ---------------------------------------------- */
@@ -962,6 +1026,12 @@ html.js .solo-sin-js { display: none; }
 
   .encabezado nav { display: none; }
   .encabezado .interior { padding: .6rem .9rem; }
+  /* El menú de la cuenta sí se queda: en el celular es la única puerta a la
+     contraseña, al equipo y a cerrar sesión. Lo que cede lugar es el texto. */
+  .marca { min-width: 0; }
+  .marca span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .menu-usuario .nombre { max-width: 5.5rem; }
+  .menu-usuario .desplegable { min-width: 13.5rem; }
 
   .barra-movil {
     display: flex;

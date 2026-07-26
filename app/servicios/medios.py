@@ -88,14 +88,6 @@ def borrar_foto(nombre: str | None) -> None:
     ruta.unlink(missing_ok=True)
 
 
-def espacio_usado() -> tuple[int, int]:
-    """(cantidad de archivos, bytes) que ocupan las subidas."""
-    if not DIR_SUBIDAS.exists():
-        return 0, 0
-    archivos = [a for a in DIR_SUBIDAS.iterdir() if a.is_file()]
-    return len(archivos), sum(a.stat().st_size for a in archivos)
-
-
 # --- Videos -------------------------------------------------------------------
 
 
@@ -129,8 +121,7 @@ _ID_VIMEO = re.compile(r"^\d{6,12}$")
 
 _NO_RECONOCIDO = (
     "Por ahora reconocemos videos de YouTube y de Vimeo. Subilo ahí como "
-    "«no listado» y pegá el enlace acá: así el video no ocupa lugar en el "
-    "servidor y solo lo ve quien tiene el link."
+    "«no listado» y pegá el enlace acá: así solo lo ve quien tiene el link."
 )
 
 

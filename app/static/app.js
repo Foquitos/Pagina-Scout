@@ -498,11 +498,6 @@
   var FOTO_LADO = 1600;
   var FOTO_CALIDAD = 0.82;
 
-  function enPeso(bytes) {
-    if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1).replace(".", ",") + " MB";
-    return Math.round(bytes / 1024) + " kB";
-  }
-
   function cajaDeFoto(entrada) {
     if (entrada._caja) return entrada._caja;
     var caja = document.createElement("div");
@@ -526,7 +521,9 @@
     }
 
     caja.hidden = false;
-    uno("p", caja).textContent = "Preparando la foto…";
+    var leyenda = uno("p", caja);
+    leyenda.hidden = false;
+    leyenda.textContent = "Preparando la foto…";
 
     var origen = URL.createObjectURL(archivo);
     var imagen = new Image();
@@ -550,9 +547,9 @@
           }
           entrada._previa = URL.createObjectURL(mostrar);
           uno("img", caja).src = entrada._previa;
-          uno("p", caja).textContent = sirve
-            ? enPeso(archivo.size) + " → " + enPeso(blob.size) + " · se achicó en tu celular"
-            : enPeso(archivo.size);
+          // La vista previa muestra la foto y se calla: cuánto pesaba y si se
+          // pudo achicar es asunto de acá adentro, no de quien la sube.
+          leyenda.hidden = true;
         },
         "image/jpeg",
         FOTO_CALIDAD

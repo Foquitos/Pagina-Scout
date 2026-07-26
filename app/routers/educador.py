@@ -32,7 +32,7 @@ from app.models import (
     Reto,
     Usuario,
 )
-from app.servicios import cuentas, medios, progresion, puntajes, retos
+from app.servicios import cuentas, progresion, puntajes, retos
 
 router = APIRouter()
 
@@ -80,7 +80,6 @@ def panel(
         )
     )
 
-    fotos, bytes_usados = medios.espacio_usado()
     return render(
         request,
         "educador/panel.html",
@@ -91,8 +90,6 @@ def panel(
         jovenes_sin_patrulla=jovenes_sin_patrulla or 0,
         educadores=educadores or 0,
         filas=puntajes.tablero_de_unidad(sesion, unidad_id, fecha),
-        fotos_guardadas=fotos,
-        megas_usados=round(bytes_usados / (1024 * 1024), 1),
     )
 
 

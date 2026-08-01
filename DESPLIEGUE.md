@@ -69,6 +69,11 @@ python -c "import secrets; print(secrets.token_hex(32))"
 Los nombres van en variables para no repetirlos; `CUENTA` tiene que ser único en
 todo Azure y admite solo minúsculas y números.
 
+De acá en adelante cada comando va en dos versiones, porque bash y PowerShell no
+son intercambiables: PowerShell asigna con `$VAR = ...`, sin `$( )` alrededor del
+comando cuya salida se guarda, y no corta líneas con `\` sino con un acento grave
+(`` ` ``). Donde hay un solo bloque es porque sirve igual en las dos.
+
 ```bash
 GRUPO=retos-unidad
 UBICACION=eastus
@@ -79,6 +84,20 @@ RECURSO=retos-datos
 USUARIO_GH=tu-usuario-de-github
 IMAGEN=ghcr.io/$USUARIO_GH/retos-unidad:latest
 ```
+
+```powershell
+$GRUPO = "retos-unidad"
+$UBICACION = "eastus"
+$ENTORNO = "retos-entorno"
+$APP = "retos-unidad"
+$CUENTA = "retosdatos$(Get-Random -Maximum 32768)"
+$RECURSO = "retos-datos"
+$USUARIO_GH = "tu-usuario-de-github"
+$IMAGEN = "ghcr.io/$USUARIO_GH/retos-unidad:latest"
+```
+
+Las variables viven en la ventana donde se escribieron: si se cierra la consola
+o se abre otra, hay que volver a definirlas antes de seguir con los pasos.
 
 ### 1. La imagen, en un registro público
 
@@ -93,6 +112,13 @@ Hace falta un token de GitHub con permiso `write:packages`
 ```bash
 docker build -t $IMAGEN .
 echo $TOKEN_GH | docker login ghcr.io -u $USUARIO_GH --password-stdin
+docker push $IMAGEN
+```
+
+```powershell
+$TOKEN_GH = "el-token-de-github"
+docker build -t $IMAGEN .
+$TOKEN_GH | docker login ghcr.io -u $USUARIO_GH --password-stdin
 docker push $IMAGEN
 ```
 
@@ -130,6 +156,17 @@ CLAVE_CUENTA=$(az storage account keys list --resource-group $GRUPO \
     --account-name $CUENTA --query "[0].value" --output tsv)
 ```
 
+```powershell
+az storage account create --name $CUENTA --resource-group $GRUPO `
+    --location $UBICACION --sku Standard_LRS --kind StorageV2
+
+az storage share-rm create --resource-group $GRUPO `
+    --storage-account $CUENTA --name $RECURSO --quota 5
+
+$CLAVE_CUENTA = az storage account keys list --resource-group $GRUPO `
+    --account-name $CUENTA --query "[0].value" --output tsv
+```
+
 ### 4. El entorno, y el disco enganchado al entorno
 
 ```bash
@@ -141,6 +178,18 @@ az containerapp env storage set --name $ENTORNO --resource-group $GRUPO \
     --azure-file-account-name $CUENTA \
     --azure-file-account-key $CLAVE_CUENTA \
     --azure-file-share-name $RECURSO \
+    --access-mode ReadWrite
+```
+
+```powershell
+az containerapp env create --name $ENTORNO --resource-group $GRUPO `
+    --location $UBICACION
+
+az containerapp env storage set --name $ENTORNO --resource-group $GRUPO `
+    --storage-name datos `
+    --azure-file-account-name $CUENTA `
+    --azure-file-account-key $CLAVE_CUENTA `
+    --azure-file-share-name $RECURSO `
     --access-mode ReadWrite
 ```
 
@@ -157,6 +206,11 @@ az containerapp env show --name $ENTORNO --resource-group $GRUPO \
     --query id --output tsv
 ```
 
+```powershell
+az containerapp env show --name $ENTORNO --resource-group $GRUPO `
+    --query id --output tsv
+```
+
 Y con el archivo completo:
 
 ```bash
@@ -164,6 +218,14 @@ az containerapp create --name $APP --resource-group $GRUPO \
     --yaml azure/containerapp.yaml
 
 az containerapp show --name $APP --resource-group $GRUPO \
+    --query properties.configuration.ingress.fqdn --output tsv
+```
+
+```powershell
+az containerapp create --name $APP --resource-group $GRUPO `
+    --yaml azure/containerapp.yaml
+
+az containerapp show --name $APP --resource-group $GRUPO `
     --query properties.configuration.ingress.fqdn --output tsv
 ```
 
@@ -182,7 +244,8 @@ primero abrí la dirección en el navegador y recién después:
 az containerapp exec --name $APP --resource-group $GRUPO --command sh
 ```
 
-Ya adentro:
+Ya adentro —lo que corre ahí es el shell del contenedor, así que estas líneas
+van tal cual aunque hayas abierto la consola desde PowerShell:
 
 ```bash
 python scripts/crear_educador.py educador "Nombre y Apellido"
@@ -216,7 +279,10 @@ python scripts/crear_educador.py educador "Nombre y Apellido" "una-provisoria"
 
 ## Actualizar la aplicación
 
-Tres pasos: construir, empujar, y avisarle a Azure.
+Tres pasos: construir, empujar, y avisarle a Azure. Los dos primeros comandos
+leen el repositorio, así que hay que estar parado adentro de la carpeta del
+proyecto y no en cualquier otra: si no, `git rev-parse` no encuentra nada y `SHA`
+queda vacío.
 
 ```bash
 SHA=$(git rev-parse --short HEAD)
@@ -226,6 +292,16 @@ docker push ghcr.io/$USUARIO_GH/retos-unidad:$SHA
 docker push ghcr.io/$USUARIO_GH/retos-unidad:latest
 az containerapp update --name $APP --resource-group $GRUPO \
     --image ghcr.io/$USUARIO_GH/retos-unidad:$SHA
+```
+
+```powershell
+$SHA = git rev-parse --short HEAD
+docker build -t "ghcr.io/$USUARIO_GH/retos-unidad:latest" `
+             -t "ghcr.io/$USUARIO_GH/retos-unidad:$SHA" .
+docker push "ghcr.io/$USUARIO_GH/retos-unidad:$SHA"
+docker push "ghcr.io/$USUARIO_GH/retos-unidad:latest"
+az containerapp update --name $APP --resource-group $GRUPO `
+    --image "ghcr.io/$USUARIO_GH/retos-unidad:$SHA"
 ```
 
 **La etiqueta con el commit no es un adorno.** Si se despliega siempre

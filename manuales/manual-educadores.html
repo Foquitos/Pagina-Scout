@@ -1,0 +1,1526 @@
+<title>Manual del equipo de educadores · Retos de Unidad</title>
+
+<style>
+  /* =========================================================
+     Manual de campo — equipo de educadores
+     Hereda la paleta de app/static/estilos.css para que el
+     manual se vea como la aplicación que documenta.
+     ========================================================= */
+
+  :root {
+    --verde: #3E8E5A;
+    --verde-oscuro: #2c6a42;
+    --sol: #E0A526;
+    --fuego: #E2673A;
+    --cielo: #2E86AB;
+    --coral: #D64550;
+
+    --papel: #F5F2E9;
+    --tarjeta: #ffffff;
+    --tinta: #1d2321;
+    --tinta-suave: #5d6b63;
+    --borde: #e5dfd1;
+    --borde-fuerte: #d5cdb9;
+    --cinta: rgba(62, 142, 90, .06);
+
+    --fuente-titulo: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+    --fuente-texto: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    --fuente-cita: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --fuente-ruta: "Cascadia Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --radio: 16px;
+    --radio-chico: 9px;
+    --sombra: 0 1px 2px rgba(29, 35, 33, .04), 0 10px 24px -18px rgba(29, 35, 33, .40);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --papel: #141815;
+      --tarjeta: #1b201d;
+      --tinta: #e9e7de;
+      --tinta-suave: #9aa79f;
+      --borde: #2b322d;
+      --borde-fuerte: #3a433c;
+      --cinta: rgba(92, 179, 124, .07);
+      --verde: #5cb37c;
+      --verde-oscuro: #7ac795;
+      --sol: #E7B857;
+      --fuego: #ef8158;
+      --cielo: #58a8c9;
+      --coral: #e86f78;
+      --sombra: 0 1px 2px rgba(0, 0, 0, .30), 0 12px 28px -18px rgba(0, 0, 0, .80);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --papel: #141815;
+    --tarjeta: #1b201d;
+    --tinta: #e9e7de;
+    --tinta-suave: #9aa79f;
+    --borde: #2b322d;
+    --borde-fuerte: #3a433c;
+    --cinta: rgba(92, 179, 124, .07);
+    --verde: #5cb37c;
+    --verde-oscuro: #7ac795;
+    --sol: #E7B857;
+    --fuego: #ef8158;
+    --cielo: #58a8c9;
+    --coral: #e86f78;
+    --sombra: 0 1px 2px rgba(0, 0, 0, .30), 0 12px 28px -18px rgba(0, 0, 0, .80);
+  }
+
+  :root[data-theme="light"] {
+    --papel: #F5F2E9;
+    --tarjeta: #ffffff;
+    --tinta: #1d2321;
+    --tinta-suave: #5d6b63;
+    --borde: #e5dfd1;
+    --borde-fuerte: #d5cdb9;
+    --cinta: rgba(62, 142, 90, .06);
+    --verde: #3E8E5A;
+    --verde-oscuro: #2c6a42;
+    --sol: #E0A526;
+    --fuego: #E2673A;
+    --cielo: #2E86AB;
+    --coral: #D64550;
+    --sombra: 0 1px 2px rgba(29, 35, 33, .04), 0 10px 24px -18px rgba(29, 35, 33, .40);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: var(--fuente-texto);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--sol);
+    outline-offset: 2px;
+    border-radius: 5px;
+  }
+
+  /* --- Portada ------------------------------------------------ */
+
+  .portada {
+    background:
+      radial-gradient(circle at 88% -10%, rgba(224, 165, 38, .20), transparent 46%),
+      linear-gradient(135deg, var(--verde-oscuro), var(--verde));
+    color: #fff;
+    padding: clamp(2.6rem, 7vw, 5rem) 1.5rem clamp(2.2rem, 5vw, 3.4rem);
+  }
+  :root[data-theme="dark"] .portada,
+  .portada { color: #fff; }
+  @media (prefers-color-scheme: dark) {
+    .portada {
+      background:
+        radial-gradient(circle at 88% -10%, rgba(231, 184, 87, .16), transparent 46%),
+        linear-gradient(135deg, #1d3d2a, #245239);
+    }
+  }
+  :root[data-theme="dark"] .portada {
+    background:
+      radial-gradient(circle at 88% -10%, rgba(231, 184, 87, .16), transparent 46%),
+      linear-gradient(135deg, #1d3d2a, #245239);
+  }
+  :root[data-theme="light"] .portada {
+    background:
+      radial-gradient(circle at 88% -10%, rgba(224, 165, 38, .20), transparent 46%),
+      linear-gradient(135deg, #2c6a42, #3E8E5A);
+  }
+
+  .portada .interior { max-width: 1180px; margin: 0 auto; }
+
+  .eyebrow {
+    font-size: .74rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    font-weight: 700;
+    opacity: .82;
+    margin: 0 0 .9rem;
+  }
+
+  .portada h1 {
+    font-family: var(--fuente-titulo);
+    font-size: clamp(2.1rem, 6vw, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -.025em;
+    font-weight: 700;
+    margin: 0 0 .8rem;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+
+  .portada .bajada {
+    font-size: clamp(1.02rem, 2.2vw, 1.18rem);
+    max-width: 62ch;
+    margin: 0;
+    opacity: .93;
+  }
+
+  .portada .circuito {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem .7rem;
+    margin-top: 2rem;
+    font-size: .88rem;
+  }
+  .portada .circuito span.paso {
+    background: rgba(255, 255, 255, .13);
+    border: 1px solid rgba(255, 255, 255, .22);
+    padding: .3rem .75rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .portada .circuito span.flecha { opacity: .6; }
+
+  /* --- Estructura --------------------------------------------- */
+
+  .envoltura {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  @media (min-width: 1000px) {
+    .envoltura {
+      grid-template-columns: 232px minmax(0, 1fr);
+      gap: 3.5rem;
+      align-items: start;
+    }
+  }
+
+  /* --- Índice -------------------------------------------------- */
+
+  .indice {
+    padding-top: 2.5rem;
+    font-size: .9rem;
+  }
+  @media (min-width: 1000px) {
+    .indice {
+      position: sticky;
+      top: 0;
+      max-height: 100vh;
+      overflow-y: auto;
+      padding-bottom: 2rem;
+    }
+  }
+  .indice h2 {
+    font-family: var(--fuente-titulo);
+    font-size: .74rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--tinta-suave);
+    margin: 0 0 .8rem;
+    font-weight: 700;
+  }
+  .indice ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+    counter-reset: seccion;
+  }
+  .indice a {
+    display: flex;
+    gap: .6rem;
+    text-decoration: none;
+    color: var(--tinta-suave);
+    padding: .34rem .55rem;
+    border-radius: var(--radio-chico);
+    border-left: 2px solid transparent;
+    transition: color .15s, background .15s, border-color .15s;
+  }
+  .indice a::before {
+    counter-increment: seccion;
+    content: counter(seccion, decimal-leading-zero);
+    font-family: var(--fuente-ruta);
+    font-size: .74rem;
+    opacity: .55;
+    padding-top: .15em;
+  }
+  .indice a:hover { color: var(--tinta); background: var(--cinta); }
+  .indice a.activo {
+    color: var(--verde-oscuro);
+    font-weight: 600;
+    border-left-color: var(--verde);
+    background: var(--cinta);
+  }
+
+  /* --- Contenido ----------------------------------------------- */
+
+  .contenido { padding-top: 2.5rem; min-width: 0; }
+
+  section { scroll-margin-top: 1.5rem; }
+  section + section { margin-top: 4rem; }
+
+  h2.titulo-seccion {
+    font-family: var(--fuente-titulo);
+    font-size: clamp(1.55rem, 3.4vw, 2.05rem);
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    font-weight: 700;
+    margin: 0 0 .5rem;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--fuente-titulo);
+    font-size: 1.14rem;
+    letter-spacing: -.01em;
+    font-weight: 700;
+    margin: 2.2rem 0 .5rem;
+    text-wrap: balance;
+  }
+
+  p { margin: 0 0 1rem; max-width: 68ch; }
+  .intro { color: var(--tinta-suave); font-size: 1.04rem; max-width: 66ch; margin-bottom: 1.8rem; }
+
+  ul, ol.pasos { max-width: 68ch; }
+  li { margin-bottom: .45rem; }
+
+  strong { font-weight: 700; }
+  a { color: var(--verde-oscuro); }
+
+  code, .ruta {
+    font-family: var(--fuente-ruta);
+    font-size: .87em;
+    background: var(--cinta);
+    border: 1px solid var(--borde);
+    border-radius: 5px;
+    padding: .08em .38em;
+    white-space: nowrap;
+  }
+
+  /* --- Pantalla (la unidad de documentación) -------------------- */
+
+  .pantalla {
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 1.35rem 1.5rem 1.4rem;
+    box-shadow: var(--sombra);
+    margin-bottom: 1.1rem;
+  }
+
+  .pantalla-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .55rem .7rem;
+    margin-bottom: .9rem;
+  }
+  .pantalla-cabecera h3 {
+    margin: 0;
+    font-size: 1.16rem;
+    flex: 1 1 auto;
+  }
+  .pantalla p:last-child { margin-bottom: 0; }
+  .pantalla ul { margin: .3rem 0 1rem; padding-left: 1.15rem; }
+  .pantalla ul:last-child { margin-bottom: 0; }
+
+  /* --- Chips: ruta y quién decide ------------------------------ */
+
+  .chip-ruta {
+    font-family: var(--fuente-ruta);
+    font-size: .78rem;
+    background: var(--cinta);
+    border: 1px solid var(--borde-fuerte);
+    color: var(--tinta-suave);
+    border-radius: 999px;
+    padding: .16rem .6rem;
+    white-space: nowrap;
+  }
+
+  .quien {
+    font-size: .73rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    padding: .2rem .62rem;
+    white-space: nowrap;
+    border: 1px solid;
+  }
+  .quien.equipo   { color: var(--verde-oscuro); border-color: color-mix(in srgb, var(--verde) 45%, transparent); background: color-mix(in srgb, var(--verde) 11%, transparent); }
+  .quien.joven    { color: var(--sol);          border-color: color-mix(in srgb, var(--sol) 50%, transparent);   background: color-mix(in srgb, var(--sol) 13%, transparent); }
+  .quien.patrulla { color: var(--cielo);        border-color: color-mix(in srgb, var(--cielo) 45%, transparent); background: color-mix(in srgb, var(--cielo) 11%, transparent); }
+  .quien.asamblea { color: var(--fuego);        border-color: color-mix(in srgb, var(--fuego) 45%, transparent); background: color-mix(in srgb, var(--fuego) 11%, transparent); }
+
+  .leyenda-quien {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .8rem;
+    padding: 1rem 1.15rem;
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    margin-bottom: 1.6rem;
+    align-items: center;
+    font-size: .88rem;
+    color: var(--tinta-suave);
+  }
+  .leyenda-quien .par { display: inline-flex; align-items: center; gap: .42rem; }
+
+  /* --- Avisos --------------------------------------------------- */
+
+  .nota {
+    border-left: 3px solid var(--verde);
+    background: var(--cinta);
+    border-radius: 0 var(--radio-chico) var(--radio-chico) 0;
+    padding: .95rem 1.15rem;
+    margin: 1.3rem 0;
+    max-width: 70ch;
+  }
+  .nota p { margin-bottom: .5rem; }
+  .nota p:last-child { margin-bottom: 0; }
+  .nota.ojo { border-left-color: var(--coral); background: color-mix(in srgb, var(--coral) 7%, transparent); }
+  .nota.metodo { border-left-color: var(--sol); background: color-mix(in srgb, var(--sol) 8%, transparent); }
+  .nota .rotulo {
+    display: block;
+    font-size: .71rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--tinta-suave);
+    margin-bottom: .35rem;
+  }
+
+  blockquote {
+    font-family: var(--fuente-cita);
+    font-style: italic;
+    font-size: 1.03rem;
+    line-height: 1.55;
+    margin: 1.3rem 0;
+    padding-left: 1.1rem;
+    border-left: 2px solid var(--sol);
+    color: var(--tinta);
+    max-width: 62ch;
+  }
+  blockquote cite {
+    display: block;
+    font-family: var(--fuente-texto);
+    font-style: normal;
+    font-size: .82rem;
+    color: var(--tinta-suave);
+    margin-top: .5rem;
+    letter-spacing: .02em;
+  }
+
+  /* --- Tablas --------------------------------------------------- */
+
+  .tabla-caja {
+    overflow-x: auto;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--tarjeta);
+    margin: 1.3rem 0;
+    box-shadow: var(--sombra);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 480px;
+    font-size: .93rem;
+  }
+  th, td {
+    text-align: left;
+    padding: .68rem .95rem;
+    border-bottom: 1px solid var(--borde);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--fuente-titulo);
+    font-size: .74rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--tinta-suave);
+    font-weight: 700;
+    background: var(--cinta);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  /* En las tablas los chips llevan frases enteras («La patrulla, en su
+     Consejo»), así que ahí sí se les deja cortar renglón. */
+  td .quien { font-size: .68rem; white-space: normal; }
+
+  /* --- Barra de secciones (la del educador) --------------------- */
+
+  .barra-demo {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: .4rem;
+    background: linear-gradient(135deg, var(--verde-oscuro), var(--verde));
+    padding: .7rem;
+    border-radius: var(--radio);
+    margin: 1.3rem 0;
+    box-shadow: var(--sombra);
+  }
+  .barra-demo .item {
+    text-align: center;
+    color: #fff;
+    padding: .55rem .3rem;
+    border-radius: var(--radio-chico);
+    background: rgba(255, 255, 255, .1);
+    font-size: .78rem;
+    line-height: 1.3;
+  }
+  .barra-demo .item .ico { display: block; font-size: 1.32rem; margin-bottom: .18rem; }
+  .barra-demo .item small { display: block; opacity: .78; font-size: .68rem; }
+
+  /* --- Pasos numerados ------------------------------------------ */
+
+  ol.pasos {
+    list-style: none;
+    counter-reset: paso;
+    padding: 0;
+    margin: 1.2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+  }
+  /* El número va posicionado y no como celda de una rejilla: si el <li> fuera
+     grid, cada <strong> y cada <span class="ruta"> de adentro se convertiría en
+     su propia celda y el renglón se partiría en pedazos. */
+  ol.pasos > li {
+    counter-increment: paso;
+    position: relative;
+    padding-left: 2.7rem;
+    min-height: 1.85rem;
+    margin: 0;
+  }
+  ol.pasos > li::before {
+    content: counter(paso);
+    position: absolute;
+    left: 0;
+    top: .1rem;
+    font-family: var(--fuente-ruta);
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--verde-oscuro);
+    background: var(--cinta);
+    border: 1px solid color-mix(in srgb, var(--verde) 35%, transparent);
+    border-radius: 50%;
+    width: 1.85rem;
+    height: 1.85rem;
+    display: grid;
+    place-items: center;
+  }
+
+  /* --- Pie ------------------------------------------------------ */
+
+  .pie {
+    border-top: 1px solid var(--borde);
+    margin-top: 4rem;
+    padding-top: 1.6rem;
+    font-size: .88rem;
+    color: var(--tinta-suave);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+  html { scroll-behavior: smooth; }
+</style>
+
+<header class="portada">
+  <div class="interior">
+    <p class="eyebrow">Retos de Unidad · Rama Scouts</p>
+    <h1>Manual del equipo de educadores</h1>
+    <p class="bajada">
+      Todo lo que la aplicación hace, pantalla por pantalla, y —lo que más
+      importa— de quién es cada decisión. Está escrito para que lo lea alguien
+      del equipo que entra por primera vez y para consultarlo suelto en medio
+      de una reunión.
+    </p>
+    <p class="circuito">
+      <span class="paso">🎯 El equipo asigna un reto</span>
+      <span class="flecha" aria-hidden="true">→</span>
+      <span class="paso">📝 El joven entrega</span>
+      <span class="flecha" aria-hidden="true">→</span>
+      <span class="paso">✅ Se valida</span>
+      <span class="flecha" aria-hidden="true">→</span>
+      <span class="paso">⭐ Suman puntos a la patrulla</span>
+    </p>
+  </div>
+</header>
+
+<div class="envoltura">
+
+  <nav class="indice" aria-label="Índice del manual">
+    <h2>En este manual</h2>
+    <ol>
+      <li><a href="#empezar">Entrar por primera vez</a></li>
+      <li><a href="#pantalla">Cómo se mueve la pantalla</a></li>
+      <li><a href="#panel">El Panel</a></li>
+      <li><a href="#retos">Retos y agenda</a></li>
+      <li><a href="#entregas">Entregas y validación</a></li>
+      <li><a href="#novedades">Novedades y moderación</a></li>
+      <li><a href="#gente">Jóvenes, patrullas y equipo</a></li>
+      <li><a href="#progresion">La progresión personal</a></li>
+      <li><a href="#ciclo">El ciclo de programa</a></li>
+      <li><a href="#especialidades">Especialidades</a></li>
+      <li><a href="#no-tocar">Lo que no decide el equipo</a></li>
+      <li><a href="#cuentas">Cuentas y contraseñas</a></li>
+      <li><a href="#fotos">Fotos, videos y privacidad</a></li>
+      <li><a href="#problemas">Si algo no anda</a></li>
+    </ol>
+  </nav>
+
+  <main class="contenido">
+
+    <p class="intro">
+      La aplicación acompaña el programa de una Unidad Scout: los jóvenes reciben
+      retos, entregan lo que hicieron, y eso suma puntos <strong>a la patrulla</strong>.
+      Alrededor de ese circuito están las cartas de exploración, los cargos, el
+      Consejo de Patrulla, las ideas del ciclo, el calendario y las especialidades.
+      Casi todo lo que sigue está fundado en la Guía de la Rama Scouts, y cuando
+      una pantalla se comporta de una manera que sorprende, suele ser por eso.
+    </p>
+
+    <div class="leyenda-quien">
+      <strong style="color: var(--tinta)">Quién decide:</strong>
+      <span class="par"><span class="quien equipo">Equipo</span> ustedes</span>
+      <span class="par"><span class="quien joven">Joven</span> cada chica o chico</span>
+      <span class="par"><span class="quien patrulla">Patrulla</span> en su Consejo</span>
+      <span class="par"><span class="quien asamblea">Asamblea</span> en persona, fuera de la app</span>
+    </div>
+
+    <!-- ============================================ -->
+    <section id="empezar">
+      <h2 class="titulo-seccion">Entrar por primera vez</h2>
+      <p>
+        Alguien del equipo te da de alta y te dice dos cosas: tu nombre de usuario
+        y una contraseña provisoria que la aplicación sorteó, del tipo
+        <code>fogata-remo-47</code>.
+      </p>
+
+      <ol class="pasos">
+        <li>Entrá en <span class="ruta">/ingresar</span> con ese usuario y esa contraseña.</li>
+        <li>
+          La aplicación te lleva derecho a <span class="ruta">/clave</span> y no te
+          deja ir a ninguna otra parte. No es un paso que se puede saltear: mientras
+          la contraseña siga siendo la provisoria, todas las demás pantallas te
+          devuelven acá.
+        </li>
+        <li>Ponés tu contraseña propia y ya estás adentro, en el Panel.</li>
+      </ol>
+
+      <div class="nota ojo">
+        <span class="rotulo">Ojo</span>
+        <p>
+          La contraseña provisoria se muestra <strong>una sola vez</strong>, en el
+          momento del alta. Al recargar la página ya no está. Si se pierde antes de
+          que la persona entre, no hay de dónde sacarla: se blanquea la cuenta y sale
+          otra distinta.
+        </p>
+      </div>
+
+      <p>
+        Nadie —ni vos, ni quien tenga la base de datos en la mano— puede ver la
+        contraseña de otra persona: se guarda hasheada. Por eso el único camino
+        cuando alguien se la olvida es blanquearla.
+      </p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="pantalla">
+      <h2 class="titulo-seccion">Cómo se mueve la pantalla</h2>
+      <p>
+        Siete secciones, siempre las mismas. En el celular son la barra de abajo;
+        en pantalla ancha, las pestañas de arriba. Sale de un solo listado, así que
+        las dos dicen exactamente lo mismo.
+      </p>
+
+      <div class="barra-demo">
+        <span class="item"><span class="ico" aria-hidden="true">🏕️</span>Panel<small>/panel</small></span>
+        <span class="item"><span class="ico" aria-hidden="true">📣</span>Novedades<small>/novedades</small></span>
+        <span class="item"><span class="ico" aria-hidden="true">✅</span>Entregas<small>/validaciones</small></span>
+        <span class="item"><span class="ico" aria-hidden="true">🎯</span>Retos<small>/retos</small></span>
+        <span class="item"><span class="ico" aria-hidden="true">📅</span>Asignar<small>/asignar</small></span>
+        <span class="item"><span class="ico" aria-hidden="true">🤝</span>Patrullas<small>/patrullas</small></span>
+        <span class="item"><span class="ico" aria-hidden="true">🧭</span>Jóvenes<small>/jovenes</small></span>
+      </div>
+
+      <p>
+        En esa barra van <strong>solo las secciones del programa</strong>. Lo que es
+        de tu cuenta vive en el <strong>menú de la cuenta</strong>, arriba a la
+        derecha, detrás de tu avatar: <span class="ruta">/clave</span> para cambiar tu
+        contraseña, <span class="ruta">/educadores</span> para el equipo, y cerrar
+        sesión. Si buscás «Equipo» en la barra de abajo no está ahí, y es a propósito:
+        siete botones ya llenan el ancho de un teléfono.
+      </p>
+
+      <h3>Lo que cuelga de cada sección</h3>
+      <p>Nada se perdió: lo que no está en la barra se llega desde su lugar natural.</p>
+
+      <div class="tabla-caja">
+        <table>
+          <thead>
+            <tr><th>Desde</th><th>Llegás a</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Panel</td><td><span class="ruta">/calendario</span>, <span class="ruta">/ideas</span>, <span class="ruta">/cargos</span>, y el tablero al pie</td></tr>
+            <tr><td>Jóvenes</td><td><span class="ruta">/progresion/{joven}</span>, <span class="ruta">/cartas-de/{joven}</span>, <span class="ruta">/especialidades</span></td></tr>
+            <tr><td>Patrullas</td><td><span class="ruta">/patrulla/{id}</span> y el <span class="ruta">/libro-de-oro/{patrulla}</span></td></tr>
+            <tr><td>Menú de la cuenta</td><td><span class="ruta">/clave</span>, <span class="ruta">/educadores</span>, salir</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="panel">
+      <h2 class="titulo-seccion">El Panel</h2>
+      <p class="intro">
+        Es la pantalla de entrada y responde una sola pregunta: ¿hay algo que
+        necesite al equipo hoy?
+      </p>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>🏕️ Panel de la Unidad</h3>
+          <span class="chip-ruta">/panel</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>Arriba, cuatro números que se leen de un vistazo:</p>
+        <ul>
+          <li><strong>Entregas incompletas esperando respuesta.</strong> Lo completo se validó solo; esto es lo que quedó a medias.</li>
+          <li><strong>Retos activos hoy.</strong></li>
+          <li><strong>Jóvenes sin patrulla.</strong></li>
+          <li><strong>Educadores en el equipo.</strong></li>
+        </ul>
+        <p>Debajo, los avisos que piden una respuesta que no es una entrega, en orden de urgencia:</p>
+        <ul>
+          <li><strong>⚠️ Publicaciones con un aviso sin mirar.</strong> Va primero y separado del resto. Es lo único del panel que puede no poder esperar al sábado.</li>
+          <li><strong>💬 Cartas cerradas esperando una conversación.</strong> Las cerró el joven con su autoevaluación; ya cuentan. Lo que falta no es tu permiso, es que las miren juntos.</li>
+          <li><strong>📨 Especialidades pedidas</strong> que esperan que armes el recorrido.</li>
+          <li><strong>⭐ Especialidades que llegaron a la fase de servicio</strong>, listas para conversar y entregar la insignia.</li>
+        </ul>
+        <p>
+          Al pie está el <strong>tablero de patrullas</strong> entero. Por eso el
+          tablero no ocupa un lugar propio en la barra: ya está acá.
+        </p>
+      </div>
+
+      <div class="nota metodo">
+        <span class="rotulo">Por qué el tablero ordena por promedio</span>
+        <p>
+          La cifra grande es <strong>puntos por integrante</strong>, no el total.
+          Las patrullas son desparejas —la guía dice que eso está bien y hasta pide
+          no repartir a los que llegan para emparejarlas—, así que si el marcador
+          sumara nomás, una patrulla de ocho le ganaría siempre a una de cuatro sin
+          que nadie se haya esforzado más. El total sigue a la vista, pero no decide
+          quién va arriba. Los educadores no cuentan para el promedio: no entregan retos.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="retos">
+      <h2 class="titulo-seccion">Retos y agenda</h2>
+      <p class="intro">
+        Un reto se escribe una vez y se asigna las veces que haga falta. Son dos
+        pantallas separadas justamente por eso.
+      </p>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>🎯 Retos</h3>
+          <span class="chip-ruta">/retos</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>
+          El catálogo de retos que escribió el equipo: título, consigna, área de
+          desarrollo, puntaje y si pide foto. Un reto que ya no va más se
+          <strong>archiva</strong> —deja de ofrecerse para asignar, pero no se borra,
+          porque hay entregas colgando de él.
+        </p>
+      </div>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>📅 Asignar un reto</h3>
+          <span class="chip-ruta">/asignar</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>
+          Elegís un reto, una fecha y un <strong>alcance</strong>: toda la Unidad, una
+          patrulla, o una persona sola. Debajo está la <strong>agenda de hoy en
+          adelante</strong>, con lo que ya está puesto.
+        </p>
+        <p>Para sacar algo de la agenda, cada fila tiene su <strong>Quitar</strong>:</p>
+        <ul>
+          <li><strong>Si nadie entregó nada</strong>, se saca derecho, con una pregunta y listo.</li>
+          <li>
+            <strong>Si hay entregas adentro</strong>, la aplicación no lo trata igual:
+            vuelve a la agenda con la cuenta exacta de lo que se estaría borrando
+            —cuántas entregas, cuántas validadas, cuántos puntos y a qué patrullas se
+            les sacan— y hace falta marcar una casilla. También te ofrece la salida
+            obvia, <strong>Dejarlo como está</strong>, porque un reto viejo en la
+            agenda no molesta a nadie.
+          </li>
+        </ul>
+        <p>
+          Borrar un reto asignado <strong>nunca toca la Bitácora de Aventura</strong>
+          de nadie: si una entrada apuntaba a esa entrega, la entrada queda y se suelta
+          el vínculo. Las fotos de las entregas sí se borran del disco.
+        </p>
+      </div>
+
+      <div class="nota">
+        <span class="rotulo">El reto 🤖 propuesto por la aplicación</span>
+        <p>
+          Si para un día no asignaste nada, la aplicación propone un desafío sacado de
+          las cartas, para que la pantalla nunca aparezca vacía. La elección es
+          determinista por Unidad y fecha: toda la Unidad ve el mismo reto y recargar
+          no lo cambia. En cuanto asignás algo para ese día, el automático deja de
+          aparecer.
+        </p>
+        <p>
+          <strong>Cuidado al quitarlo:</strong> si sacás el propuesto y ese día se queda
+          sin ningún reto, la aplicación vuelve a proponer <strong>el mismo</strong>.
+          Para que no vuelva, asigná uno propio.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="entregas">
+      <h2 class="titulo-seccion">Entregas y validación</h2>
+
+      <div class="nota ojo">
+        <span class="rotulo">Lo primero que hay que entender</span>
+        <p>
+          <strong><span class="ruta">/validaciones</span> no es una cola de
+          aprobación.</strong> Una entrega completa se da por buena sola y suma en el
+          momento. Lo que ves ahí es <em>todo lo entregado</em>, y lo que te toca es
+          mirar y —si algo no pasó— darlo de baja.
+        </p>
+      </div>
+
+      <p>
+        Un chico que hizo lo que le pidieron no tiene por qué esperar al sábado para
+        que alguien le diga que sí. Un validador automático puede aprobar o derivar a
+        una persona, nada más: <strong>rechazar es siempre decisión de un
+        educador</strong>.
+      </p>
+
+      <blockquote>
+        Ante discrepancias entre la evaluación del educador y la autoevaluación del
+        joven, siempre primará la autoevaluación. Es preferible que la o el joven se
+        exceda en la estimación de sus logros y no que se afecte su autoestima o se le
+        desanime para seguir avanzando.
+        <cite>Guía de la Rama Scouts, capítulo 9</cite>
+      </blockquote>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>✅ Lo que entregaron</h3>
+          <span class="chip-ruta">/validaciones</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>Cada entrega trae el relato, la foto si la hubo, y tres salidas:</p>
+        <ul>
+          <li><strong>Darla por buena (N pts)</strong> — la valida y suma a la patrulla.</li>
+          <li><strong>Pedir que amplíe</strong> — vuelve al joven con una devolución escrita, para que cuente mejor lo que hizo.</li>
+          <li><strong>Darla de baja</strong> — la que no pasó. Le saca los puntos y la saca del muro sola.</li>
+        </ul>
+        <p>
+          Lo que sí espera respuesta son las <strong>entregas incompletas</strong>, que
+          el validador deriva y el panel cuenta aparte. El resto ya está resuelto.
+        </p>
+        <p>
+          <strong>Con teclado</strong> hay atajos: <code>J</code> y <code>K</code> para
+          moverse por la lista, <code>A</code> / <code>D</code> / <code>R</code> para
+          resolver. Se anuncian solo donde hay teclado de verdad y se apagan mientras
+          estás escribiendo en un campo.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="novedades">
+      <h2 class="titulo-seccion">Novedades y moderación</h2>
+      <p class="intro">
+        Ni el muro ni el Libro de Oro esperan que un adulto mire la foto antes de que
+        la vean los demás. Es una decisión, no un olvido —el libro es de la patrulla, y
+        pedirle permiso a un grande para escribir en el propio libro lo desnaturaliza—.
+        Esta sección es lo que esa inmediatez obliga a tener.
+      </p>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>📣 Lo que se publicó</h3>
+          <span class="chip-ruta">/novedades</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>
+          Todo lo que se publicó en la Unidad, lo último primero, con la foto a la
+          vista: el muro y las páginas de todos los libros de oro en una sola pantalla.
+          <strong>No es una cola de aprobación</strong> —todo lo que está ahí ya está
+          publicado—; es dónde el equipo se entera sin recorrer libro por libro.
+        </p>
+        <p>Sobre cada publicación:</p>
+        <ul>
+          <li><strong>Bajarla</strong> — la saca de circulación sin borrar nada. La entrega conserva sus puntos y la página sigue en el libro para su autor y para el equipo. Tampoco toca el interruptor de «compartida» del joven.</li>
+          <li><strong>Volver a publicarla</strong> — deshace lo anterior. Un educador que baja algo por error a las once de la noche lo devuelve desde la misma pantalla, sin entrar a la base de datos.</li>
+          <li><strong>Está bien</strong> — cierra el aviso sin bajar nada: «lo miramos y queda».</li>
+          <li><strong>Verla donde está</strong> — te lleva al muro o a la página del libro.</li>
+        </ul>
+      </div>
+
+      <div class="nota metodo">
+        <span class="rotulo">Los avisos</span>
+        <p>
+          Cualquiera de la Unidad puede pedir que el equipo mire una publicación, y
+          sobre todo quien aparece en la foto: es el primero que se da cuenta y el que
+          antes no tenía forma de decirlo hasta la reunión del sábado. Un aviso
+          <strong>no baja nada</strong>: pone la publicación arriba de todo en
+          <span class="ruta">/novedades</span> y la cuenta en el Panel.
+        </p>
+        <p>
+          Que exista la salida «Está bien» es lo que impide que avisar sea, en los
+          hechos, sacar del muro.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="gente">
+      <h2 class="titulo-seccion">Jóvenes, patrullas y equipo</h2>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>🧭 Jóvenes de la Unidad</h3>
+          <span class="chip-ruta">/jovenes</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>
+          Con <strong>➕ Dar de alta</strong> creás la cuenta: nombre y usuario, nada
+          más. La aplicación sortea la contraseña provisoria y te la muestra ahí mismo,
+          una sola vez, para que se la digas en la reunión.
+        </p>
+        <p>De cada joven ves su etapa y cuántas cartas lleva elegidas y logradas. Desde acá:</p>
+        <ul>
+          <li><strong>Cambiar de patrulla</strong> — se guarda solo, sin apretar nada.</li>
+          <li><strong>🧭 Progresión →</strong> — su etapa y sus cartas.</li>
+          <li><strong>Ver sus cartas</strong> — solo lectura, lo que escribió.</li>
+          <li><strong>Se olvidó la contraseña</strong> — blanquea y sortea una provisoria nueva.</li>
+        </ul>
+        <div class="nota">
+          <p style="margin:0">
+            <strong>La etapa no se toca desde acá.</strong> En este listado solo se
+            cambia la patrulla. Son dos decisiones distintas: mover a alguien de
+            patrulla es organizar la Unidad; cambiarle la etapa es cerrar un tramo de su
+            progresión personal, y para eso hay que estar mirando sus cartas.
+          </p>
+        </div>
+      </div>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>🤝 Patrullas</h3>
+          <span class="chip-ruta">/patrullas</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>
+          Crear las patrullas de la Unidad y ponerles nombre y color. <strong>El nombre
+          se cambia acá y no adentro de la patrulla</strong>: cambiarlo es una decisión
+          de la Unidad, no un campo de texto.
+        </p>
+        <p>
+          Todo lo demás de la patrulla —lema, grito, emblema, banderín, historia, los
+          cargos, el Consejo— lo escribe la patrulla en
+          <span class="ruta">/patrulla/{id}</span>. Vos podés entrar y leerlo.
+        </p>
+      </div>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>🎖️ Cargos</h3>
+          <span class="chip-ruta">/cargos</span>
+          <span class="quien equipo">Equipo</span>
+          <span class="quien patrulla">Patrulla</span>
+        </div>
+        <p>
+          El equipo mantiene el <strong>catálogo</strong> de la Unidad —arranca con los
+          ocho de la guía y se le agregan los propios—. Pero <strong>quién ocupa cada
+          cargo lo decide la patrulla</strong>, en su Consejo, desde su propia pantalla.
+        </p>
+        <p>
+          Un cargo dado de baja del catálogo deja de ofrecerse pero nunca se borra: los
+          períodos ya cumplidos son parte de la progresión de alguien.
+        </p>
+      </div>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>👥 Equipo de educadores</h3>
+          <span class="chip-ruta">/educadores</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>
+          Se llega desde el <strong>menú de la cuenta</strong>, arriba a la derecha.
+          <strong>No hay rol de administrador:</strong> cualquier educador puede sumar a
+          otro y blanquear a cualquiera del equipo salvo a sí mismo. El equipo de una
+          Unidad son tres o cuatro personas que se conocen y comparten la responsabilidad
+          del programa; inventar una jerarquía adentro sería inventar un cargo que en la
+          Unidad no existe.
+        </p>
+        <p><strong>Cuando alguien se va</strong>, la aplicación elige sola entre dos caminos y te dice cuál va a pasar <em>antes</em> de que aprietes:</p>
+        <div class="tabla-caja">
+          <table>
+            <thead>
+              <tr><th>Botón</th><th>Cuándo</th><th>Qué pasa</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Sacar del equipo</strong></td>
+                <td>Ya firmó algo: una carta acordada, un cambio de etapa, una entrega validada.</td>
+                <td>Se desactiva. Deja de entrar, la sesión abierta se corta en el momento, su nombre sigue figurando donde firmó, y aparece en «Ya no están». Se puede <strong>reincorporar</strong> con la contraseña que tenía.</td>
+              </tr>
+              <tr>
+                <td><strong>Borrar cuenta</strong></td>
+                <td>No firmó nada. Es el usuario que se escribió mal.</td>
+                <td>Se borra de verdad. No existió para nadie, y dejarlo como «inactivo» sería guardar basura con nombre de persona.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Un educador <strong>firma</strong> cosas, y la aplicación entera está construida
+          sobre que se sepa quién decidió qué. Por eso no se borra sin más a alguien que
+          dejó rastro: quedarían huecos en el historial de progresión de chicos que hoy
+          dice quién los acompañó.
+        </p>
+        <div class="nota ojo">
+          <p style="margin:0">
+            <strong>Nadie se da de baja a sí mismo.</strong> Hay que pedírselo a otra
+            persona del equipo. No es burocracia: es lo que garantiza que la Unidad nunca
+            se quede sin ningún educador que pueda entrar, porque cada baja la firma
+            alguien que se queda adentro.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="progresion">
+      <h2 class="titulo-seccion">La progresión personal</h2>
+      <p class="intro">
+        Cada joven elige entre <strong>12 y 14 cartas</strong> para su etapa, las trabaja
+        desafío por desafío, y las cierra escribiendo su autoevaluación. El equipo
+        acompaña, conversa y firma.
+      </p>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>🧭 Progresión de un joven</h3>
+          <span class="chip-ruta">/progresion/{joven}</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <p>
+          Se entra desde el listado de jóvenes. Arriba, el cambio de etapa; abajo, las
+          cartas elegidas con su avance, y el historial de las etapas anteriores.
+        </p>
+        <p>
+          El avance se cuenta <strong>sobre los desafíos requeridos</strong>, que son los
+          mínimos de la carta. Los opcionales suman y se muestran, pero no mueven la meta.
+        </p>
+      </div>
+
+      <h3>Nada se cierra solo, y nada se cierra a ciegas</h3>
+      <p>La aplicación no bloquea: avisa. El camino esperado sale derecho, y todo lo demás pide una confirmación explícita.</p>
+
+      <div class="tabla-caja">
+        <table>
+          <thead>
+            <tr><th>Lo que se pide</th><th>Qué pasa</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Cerrar una carta con todos los requeridos hechos</td><td>Se cierra. El aviso recuerda que primero se conversa.</td></tr>
+            <tr><td>Cerrar una carta con requeridos sin marcar</td><td>Hace falta marcar la casilla. Queda guardado que se cerró con pendientes.</td></tr>
+            <tr><td>Pasar a la etapa siguiente con las 12 cartas logradas</td><td>Se cambia derecho.</td></tr>
+            <tr><td>Cambiar de etapa sin eso, o volver a una anterior</td><td>Hace falta marcar la casilla.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Que falten requeridos no vuelve imposible cerrar una carta, y es a propósito: la
+        guía dice que un desafío opcional puede reemplazar a uno requerido si se conversó,
+        y hay chicos que hicieron la competencia sin ir tildando la lista. Lo que no puede
+        pasar es que ocurra sin que nadie lo mire.
+      </p>
+
+      <h3>Quién cierra una carta</h3>
+      <p>
+        <strong>La cierra el joven</strong>, escribiendo su autoevaluación —las seis
+        preguntas de la guía: qué aprendiste, qué hiciste para aprenderlo, qué se te hizo
+        difícil, quién te ayudó, cómo te sentiste, qué te quedaron ganas de aprender—.
+        Sin texto no se cierra: la autoevaluación <em>es</em> el cierre, no el trámite para
+        destrabarlo.
+      </p>
+      <p>
+        La carta queda lograda y cuenta desde ese momento. Lo que falta después no es un
+        permiso: es la conversación. Vos la registrás con <strong>«Ya la
+        conversamos»</strong>, y el Panel lista las que están esperando esa charla.
+      </p>
+      <p>
+        Un educador <strong>puede</strong> cerrar una carta él mismo —hay chicos que no van
+        a escribir solos, y cerrar una carta en la conversación cara a cara es legítimo—;
+        cuando lo hace, queda acordada de entrada, porque la conversación ya pasó.
+      </p>
+      <p>
+        Reabrir una carta <strong>no borra la autoevaluación</strong>. La escribió el joven
+        y es suya, igual que los comentarios de cada desafío.
+      </p>
+
+      <h3>Lo que pide cada etapa</h3>
+      <p>
+        Además de las cartas logradas, el capítulo 9 pide esto. Sale en la pantalla de
+        progresión como una lista con lo que la persona ya tiene al lado.
+      </p>
+
+      <div class="tabla-caja">
+        <table>
+          <thead>
+            <tr><th>Etapa</th><th>Además de las 12 cartas</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Pistas</strong></td><td>1 cargo de patrulla cumplido</td></tr>
+            <tr><td><strong>Senda</strong></td><td>2 cargos distintos + 1 descubierta</td></tr>
+            <tr><td><strong>Rumbo</strong></td><td>Lo anterior + 1 proyecto de Unidad y 1 de Patrulla</td></tr>
+            <tr><td><strong>Travesía</strong></td><td>3 cargos distintos, más lo anterior + apoyar a alguien que empieza + la Exploración de Travesía</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Las dos últimas de Travesía <strong>no se cuentan solas</strong>: ninguna base de
+        datos puede saberlas, así que se muestran con otro ícono para que alguien se
+        acuerde de conversarlas. Y como siempre, la aplicación avisa pero no bloquea:
+        podés pasar a alguien de etapa igual, confirmando.
+      </p>
+
+      <div class="nota metodo">
+        <span class="rotulo">Cargos y etapa</span>
+        <p>
+          Se cuentan cargos <strong>distintos</strong> cumplidos, así que repetir el mismo
+          tres ciclos no suma de nuevo. Una misma persona puede tener varios cargos a la
+          vez: en una patrulla de cinco no hay uno por cabeza, y son responsabilidades, no
+          puestos.
+        </p>
+      </div>
+
+      <h3>Lo que queda de las etapas anteriores</h3>
+      <p>
+        Cambiar de etapa no borra ni esconde nada. Las cartas y las marcas viven atadas a
+        la etapa en la que se trabajaron y salen por el <strong>historial</strong>: una
+        sección por etapa recorrida, con cada carta y lo que escribió en cada desafío. Van
+        las logradas y también las que quedaron sin cerrar, porque ahí adentro hay trabajo
+        hecho.
+      </p>
+      <p>
+        <strong>Una carta lograda no vuelve al catálogo.</strong> Esa competencia ya la
+        desarrolló: ofrecérsela de nuevo sería pedirle que la vuelva a hacer.
+      </p>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>Lo escrito lo leen tres personas</h3>
+          <span class="chip-ruta">/cartas-de/{joven}</span>
+        </div>
+        <p>
+          Una sola página de solo lectura para <strong>quien la escribió, su patrulla y los
+          educadores</strong>, porque es una sola conversación: autoevaluación,
+          coevaluación y heteroevaluación. Un joven de otra patrulla recibe un 404.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="ciclo">
+      <h2 class="titulo-seccion">El ciclo de programa</h2>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>💡 Ideas</h3>
+          <span class="chip-ruta">/ideas</span>
+          <span class="quien asamblea">Asamblea</span>
+          <span class="quien equipo">Equipo</span>
+        </div>
+        <blockquote>
+          En nuestra organización, las y los jóvenes tienen voz y voto respecto de las
+          actividades que desean realizar.
+          <cite>Guía de la Rama Scouts, capítulo 8</cite>
+        </blockquote>
+        <p>
+          <strong>La Asamblea que decide no está en la aplicación, y es a propósito.</strong>
+          Se reúne en persona y así tiene que seguir: es donde se aprende a defender una
+          idea, a escuchar la de otro y a bancarse perder una votación mirando a la cara al
+          que la ganó. Lo que la aplicación hace es juntar las propuestas para que lleguen
+          enteras a esa reunión, y anotar después lo que ahí se decidió.
+        </p>
+
+        <div class="tabla-caja">
+          <table>
+            <thead>
+              <tr><th>Estado</th><th>Qué significa</th><th>Quién lo pone</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Propuesta</strong></td><td>Alguien la escribió, nadie la miró</td><td>Nace así</td></tr>
+              <tr><td><strong>Se puede hacer</strong></td><td>El equipo la miró y es viable: va a la Asamblea</td><td><span class="quien equipo">Equipo</span></td></tr>
+              <tr><td><strong>Elegida</strong></td><td>La Asamblea la eligió, en persona</td><td><span class="quien equipo">Equipo</span>, después de la reunión</td></tr>
+              <tr><td><strong>Guardada</strong></td><td>No salió esta vez; vuelve el ciclo que viene</td><td><span class="quien equipo">Equipo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p><strong>Quién puede qué:</strong></p>
+        <ul>
+          <li><strong>Proponer:</strong> cualquiera. A los educadores la guía se lo pide expresamente, «para introducir nuevas temáticas».</li>
+          <li><strong>Apoyar («me sumo»):</strong> solo las y los jóvenes, y no decide nada: es un dato para llevar a la reunión.</li>
+          <li><strong>Mover el estado y agendar:</strong> el equipo.</li>
+          <li><strong>Borrar:</strong> el equipo, o quien la escribió mientras nadie la haya mirado.</li>
+        </ul>
+
+        <div class="nota metodo">
+          <p style="margin:0">
+            La <strong>respuesta</strong> importa sobre todo cuando algo se guarda. A un
+            chico que propuso algo se le contesta: que su idea desaparezca sin una palabra
+            es la forma más rápida de que no vuelva a proponer nada.
+          </p>
+        </div>
+      </div>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>📆 Calendario</h3>
+          <span class="chip-ruta">/calendario</span>
+          <span class="quien equipo">Equipo</span>
+          <span class="quien joven">Joven</span>
+        </div>
+        <p>
+          Lo arma el equipo, porque la fase de organización es del Consejo de Unidad.
+          Adentro va tanto lo que se eligió en la Asamblea como lo fijo: campamentos,
+          celebraciones, entregas de insignia. Lo próximo también asoma en el «Hoy» de cada
+          joven, con los días que faltan.
+        </p>
+        <p>
+          Lo que hacen las y los jóvenes ahí es marcar <strong>«estuve»</strong>. No es una
+          lista de asistencia que toma un adulto: es cada uno diciendo dónde estuvo, y es lo
+          que alimenta los requisitos de descubiertas y proyectos de su etapa. Coherente con
+          que la evaluación de la progresión sea suya.
+        </p>
+        <p>Una actividad de otra patrulla no se ve, igual que el Libro de Oro.</p>
+      </div>
+
+      <div class="pantalla">
+        <div class="pantalla-cabecera">
+          <h3>🤝 El Consejo de Patrulla y los acuerdos</h3>
+          <span class="chip-ruta">/patrulla/{id}</span>
+          <span class="quien patrulla">Patrulla</span>
+        </div>
+        <p>
+          Un acta es fecha, quiénes estuvieron y de qué hablaron. La diferencia con un
+          cuaderno es lo que pasa después: <strong>un acuerdo con responsable aparece en el
+          «Hoy» de esa persona</strong> hasta que se da por hecho. Un acuerdo que se queda
+          escrito en un acta es una anotación; uno que te espera al entrar es un compromiso.
+        </p>
+        <p>
+          Los acuerdos sin responsable existen a propósito —hay cosas que son de toda la
+          patrulla— y los puede marcar cualquiera del grupo: el que lo hizo bien no siempre
+          es el que se acuerda de venir a tildarlo.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="especialidades">
+      <h2 class="titulo-seccion">Especialidades</h2>
+      <p class="intro">
+        Voluntaria, individual, de dos a seis meses, <strong>sin puntaje ni
+        validación</strong>. Dos cosas que parecen contradecirse y no.
+      </p>
+
+      <div class="tabla-caja">
+        <table>
+          <thead>
+            <tr><th>1. La pide</th><th>2. La prepara</th><th>3. La recorre</th><th>4. La concluye</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="quien joven">Joven</span><br>La que quiera</td>
+              <td><span class="quien equipo">Equipo</span><br>Experto + fases</td>
+              <td><span class="quien joven">Joven</span><br>Las tres fases</td>
+              <td><span class="quien equipo">Equipo</span><br>Entrega la insignia</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>La pide el joven, y pide la que quiere</h3>
+      <blockquote>
+        Tanto la decisión de desarrollar una especialidad como la elección del tema
+        específico son personales y voluntarias de cada joven.
+        <cite>Guía de la Rama Scouts</cite>
+      </blockquote>
+      <p>
+        Por eso el pedido es un <strong>campo de texto libre y no una lista</strong>: si a
+        alguien le interesa la apicultura, escribe apicultura. Un catálogo cerrado
+        convertiría en «no se puede» todo lo que a los adultos no se les ocurrió. Los
+        desafíos de tipo especialidad de las Cartas de Exploración se ofrecen como
+        sugerencias, no como opciones obligadas.
+      </p>
+
+      <h3>Pero el recorrido lo prepara el equipo</h3>
+      <p>
+        Pedirla no es empezarla. La guía les encarga a los educadores conocer el tema,
+        contactar a la persona experta e informarle el sentido de las especialidades en el
+        Programa de Jóvenes, y pensar qué se espera en cada fase. Hasta que eso pasa, la
+        especialidad está pedida y el joven ve <em>«tu educador/a la está preparando»</em>.
+      </p>
+      <p>
+        Los requisitos se escriben <strong>para esa persona</strong>, no para todas, y se
+        pueden ajustar en cualquier momento, también con la especialidad ya en marcha.
+      </p>
+
+      <h3>Las tres fases</h3>
+      <ol class="pasos">
+        <li><strong>Exploración (conocer)</strong> — qué averiguó, qué herramientas se usan.</li>
+        <li><strong>Taller (hacer)</strong> — la parte práctica.</li>
+        <li><strong>Desafío (servir)</strong> — a quién le sirvió lo que aprendió. No es un examen: es lo que hace que una especialidad scout no sea un curso.</li>
+      </ol>
+      <p>
+        La fase que muestra la pantalla es la más avanzada que tenga algo escrito: nadie
+        tiene que apretar «siguiente».
+      </p>
+      <p>
+        <strong>La cierra un educador</strong>, y es lo único de la progresión personal que
+        la guía deja explícitamente del lado del equipo: la insignia «constituye un
+        testimonio permanente de la actitud de servicio», y eso lo atestigua una persona.
+      </p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="no-tocar">
+      <h2 class="titulo-seccion">Lo que no decide el equipo</h2>
+      <p class="intro">
+        Esta es la sección más importante del manual. Si te parece que a un educador le
+        falta un botón, mirá primero si no es que esa decisión es de otro.
+      </p>
+
+      <div class="tabla-caja">
+        <table>
+          <thead>
+            <tr><th>Qué</th><th>Dónde</th><th>Quién</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Repartir los cargos de patrulla</td><td><span class="ruta">/patrulla/{id}</span></td><td><span class="quien patrulla">La patrulla, en su Consejo</span></td></tr>
+            <tr><td>Escribir el lema, el grito, el emblema, la historia</td><td><span class="ruta">/patrulla/{id}</span></td><td><span class="quien patrulla">La patrulla</span></td></tr>
+            <tr><td>Escribir en el Libro de Oro</td><td><span class="ruta">/libro-de-oro/{patrulla}</span></td><td><span class="quien patrulla">La patrulla</span></td></tr>
+            <tr><td>Apoyar una idea («me sumo»)</td><td><span class="ruta">/ideas</span></td><td><span class="quien joven">Las y los jóvenes</span> — los educadores proponen, no apoyan</td></tr>
+            <tr><td>Elegir qué se hace este ciclo</td><td>—</td><td><span class="quien asamblea">La Asamblea, en persona</span></td></tr>
+            <tr><td>Elegir qué cartas trabajar</td><td><span class="ruta">/mis-cartas</span></td><td><span class="quien joven">El joven</span></td></tr>
+            <tr><td>Cerrar una carta con su autoevaluación</td><td><span class="ruta">/mis-cartas/{id}</span></td><td><span class="quien joven">El joven</span></td></tr>
+            <tr><td>Pedir una especialidad, y cuál</td><td><span class="ruta">/especialidades</span></td><td><span class="quien joven">El joven</span></td></tr>
+            <tr><td>Compartir una entrega en el muro</td><td><span class="ruta">/reto/{id}</span></td><td><span class="quien joven">El joven que la hizo</span></td></tr>
+            <tr><td>Marcar «estuve» en una actividad</td><td><span class="ruta">/calendario</span></td><td><span class="quien joven">Cada uno</span></td></tr>
+            <tr><td>Escribir la Bitácora de Aventura</td><td><span class="ruta">/bitacora</span></td><td><span class="quien joven">El joven — y nadie más la lee</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="nota metodo">
+        <p style="margin:0">
+          Ninguna de estas filas es un descuido de permisos: son el método. La aplicación
+          está construida para que el protagonismo esté donde la guía lo pone, y quitarle
+          una de estas decisiones a quien le corresponde no sería agregar una comodidad,
+          sería cambiar de programa educativo.
+        </p>
+      </div>
+
+      <h3>Y tres cosas más que conviene saber</h3>
+      <ul>
+        <li><strong>El puntaje es de la patrulla, nunca de la persona.</strong> No hay ranking de jóvenes ni ninguna vista que los ordene por puntos. Lo que aporta cada uno se guarda —hace falta para acreditar el desafío en su progresión— pero no se expone como número comparable.</li>
+        <li><strong><span class="ruta">/mi-patrulla</span> lista a la patrulla por nombre, nunca por avance</strong>, y sin puntos. Acompañarse no es competir.</li>
+        <li><strong>El muro no tiene números al lado.</strong> Se ve qué hizo cada uno, no cuánto sumó.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="cuentas">
+      <h2 class="titulo-seccion">Cuentas y contraseñas</h2>
+
+      <div class="tabla-caja">
+        <table>
+          <thead>
+            <tr><th>Qué</th><th>Dónde</th><th>Quién puede</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Dar de alta un joven</td><td><span class="ruta">/jovenes</span></td><td>Cualquier educador</td></tr>
+            <tr><td>Sumar otro educador</td><td><span class="ruta">/educadores</span></td><td>Cualquier educador</td></tr>
+            <tr><td>Cambiar la contraseña propia</td><td><span class="ruta">/clave</span></td><td>Cada uno</td></tr>
+            <tr><td>Blanquear la de un joven</td><td><span class="ruta">/jovenes</span></td><td>Cualquier educador</td></tr>
+            <tr><td>Blanquear la de un educador</td><td><span class="ruta">/educadores</span></td><td>Otro educador del equipo</td></tr>
+            <tr><td>Sacar a un educador del equipo</td><td><span class="ruta">/educadores</span></td><td>Otro educador del equipo</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        <strong>Dar de alta a alguien es decirle una frase:</strong> «tu usuario es
+        <code>ana</code>, tu contraseña es <code>fogata-remo-47</code>, y al entrar te va a
+        pedir una nueva». Blanquear hace lo mismo: sortea otra y te la muestra igual.
+      </p>
+
+      <p>
+        <strong>Blanquear es volver al día uno</strong>, no elegirle una contraseña a otro.
+        Es todo el sistema de recuperación que hay, y alcanza porque el educador está en la
+        misma reunión que el joven: no pedimos direcciones de correo de menores, así que no
+        hay «recuperar por mail» ni tiene por qué haberlo.
+      </p>
+
+      <div class="nota ojo">
+        <span class="rotulo">Después de cinco intentos fallidos</span>
+        <p>
+          Esa cuenta descansa quince minutos. Es lo que impide que alguien de afuera pruebe
+          contraseñas contra los nombres de la Unidad, que son adivinables. Si a alguien le
+          pasa por olvido: o espera, o le blanqueás la cuenta y entra con la provisoria
+          nueva.
+        </p>
+      </div>
+
+      <p>
+        <strong>El primer educador de todos</strong> se crea por consola, porque en una base
+        recién inicializada no hay nadie que pueda dar de alta a nadie. Después de ese,
+        nunca más: el resto del equipo se suma desde la aplicación.
+      </p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="fotos">
+      <h2 class="titulo-seccion">Fotos, videos y privacidad</h2>
+
+      <h3>Ninguna foto se guarda como vino</h3>
+      <p>
+        Se reescribe con el lado mayor en 1600 px antes de tocar el disco. Una foto de
+        celular de 12 megapíxeles queda entre 100 y 400 kB. En el celular además se achica
+        <em>antes</em> de subirla, así que una de 4 MB viaja como 300 kB: eso ahorra los
+        datos de quien sube.
+      </p>
+
+      <div class="nota metodo">
+        <span class="rotulo">Se descarta el EXIF</span>
+        <p style="margin:0">
+          Una foto de celular trae adentro las coordenadas de dónde se sacó. No queremos
+          guardar dónde vive un chico, así que ese dato se tira antes de escribir el
+          archivo.
+        </p>
+      </div>
+
+      <h3>Ningún video se guarda</h3>
+      <p>
+        Un minuto de video de celular pesa más que el Libro de Oro entero de un año. Se
+        guarda el enlace a YouTube o Vimeo y se muestra su reproductor. La recomendación en
+        pantalla es subirlo como <strong>no listado</strong>, para que no aparezca en
+        búsquedas y solo entre quien tiene el link.
+      </p>
+
+      <h3>Las fotos no se sirven a cualquiera</h3>
+      <p>
+        Cada archivo aplica la misma regla que la página donde se muestra: tener sesión no
+        alcanza. La foto del Libro de Oro de una patrulla no se le sirve a otra ni con la
+        dirección exacta en la mano. Importa porque una dirección así se filtra sola, en un
+        historial o en una captura reenviada.
+      </p>
+
+      <p>El Panel muestra cuánto disco llevan usado las fotos.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="problemas">
+      <h2 class="titulo-seccion">Si algo no anda</h2>
+
+      <div class="tabla-caja">
+        <table>
+          <thead>
+            <tr><th>Síntoma</th><th>Qué es</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>La primera visita del día tarda unos segundos y después va rápido</td><td>Es lo esperado: el servidor se apaga solo cuando nadie lo usa y se está encendiendo.</td></tr>
+            <tr><td>Un joven entra y solo ve la pantalla de la contraseña</td><td>Todavía tiene la provisoria. Hasta que ponga una propia no abre nada más.</td></tr>
+            <tr><td>«Esta cuenta descansa unos minutos»</td><td>Cinco intentos fallidos. Espera quince minutos, o le blanqueás la cuenta.</td></tr>
+            <tr><td>El reto 🤖 que quité volvió al día siguiente</td><td>Ese día quedó sin ningún reto asignado. Asignale uno propio y no vuelve.</td></tr>
+            <tr><td>Un joven no ve el Libro de Oro de otra patrulla</td><td>No es un error: cada libro es de su patrulla.</td></tr>
+            <tr><td>Se cortó la señal en el campamento y no se guardó lo que marcó</td><td>Queda guardado en el teléfono y se manda solo cuando vuelve la conexión, con un cartel a la vista mientras tanto.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="nota">
+        <span class="rotulo">Si de verdad se rompió algo</span>
+        <p style="margin:0">
+          Los detalles técnicos —desplegar un cambio, mirar los registros del servidor,
+          respaldar la base y las fotos, volver a una versión anterior— están en
+          <code>OPERAR.md</code>, en el repositorio. Este manual es el de la Unidad, no el
+          del servidor.
+        </p>
+      </div>
+    </section>
+
+    <footer class="pie">
+      <p>
+        <strong>Retos de Unidad</strong> · Manual del equipo de educadores.
+        Todo lo que dice este manual sale de la aplicación y de la Guía de la Rama Scouts;
+        los diez capítulos, las Cartas de Exploración y los manuales de cabullería y fuegos
+        están en la carpeta <code>Docs/</code>.
+      </p>
+      <p>Hay un manual aparte, más corto y hecho para el celular, para las chicas y los chicos de la Unidad.</p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // El índice marca en qué sección estás. Es comodidad: sin JS los enlaces
+  // funcionan igual, que es la misma regla que sigue la aplicación.
+  (function () {
+    var enlaces = Array.prototype.slice.call(document.querySelectorAll('.indice a'));
+    var secciones = enlaces
+      .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+      .filter(Boolean);
+    if (!secciones.length || !('IntersectionObserver' in window)) return;
+
+    var visibles = new Set();
+
+    function pintar() {
+      var primera = secciones.find(function (s) { return visibles.has(s.id); });
+      enlaces.forEach(function (a) {
+        a.classList.toggle('activo', primera && a.getAttribute('href') === '#' + primera.id);
+      });
+    }
+
+    var observador = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (e.isIntersecting) visibles.add(e.target.id);
+        else visibles.delete(e.target.id);
+      });
+      pintar();
+    }, { rootMargin: '0px 0px -65% 0px' });
+
+    secciones.forEach(function (s) { observador.observe(s); });
+  })();
+</script>

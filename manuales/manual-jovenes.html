@@ -1,0 +1,905 @@
+<title>Tu guía de Retos de Unidad</title>
+
+<style>
+  /* =========================================================
+     Guía para las chicas y los chicos de la Unidad.
+     Se maneja igual que la aplicación: la barra de siete
+     secciones abajo, tocás y cambia. Pensada para el celular.
+     ========================================================= */
+
+  :root {
+    --verde: #3E8E5A;
+    --verde-oscuro: #2c6a42;
+    --sol: #E0A526;
+    --fuego: #E2673A;
+    --cielo: #2E86AB;
+    --violeta: #7D5BA6;
+    --teal: #4E8C7D;
+    --coral: #D64550;
+
+    --papel: #F5F2E9;
+    --tarjeta: #ffffff;
+    --tinta: #1d2321;
+    --tinta-suave: #5d6b63;
+    --borde: #e5dfd1;
+
+    --barra-fondo: #2c6a42;
+    --barra-texto: #ffffff;
+
+    --fuente: "Nunito", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    --fuente-titulo: "Nunito", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    --fuente-mano: "Bradley Hand", "Segoe Script", "Comic Sans MS", cursive;
+
+    --radio: 20px;
+    --radio-chico: 12px;
+    --sombra: 0 1px 2px rgba(29, 35, 33, .04), 0 12px 28px -18px rgba(29, 35, 33, .45);
+
+    --tono: var(--verde);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --papel: #14181a;
+      --tarjeta: #1c2124;
+      --tinta: #eae8e1;
+      --tinta-suave: #9ba79f;
+      --borde: #2c3236;
+      --verde: #5cb37c;
+      --verde-oscuro: #7ac795;
+      --sol: #E7B857;
+      --fuego: #ef8158;
+      --cielo: #58a8c9;
+      --violeta: #a488cc;
+      --teal: #6fb3a2;
+      --coral: #e86f78;
+      --barra-fondo: #10231a;
+      --sombra: 0 1px 2px rgba(0, 0, 0, .3), 0 14px 30px -18px rgba(0, 0, 0, .85);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --papel: #14181a;
+    --tarjeta: #1c2124;
+    --tinta: #eae8e1;
+    --tinta-suave: #9ba79f;
+    --borde: #2c3236;
+    --verde: #5cb37c;
+    --verde-oscuro: #7ac795;
+    --sol: #E7B857;
+    --fuego: #ef8158;
+    --cielo: #58a8c9;
+    --violeta: #a488cc;
+    --teal: #6fb3a2;
+    --coral: #e86f78;
+    --barra-fondo: #10231a;
+    --sombra: 0 1px 2px rgba(0, 0, 0, .3), 0 14px 30px -18px rgba(0, 0, 0, .85);
+  }
+
+  :root[data-theme="light"] {
+    --papel: #F5F2E9;
+    --tarjeta: #ffffff;
+    --tinta: #1d2321;
+    --tinta-suave: #5d6b63;
+    --borde: #e5dfd1;
+    --verde: #3E8E5A;
+    --verde-oscuro: #2c6a42;
+    --sol: #E0A526;
+    --fuego: #E2673A;
+    --cielo: #2E86AB;
+    --violeta: #7D5BA6;
+    --teal: #4E8C7D;
+    --coral: #D64550;
+    --barra-fondo: #2c6a42;
+    --sombra: 0 1px 2px rgba(29, 35, 33, .04), 0 12px 28px -18px rgba(29, 35, 33, .45);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--papel);
+    background-image:
+      radial-gradient(circle at 18% 6%, color-mix(in srgb, var(--verde) 9%, transparent), transparent 42%),
+      radial-gradient(circle at 88% 2%, color-mix(in srgb, var(--sol) 11%, transparent), transparent 38%);
+    background-attachment: fixed;
+    color: var(--tinta);
+    font-family: var(--fuente);
+    font-size: 17.5px;
+    line-height: 1.62;
+    -webkit-text-size-adjust: 100%;
+    /* Lugar para la barra de secciones, que va fija abajo. */
+    padding-bottom: 92px;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--sol);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+
+  .envoltura { max-width: 800px; margin: 0 auto; padding: 0 1.1rem; }
+
+  /* --- Portada -------------------------------------------------- */
+
+  .portada {
+    background: linear-gradient(135deg, var(--verde-oscuro), var(--verde) 58%, #4ea36a);
+    color: #fff;
+    padding: clamp(2.4rem, 8vw, 4rem) 0 clamp(2rem, 6vw, 3rem);
+    position: relative;
+    overflow: hidden;
+  }
+  @media (prefers-color-scheme: dark) {
+    .portada { background: linear-gradient(135deg, #12291d, #1f4a30 60%, #27593a); }
+  }
+  :root[data-theme="dark"] .portada { background: linear-gradient(135deg, #12291d, #1f4a30 60%, #27593a); }
+  :root[data-theme="light"] .portada { background: linear-gradient(135deg, #2c6a42, #3E8E5A 58%, #4ea36a); }
+
+  .portada::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 -1px 0;
+    height: 34px;
+    background: var(--papel);
+    clip-path: polygon(0 100%, 0 46%, 7% 72%, 15% 26%, 24% 66%, 33% 14%, 43% 60%, 52% 30%, 62% 70%, 71% 22%, 80% 64%, 89% 34%, 96% 68%, 100% 44%, 100% 100%);
+    opacity: .95;
+  }
+
+  .portada h1 {
+    font-family: var(--fuente-titulo);
+    font-size: clamp(2.1rem, 8vw, 3.4rem);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin: 0 0 .7rem;
+    text-wrap: balance;
+  }
+  .portada .hola {
+    font-size: .8rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    font-weight: 800;
+    opacity: .8;
+    margin: 0 0 .9rem;
+  }
+  .portada p.bajada {
+    font-size: clamp(1.03rem, 3vw, 1.22rem);
+    max-width: 42ch;
+    margin: 0;
+    opacity: .95;
+  }
+
+  /* --- Bloques generales ---------------------------------------- */
+
+  h2.titulo {
+    font-family: var(--fuente-titulo);
+    font-size: clamp(1.45rem, 5vw, 1.95rem);
+    font-weight: 800;
+    letter-spacing: -.015em;
+    margin: 0 0 .4rem;
+    text-wrap: balance;
+  }
+  .sub { color: var(--tinta-suave); margin: 0 0 1.4rem; max-width: 52ch; }
+
+  section.bloque { padding: 2.8rem 0 .5rem; }
+
+  p { margin: 0 0 1rem; }
+  strong { font-weight: 800; }
+
+  /* --- El circuito: cómo se juega ------------------------------- */
+
+  .circuito {
+    display: grid;
+    gap: .7rem;
+    grid-template-columns: 1fr;
+    counter-reset: paso;
+    margin-bottom: 1rem;
+  }
+  @media (min-width: 620px) { .circuito { grid-template-columns: repeat(4, 1fr); } }
+
+  .circuito .paso {
+    counter-increment: paso;
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 1.05rem 1.1rem 1.15rem;
+    box-shadow: var(--sombra);
+    position: relative;
+  }
+  .circuito .paso::before {
+    content: counter(paso);
+    position: absolute;
+    top: -.7rem;
+    left: 1.05rem;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 50%;
+    background: var(--verde);
+    color: #fff;
+    font-weight: 800;
+    font-size: .88rem;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+  }
+  .circuito .paso .emo { font-size: 1.7rem; display: block; margin: .35rem 0 .3rem; }
+  .circuito .paso h3 { font-family: var(--fuente-titulo); font-size: 1.02rem; font-weight: 800; margin: 0 0 .2rem; }
+  .circuito .paso p { font-size: .92rem; color: var(--tinta-suave); margin: 0; }
+
+  /* --- Explorador de secciones ---------------------------------- */
+
+  .explorador {
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    overflow: hidden;
+    border-top: 5px solid var(--tono);
+    transition: border-color .25s ease;
+  }
+
+  .panel-cabecera {
+    padding: 1.4rem 1.3rem .9rem;
+    background: color-mix(in srgb, var(--tono) 8%, transparent);
+    border-bottom: 1px solid var(--borde);
+  }
+  .panel-cabecera .emoji { font-size: 2.4rem; display: block; line-height: 1; margin-bottom: .45rem; }
+  .panel-cabecera h3 {
+    font-family: var(--fuente-titulo);
+    font-size: clamp(1.3rem, 4.6vw, 1.7rem);
+    font-weight: 800;
+    margin: 0 0 .25rem;
+    color: var(--tono);
+    letter-spacing: -.015em;
+  }
+  .panel-cabecera .donde {
+    font-size: .8rem;
+    color: var(--tinta-suave);
+    margin: 0;
+  }
+  .panel-cabecera .donde b { color: var(--tono); }
+
+  .panel-cuerpo { padding: 1.25rem 1.3rem 1.5rem; }
+  .panel-cuerpo > p:first-child { font-size: 1.06rem; }
+  .panel-cuerpo p:last-child { margin-bottom: 0; }
+
+  .panel[hidden] { display: none; }
+
+  @keyframes entra {
+    from { opacity: 0; transform: translateY(9px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .panel:not([hidden]) { animation: entra .28s ease both; }
+
+  ul.acciones {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .55rem;
+  }
+  /* El marcador va posicionado y no como celda de una rejilla: si la lista
+     fuera grid, cada <strong> y cada <span> de adentro se convertiría en su
+     propia celda y el texto se partiría en pedazos. */
+  ul.acciones li {
+    position: relative;
+    padding-left: 1.7rem;
+    font-size: .98rem;
+  }
+  ul.acciones li::before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--tono);
+    font-weight: 800;
+    line-height: 1.62;
+  }
+
+  .clave {
+    border-left: 3px solid var(--tono);
+    background: color-mix(in srgb, var(--tono) 8%, transparent);
+    border-radius: 0 var(--radio-chico) var(--radio-chico) 0;
+    padding: .85rem 1.05rem;
+    margin: 1.1rem 0 0;
+    font-size: .95rem;
+  }
+  .clave .rotulo {
+    display: block;
+    font-size: .68rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: var(--tono);
+    margin-bottom: .25rem;
+  }
+  .clave p { margin: 0; }
+
+  .boton-falso {
+    display: inline-block;
+    background: var(--tono);
+    color: #fff;
+    border-radius: 999px;
+    padding: .1rem .6rem;
+    font-size: .85rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .aviso-tocar {
+    text-align: center;
+    color: var(--tinta-suave);
+    font-size: .92rem;
+    margin: .9rem 0 0;
+  }
+  .aviso-tocar .flecha { display: inline-block; animation: rebota 1.6s ease-in-out infinite; }
+  @keyframes rebota {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+
+  /* --- La barra de secciones (igual que en la app) --------------- */
+
+  .barra {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    background: var(--barra-fondo);
+    box-shadow: 0 -3px 16px rgba(0, 0, 0, .25);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .barra .pistas {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .barra button {
+    appearance: none;
+    background: none;
+    border: none;
+    border-top: 3px solid transparent;
+    color: rgba(255, 255, 255, .72);
+    font-family: inherit;
+    font-size: .63rem;
+    font-weight: 700;
+    padding: .5rem .1rem .55rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .12rem;
+    line-height: 1.2;
+    transition: color .18s, background .18s, border-color .18s;
+    min-height: 58px;
+  }
+  .barra button .ico { font-size: 1.28rem; line-height: 1; }
+  .barra button:hover { color: #fff; background: rgba(255, 255, 255, .09); }
+  .barra button[aria-selected="true"] {
+    color: #fff;
+    background: rgba(255, 255, 255, .15);
+    border-top-color: var(--sol);
+  }
+  @media (min-width: 560px) {
+    .barra button { font-size: .74rem; }
+    .barra button .ico { font-size: 1.4rem; }
+  }
+
+  /* --- Tarjetas sueltas ----------------------------------------- */
+
+  .rejilla {
+    display: grid;
+    gap: .8rem;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 620px) { .rejilla { grid-template-columns: 1fr 1fr; } }
+
+  .tarjeta {
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 1.15rem 1.25rem 1.25rem;
+    box-shadow: var(--sombra);
+  }
+  .tarjeta h3 {
+    font-family: var(--fuente-titulo);
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin: 0 0 .35rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .tarjeta p { font-size: .95rem; margin: 0; color: var(--tinta-suave); }
+  .tarjeta p + p { margin-top: .6rem; }
+
+  /* --- Tuyo: lo que decidís vos --------------------------------- */
+
+  .tuyo {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--sol) 16%, var(--tarjeta)), var(--tarjeta) 70%);
+    border: 1px solid color-mix(in srgb, var(--sol) 35%, var(--borde));
+    border-radius: var(--radio);
+    padding: 1.5rem 1.4rem;
+    box-shadow: var(--sombra);
+  }
+  .tuyo ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: grid;
+    gap: .6rem;
+  }
+  @media (min-width: 620px) { .tuyo ul { grid-template-columns: 1fr 1fr; } }
+  .tuyo li {
+    position: relative;
+    padding-left: 1.6rem;
+    font-size: .96rem;
+  }
+  .tuyo li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--verde);
+    font-weight: 800;
+    line-height: 1.62;
+  }
+
+  /* --- Cierre ---------------------------------------------------- */
+
+  .cierre {
+    text-align: center;
+    padding: 3rem 0 1rem;
+    color: var(--tinta-suave);
+    font-size: .93rem;
+  }
+  .cierre .lema {
+    font-family: var(--fuente-mano);
+    font-size: 1.5rem;
+    color: var(--verde-oscuro);
+    display: block;
+    margin-bottom: .5rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+
+<header class="portada">
+  <div class="envoltura">
+    <p class="hola">Retos de Unidad</p>
+    <h1>Tu guía de la página</h1>
+    <p class="bajada">
+      Todo lo que podés hacer acá adentro, en siete secciones. Se maneja igual
+      que la aplicación: la barra de abajo, tocás y cambia. Probala.
+    </p>
+  </div>
+</header>
+
+<main>
+
+  <!-- ====== Cómo se juega ====== -->
+  <section class="bloque envoltura">
+    <h2 class="titulo">Cómo funciona</h2>
+    <p class="sub">
+      Casi todo arranca igual: hay algo para hacer, lo hacés de verdad, contás
+      cómo te fue, y tu patrulla suma.
+    </p>
+
+    <div class="circuito">
+      <div class="paso">
+        <span class="emo" aria-hidden="true">🎯</span>
+        <h3>Aparece un reto</h3>
+        <p>Todos los días hay algo en «Hoy». A veces lo escribe tu educador/a, a veces lo propone la página.</p>
+      </div>
+      <div class="paso">
+        <span class="emo" aria-hidden="true">🏃</span>
+        <h3>Lo hacés</h3>
+        <p>En serio, en tu casa, en la reunión o donde sea. Esa es la parte importante.</p>
+      </div>
+      <div class="paso">
+        <span class="emo" aria-hidden="true">📝</span>
+        <h3>Contás qué hiciste</h3>
+        <p>Escribís cómo te fue y, si el reto la pide, subís una foto.</p>
+      </div>
+      <div class="paso">
+        <span class="emo" aria-hidden="true">⭐</span>
+        <h3>Suma tu patrulla</h3>
+        <p>Los puntos son de la patrulla, nunca tuyos solos. Nadie te compara con nadie.</p>
+      </div>
+    </div>
+
+    <div class="clave" style="--tono: var(--verde)">
+      <span class="rotulo">Importante</span>
+      <p>
+        Si tu entrega está completa, <strong>se valida sola y suma en el
+        momento</strong>. No tenés que esperar al sábado para que alguien te diga
+        que sí. Si quedó a medias, tu educador/a te va a pedir que cuentes un
+        poco más.
+      </p>
+    </div>
+  </section>
+
+  <!-- ====== El explorador de secciones ====== -->
+  <section class="bloque envoltura" id="secciones">
+    <h2 class="titulo">Las siete secciones</h2>
+    <p class="sub">
+      Son las mismas que ves abajo cuando entrás a la página. Tocá cualquiera
+      para saber qué hay adentro.
+    </p>
+
+    <div class="explorador" id="explorador">
+
+      <!-- HOY -->
+      <div class="panel" id="panel-hoy" role="tabpanel" aria-labelledby="tab-hoy" tabindex="0">
+        <div class="panel-cabecera">
+          <span class="emoji" aria-hidden="true">🏕️</span>
+          <h3>Hoy</h3>
+          <p class="donde">Es la pantalla con la que arrancás · <b>/hoy</b></p>
+        </div>
+        <div class="panel-cuerpo">
+          <p>
+            Te saluda por tu nombre y te muestra <strong>tu reto del día</strong>.
+            Arriba están los puntos de tu patrulla, las acciones que llevan y la
+            racha 🔥 de días seguidos.
+          </p>
+          <ul class="acciones">
+            <li>Tocás <span class="boton-falso">¡Hacerlo! →</span> y se abre el reto: qué hay que hacer, de qué carta viene y cuántos puntos vale.</li>
+            <li>Si ya entregaste, ves cómo quedó: <strong>🎉 ¡Validado!</strong>, <strong>⏳ Esperando al educador</strong> o <strong>📨 Enviado</strong>.</li>
+            <li>Si te comprometiste a algo en el Consejo de tu patrulla, aparece acá hasta que lo marques como hecho.</li>
+            <li>Abajo asoma <strong>lo que viene</strong>: el próximo campamento o salida, con los días que faltan.</li>
+          </ul>
+          <div class="clave">
+            <span class="rotulo">Si un día no hay nada</span>
+            <p>La página te propone un desafío sacado de las cartas, para que siempre tengas algo. Toda la Unidad ve el mismo, y no cambia por recargar.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MURO -->
+      <div class="panel" id="panel-muro" role="tabpanel" aria-labelledby="tab-muro" tabindex="0" hidden>
+        <div class="panel-cabecera">
+          <span class="emoji" aria-hidden="true">📣</span>
+          <h3>El muro</h3>
+          <p class="donde">Lo que los demás quisieron mostrar · <b>/muro</b></p>
+        </div>
+        <div class="panel-cuerpo">
+          <p>
+            Lo que hizo el resto de la Unidad, con sus fotos. No para competir:
+            para tener ideas y para ver que los otros también la están
+            remando.
+          </p>
+          <ul class="acciones">
+            <li>Tu entrega <strong>no aparece sola</strong>. El interruptor arranca apagado y lo movés vos: <span class="boton-falso">📣 Compartirlo</span></li>
+            <li>Podés sacarla cuando quieras, sin explicarle nada a nadie: <strong>Sacarlo del muro</strong>. Los puntos no se pierden.</li>
+            <li>Al muro solo llega lo que ya está validado.</li>
+            <li>Desde acá también entrás a <strong>mis retos</strong>, que es todo lo que entregaste hasta hoy.</li>
+          </ul>
+          <div class="clave">
+            <span class="rotulo">Si algo no te gusta, avisá</span>
+            <p>
+              Debajo de cualquier publicación está <strong>⚠️ Avisar al equipo</strong>.
+              Sirve sobre todo si <strong>salís en una foto</strong> y preferís que no
+              esté. Avisar no borra nada: hace que tus educadores lo miren rápido, sin
+              esperar a la reunión.
+            </p>
+          </div>
+          <div class="clave" style="margin-top:.7rem">
+            <span class="rotulo">Sin números</span>
+            <p>Al lado de cada cosa no dice cuánto sumó. Se ve qué hizo cada uno, y ya.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARTAS -->
+      <div class="panel" id="panel-cartas" role="tabpanel" aria-labelledby="tab-cartas" tabindex="0" hidden>
+        <div class="panel-cabecera">
+          <span class="emoji" aria-hidden="true">🧭</span>
+          <h3>Mis cartas</h3>
+          <p class="donde">Tu progresión personal · <b>/mis-cartas</b></p>
+        </div>
+        <div class="panel-cuerpo">
+          <p>
+            Las Cartas de Exploración son las cosas que podés aprender a hacer.
+            Para tu etapa <strong>elegís entre 12 y 14</strong>, y las elegís
+            vos: nadie te las asigna.
+          </p>
+          <ul class="acciones">
+            <li>Abajo está el <strong>catálogo</strong> completo, ordenado por área. Hay un buscador que filtra al instante.</li>
+            <li>Tocás <span class="boton-falso">＋ Elegir esta carta</span> y sube a tu lista de arriba. Si te arrepentís, la sacás.</li>
+            <li>Adentro de cada carta están <strong>los desafíos</strong>. Los vas tildando y escribís cómo te fue en cada uno.</li>
+            <li>Los <strong>requeridos</strong> son los mínimos y son los que mueven la barra. Los <strong>opcionales</strong> suman igual.</li>
+            <li>Desde acá llegás también a tus <strong>especialidades ⭐</strong>.</li>
+          </ul>
+          <div class="clave">
+            <span class="rotulo">La carta la cerrás vos</span>
+            <p>
+              Al final de cada carta hay un cuadro con seis preguntas: qué
+              aprendiste, qué hiciste para aprenderlo, qué se te hizo difícil,
+              quién te ayudó, cómo te sentiste, qué te quedaron ganas de
+              aprender. <strong>Eso es cerrar la carta.</strong> No es un trámite
+              para que después alguien te apruebe: lo que escribís vos es la
+              evaluación que más vale.
+            </p>
+          </div>
+          <div class="clave" style="margin-top:.7rem">
+            <span class="rotulo">No hay que apretar «guardar»</span>
+            <p>Tildar una casilla se guarda al instante, y lo que escribís se guarda solo cuando dejás de escribir.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PATRULLA -->
+      <div class="panel" id="panel-patrulla" role="tabpanel" aria-labelledby="tab-patrulla" tabindex="0" hidden>
+        <div class="panel-cabecera">
+          <span class="emoji" aria-hidden="true">🤝</span>
+          <h3>Mi patrulla</h3>
+          <p class="donde">Todo lo de tu patrulla · <b>/mi-patrulla</b></p>
+        </div>
+        <div class="panel-cuerpo">
+          <p>
+            Quiénes son, qué acordaron y qué quieren recordar. Esta sección la
+            escriben ustedes: los educadores la pueden leer, pero no la llenan
+            ellos.
+          </p>
+          <ul class="acciones">
+            <li><strong>🚩 Nuestra identidad</strong> — el lema, el grito, el emblema, el banderín, desde cuándo existe la patrulla y su historia.</li>
+            <li><strong>🎖️ Los cargos</strong> — quién se hace cargo de qué. <strong>Lo reparte la patrulla</strong>, no el educador, y podés tener más de uno a la vez.</li>
+            <li><strong>🗣️ El Consejo de Patrulla</strong> — el acta de cada reunión: la fecha, quiénes estuvieron y de qué hablaron.</li>
+            <li><strong>🤝 Lo que acordamos</strong> — si te comprometiste a algo, te va a esperar en tu «Hoy» hasta que lo marques.</li>
+            <li><strong>📖 El Libro de Oro</strong> — la memoria de la patrulla: título, texto, una foto y un video por página.</li>
+          </ul>
+          <div class="clave">
+            <span class="rotulo">Es de ustedes</span>
+            <p>
+              El Libro de Oro de tu patrulla <strong>no lo ve otra patrulla</strong>,
+              y no hace falta que ningún adulto autorice una página antes de que se
+              publique. Es el libro de ustedes.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- IDEAS -->
+      <div class="panel" id="panel-ideas" role="tabpanel" aria-labelledby="tab-ideas" tabindex="0" hidden>
+        <div class="panel-cabecera">
+          <span class="emoji" aria-hidden="true">💡</span>
+          <h3>Ideas</h3>
+          <p class="donde">Qué quiere hacer la Unidad · <b>/ideas</b></p>
+        </div>
+        <div class="panel-cuerpo">
+          <p>
+            Lo que hace la Unidad lo eligen ustedes. Acá se juntan las
+            propuestas para llevarlas enteras a la Asamblea.
+          </p>
+          <ul class="acciones">
+            <li>Escribís tu idea y tocás <span class="boton-falso">Proponer</span>. Puede ser cualquier cosa: una salida, un juego, un proyecto.</li>
+            <li>Si te gusta la idea de otro, le ponés <strong>«me sumo»</strong>. No decide nada, pero se lleva como dato a la reunión.</li>
+            <li>Mientras nadie la haya mirado, podés borrar la tuya si te arrepentiste.</li>
+          </ul>
+          <p><strong>Una idea pasa por cuatro momentos:</strong></p>
+          <ul class="acciones">
+            <li><strong>Propuesta</strong> — alguien la escribió, nadie la miró todavía.</li>
+            <li><strong>Se puede hacer</strong> — el equipo dijo que es viable y va a la Asamblea.</li>
+            <li><strong>Elegida</strong> — la Asamblea la eligió. Va al calendario.</li>
+            <li><strong>Guardada</strong> — esta vez no salió, y vuelve el ciclo que viene. Siempre te contestan por qué.</li>
+          </ul>
+          <div class="clave">
+            <span class="rotulo">La Asamblea no está en la página, a propósito</span>
+            <p>
+              Elegir qué se hace se decide <strong>en persona</strong>, todos
+              juntos. Ahí es donde se aprende a defender una idea, a escuchar la
+              del otro y a bancarse perder una votación. Una pantalla no enseña
+              eso. La página solo junta las propuestas y anota lo que se decidió.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- BITÁCORA -->
+      <div class="panel" id="panel-bitacora" role="tabpanel" aria-labelledby="tab-bitacora" tabindex="0" hidden>
+        <div class="panel-cabecera">
+          <span class="emoji" aria-hidden="true">📓</span>
+          <h3>Bitácora de Aventura</h3>
+          <p class="donde">Tu registro personal · <b>/bitacora</b></p>
+        </div>
+        <div class="panel-cuerpo">
+          <p>
+            Tu cuaderno. Escribís lo que quieras: cómo estuvo el campamento, qué
+            aprendiste, qué te salió mal, qué te dio miedo, qué te dio risa.
+          </p>
+          <ul class="acciones">
+            <li>Tocás <strong>✍️ Escribir una entrada nueva</strong>, le ponés un título y escribís.</li>
+            <li>Queda ordenado por fecha, como un diario.</li>
+          </ul>
+          <div class="clave">
+            <span class="rotulo">Esto es tuyo</span>
+            <p>
+              <strong>No se puntúa y no compite con nada.</strong> No suma para
+              tu patrulla, no aparece en el muro y no cambia tu progresión. Está
+              para vos.
+            </p>
+          </div>
+          <div class="clave" style="margin-top:.7rem">
+            <span class="rotulo">Nadie te la borra</span>
+            <p>
+              Aunque tu educador/a saque un reto de la agenda, lo que vos
+              escribiste en tu bitácora se queda. Es tuyo.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLERO -->
+      <div class="panel" id="panel-tablero" role="tabpanel" aria-labelledby="tab-tablero" tabindex="0" hidden>
+        <div class="panel-cabecera">
+          <span class="emoji" aria-hidden="true">🏆</span>
+          <h3>Tablero</h3>
+          <p class="donde">Cómo van las patrullas · <b>/tablero</b></p>
+        </div>
+        <div class="panel-cuerpo">
+          <p>
+            Todas las patrullas de la Unidad, con sus puntos, sus acciones y su
+            racha 🔥.
+          </p>
+          <div class="clave">
+            <span class="rotulo">Por qué gana la que gana</span>
+            <p>
+              El número grande son <strong>puntos por integrante</strong>, no el
+              total. Si fuera el total, una patrulla de ocho le ganaría siempre a
+              una de cuatro sin que nadie se haya esforzado más. Así, ser pocos no
+              es una desventaja.
+            </p>
+          </div>
+          <div class="clave" style="margin-top:.7rem">
+            <span class="rotulo">No hay tabla de personas</span>
+            <p>
+              En ningún lado de la página hay un ranking de chicas y chicos.
+              Los puntos son siempre de la patrulla. Tu progresión personal es
+              otra cosa, es tuya, y no se compara con la de nadie.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="aviso-tocar">
+      <span class="flecha" aria-hidden="true">↓</span>
+      Tocá las secciones de la barra de abajo
+    </p>
+  </section>
+
+  <!-- ====== Lo que decidís vos ====== -->
+  <section class="bloque envoltura">
+    <h2 class="titulo">Cosas que decidís vos</h2>
+    <p class="sub">
+      No son permisos que te dan si te portás bien. Son tuyas porque así
+      funciona el escultismo.
+    </p>
+    <div class="tuyo">
+      <ul>
+        <li><strong>Qué cartas trabajar.</strong> Elegís vos, entre todas las que hay.</li>
+        <li><strong>Cuándo cerrar una carta</strong>, escribiendo tu autoevaluación.</li>
+        <li><strong>Qué especialidad pedir.</strong> La que quieras, aunque a nadie se le haya ocurrido antes.</li>
+        <li><strong>Si compartís una entrega</strong> en el muro, y si la sacás después.</li>
+        <li><strong>Qué proponer</strong> para que haga la Unidad, y qué idea apoyar.</li>
+        <li><strong>Decir dónde estuviste</strong>, marcando «estuve» en el calendario.</li>
+        <li><strong>Quién tiene cada cargo</strong> — eso lo deciden entre toda la patrulla.</li>
+        <li><strong>Qué escribís en tu bitácora</strong>, que no lee nadie más.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ====== Trucos ====== -->
+  <section class="bloque envoltura">
+    <h2 class="titulo">Trucos que conviene saber</h2>
+    <p class="sub">Cosas chiquitas que hacen que la página no te moleste.</p>
+
+    <div class="rejilla">
+      <div class="tarjeta">
+        <h3><span aria-hidden="true">💾</span> Se guarda solo</h3>
+        <p>En casi todos lados no hay que apretar «Guardar». Tildás algo y ya está; escribís algo y se guarda cuando parás de escribir.</p>
+      </div>
+      <div class="tarjeta">
+        <h3><span aria-hidden="true">📶</span> Si no hay señal</h3>
+        <p>En el campamento pasa. Lo que marcaste queda guardado en tu teléfono y se manda solo cuando vuelve la conexión. Vas a ver un cartel mientras tanto: no lo marques de nuevo.</p>
+      </div>
+      <div class="tarjeta">
+        <h3><span aria-hidden="true">📷</span> Las fotos se achican solas</h3>
+        <p>Antes de subirse se hacen más chicas, así gastás muchos menos datos. Y se les borra el dato de dónde fueron sacadas.</p>
+      </div>
+      <div class="tarjeta">
+        <h3><span aria-hidden="true">🎬</span> Los videos van por link</h3>
+        <p>No se suben: pegás el enlace de YouTube. Subilo como <strong>no listado</strong>, así no aparece en las búsquedas y solo lo ve quien tiene el link.</p>
+      </div>
+      <div class="tarjeta">
+        <h3><span aria-hidden="true">🔍</span> El buscador de cartas</h3>
+        <p>Escribís cualquier palabra y filtra al toque, sin esperar. No hace falta poner los acentos.</p>
+      </div>
+      <div class="tarjeta">
+        <h3><span aria-hidden="true">🔑</span> Tu contraseña</h3>
+        <p>La primera te la dan y hay que cambiarla enseguida: hasta que no lo hagas, no se abre nada más. Si te la olvidás, pedile a tu educador/a que te la blanquee.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Cierre ====== -->
+  <section class="bloque envoltura">
+    <div class="cierre">
+      <span class="lema">Siempre listos</span>
+      <p>
+        Si algo no se entiende o algo no anda, preguntale a tu educador/a.
+        Y si algo de lo que está publicado no te parece bien, avisá: para eso está el botón.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<nav class="barra" aria-label="Secciones">
+  <div class="pistas" role="tablist" aria-label="Las siete secciones de la página">
+    <button type="button" role="tab" id="tab-hoy"       aria-controls="panel-hoy"       aria-selected="true"  data-tono="var(--verde)"><span class="ico" aria-hidden="true">🏕️</span>Hoy</button>
+    <button type="button" role="tab" id="tab-muro"      aria-controls="panel-muro"      aria-selected="false" tabindex="-1" data-tono="var(--fuego)"><span class="ico" aria-hidden="true">📣</span>Muro</button>
+    <button type="button" role="tab" id="tab-cartas"    aria-controls="panel-cartas"    aria-selected="false" tabindex="-1" data-tono="var(--sol)"><span class="ico" aria-hidden="true">🧭</span>Cartas</button>
+    <button type="button" role="tab" id="tab-patrulla"  aria-controls="panel-patrulla"  aria-selected="false" tabindex="-1" data-tono="var(--cielo)"><span class="ico" aria-hidden="true">🤝</span>Patrulla</button>
+    <button type="button" role="tab" id="tab-ideas"     aria-controls="panel-ideas"     aria-selected="false" tabindex="-1" data-tono="var(--violeta)"><span class="ico" aria-hidden="true">💡</span>Ideas</button>
+    <button type="button" role="tab" id="tab-bitacora"  aria-controls="panel-bitacora"  aria-selected="false" tabindex="-1" data-tono="var(--teal)"><span class="ico" aria-hidden="true">📓</span>Bitácora</button>
+    <button type="button" role="tab" id="tab-tablero"   aria-controls="panel-tablero"   aria-selected="false" tabindex="-1" data-tono="var(--coral)"><span class="ico" aria-hidden="true">🏆</span>Tablero</button>
+  </div>
+</nav>
+
+<script>
+  (function () {
+    var lista = document.querySelector('.barra .pistas');
+    if (!lista) return;
+
+    var pestanas = Array.prototype.slice.call(lista.querySelectorAll('[role="tab"]'));
+    var explorador = document.getElementById('explorador');
+
+    function mostrar(pestana, mover) {
+      pestanas.forEach(function (p) {
+        var elegida = p === pestana;
+        var panel = document.getElementById(p.getAttribute('aria-controls'));
+        p.setAttribute('aria-selected', elegida ? 'true' : 'false');
+        p.tabIndex = elegida ? 0 : -1;
+        if (panel) panel.hidden = !elegida;
+      });
+      explorador.style.setProperty('--tono', pestana.dataset.tono);
+      if (mover) {
+        // Que la tarjeta quede a la vista al cambiar de sección, sin saltar
+        // al principio de la página.
+        var caja = explorador.getBoundingClientRect();
+        if (caja.top < 0 || caja.top > window.innerHeight * 0.6) {
+          explorador.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+
+    lista.addEventListener('click', function (ev) {
+      var pestana = ev.target.closest('[role="tab"]');
+      if (pestana) mostrar(pestana, true);
+    });
+
+    lista.addEventListener('keydown', function (ev) {
+      var i = pestanas.indexOf(document.activeElement);
+      if (i < 0) return;
+      var salto = { ArrowRight: 1, ArrowLeft: -1, Home: -Infinity, End: Infinity }[ev.key];
+      if (salto === undefined) return;
+      ev.preventDefault();
+      var destino = salto === -Infinity ? 0
+        : salto === Infinity ? pestanas.length - 1
+        : (i + salto + pestanas.length) % pestanas.length;
+      pestanas[destino].focus();
+      mostrar(pestanas[destino], false);
+    });
+  })();
+</script>

@@ -170,6 +170,8 @@ cinco intentos fallidos por cuenta y la cuenta descansa quince minutos.
 | Blanquear la de un joven | `/jovenes` | cualquier educador |
 | Blanquear la de un educador | `/educadores` | otro educador del equipo |
 | Sacar a un educador del equipo | `/educadores` | otro educador del equipo |
+| Archivar un joven que se fue | `/jovenes` | cualquier educador |
+| Disolver una patrulla | `/patrullas` | cualquier educador |
 
 ### Sacar a alguien del equipo
 
@@ -195,6 +197,54 @@ La pantalla dice cuál de las dos va a pasar **antes** de que aprieten.
 **Nadie se da de baja a sí mismo.** No es una formalidad: es lo que garantiza que
 la Unidad no pueda quedarse sin ningún educador activo, porque cada baja la firma
 alguien que se queda adentro.
+
+### Lo mismo para jóvenes y patrullas
+
+`hay_referencias_a` vive en `app/db.py` y no en el servicio de cuentas
+justamente porque la pregunta es la misma para las tres cosas: ¿queda algo
+apuntando a esto? Encima de esa respuesta, cada una agrega lo suyo.
+
+**Un joven** (`/jovenes`) se archiva si tiene progresión escrita. Lo que escribió
+es suyo —Bitácora, autoevaluaciones, entregas— y no desaparece porque se fue del
+Grupo. Sale del tablero y de su patrulla, pero **los puntos que le dio a su
+patrulla se quedan donde se ganaron**: esos días pasaron y el tablero cuenta lo
+que la patrulla hizo, no quiénes siguen viniendo. Se reincorpora con todo.
+
+**Una patrulla** (`/patrullas`) tiene una precondición antes que las otras dos:
+**con integrantes adentro no se disuelve**, y la pantalla ni siquiera ofrece el
+botón. A qué patrulla va cada chico es una decisión de la Unidad y no puede ser
+el efecto secundario de disolver una etiqueta; primero se los mueve. Ya vacía, se
+desactiva si tiene historia —el Libro de Oro y los Consejos son la memoria de
+quienes pasaron por ella, y se siguen leyendo— o se borra si no dejó rastro.
+
+`Patrulla.activa` y `Usuario.activo` ya se respetaban en el tablero, la agenda,
+las asignaciones y los selects antes de que existieran estas pantallas: lo único
+que faltaba era quién apagara el interruptor.
+
+## Los cumpleaños
+
+`Usuario.nacimiento` es **opcional y se queda así**. Es el único dato personal
+además del nombre que la aplicación guarda —no hay documento, ni dirección, ni
+teléfono, ni correo— y por eso no se pide para poder usar la cuenta: quien no lo
+quiera dar no lo da, todo lo demás funciona igual, y dejar el campo vacío lo
+borra. La edad nunca se guarda calculada: sale de la fecha cuando hace falta,
+porque un número que envejece solo en la base es un número que en algún momento
+miente.
+
+**Quién ve qué.** A la Unidad entera, en `/hoy`, se le dice el día y el mes: es
+lo que hace falta para saludar. La **edad** queda del lado del equipo, en
+`/panel` y en las fichas, donde sí sirve —en la Rama Scouts la edad conversa con
+la etapa, y saber que alguien cumple quince es saber que se viene su pasaje—.
+Guardamos un dato personal de un menor más que antes; mostrarlo entero a treinta
+personas cuando alcanza con la mitad sería regalarlo.
+
+El cálculo vive en `app/servicios/cumpleanos.py` y lo que resuelve es «cuándo cae
+el próximo», que no es la fecha guardada. Dos bordes que se rompen solos y están
+fijados con pruebas: el **salto de año** —el 5 de enero visto desde diciembre— y
+el **29 de febrero**, que tres de cada cuatro años no existe y hace estallar un
+`date()`. Ahí el cumpleaños pasa al 1 de marzo y no al 28: quien nació un 29
+cumple cuando febrero terminó, y así no se le pisa el día a nadie que sí haya
+nacido un 28.
 
 A `/clave` y a `/educadores` se llega desde el **menú de la cuenta**, arriba a la
 derecha: son cosas de la persona, no secciones del programa (ver [La

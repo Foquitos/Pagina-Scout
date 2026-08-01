@@ -37,6 +37,7 @@ from app.models import (
 )
 from app.servicios import (
     agenda,
+    cumpleanos,
     medios,
     moderacion,
     muro,
@@ -66,7 +67,8 @@ def hoy(
     sesion: Session = Depends(obtener_sesion),
 ):
     if usuario.unidad_id is None:
-        return render(request, "joven/hoy.html", usuario=usuario, asignaciones=[], fecha=retos.hoy())
+        return render(request, "joven/hoy.html", usuario=usuario, asignaciones=[],
+                      fecha=retos.hoy(), cumples=[])
 
     fecha = retos.hoy()
     retos.asegurar_reto_del_dia(sesion, usuario.unidad_id, fecha)
@@ -93,6 +95,9 @@ def hoy(
         # acta es una anotación; uno que te espera al entrar es un compromiso.
         proximas=agenda.proximas(sesion, usuario, fecha, tope=3),
         acuerdos=vida_de_patrulla.acuerdos_a_cargo_de(sesion, usuario),
+        # Quién cumple años en los próximos días. Sin la edad: acá se muestra
+        # para saludar, y para eso alcanza con el día. Ver `servicios/cumpleanos.py`.
+        cumples=cumpleanos.proximos(sesion, usuario.unidad_id, fecha, dias=14, tope=5),
     )
 
 

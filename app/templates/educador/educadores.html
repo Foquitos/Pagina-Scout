@@ -25,6 +25,8 @@
                autocapitalize="none" autocomplete="off">
       </div>
     </div>
+    <label for="nacimiento">🎂 Cumpleaños <span class="meta">(opcional)</span></label>
+    <input type="date" id="nacimiento" name="nacimiento">
     <p class="meta">La contraseña no se elige acá: la aplicación sortea una provisoria
       y te la muestra una sola vez, para que se la digas en el momento. La persona
       pone la suya la primera vez que entra.</p>
@@ -44,9 +46,24 @@
         <p class="meta">
           <span>usuario: {{ e.usuario }}</span>
           <span>desde el {{ e.creado_en.strftime('%d/%m/%Y') }}</span>
+          {% if e.nacimiento %}
+            <span>🎂 {{ e.nacimiento.strftime('%d/%m') }} · {{ e.edad_al(hoy) }} años</span>
+          {% endif %}
         </p>
       </div>
     </div>
+
+    {# Cualquiera del equipo lo pone o lo saca, el propio incluido: son tres o
+       cuatro personas que se conocen y acá adentro no hay jerarquía. #}
+    <form method="post" action="/educadores/{{ e.id }}/nacimiento" data-autoguardar>
+      <label for="nacimiento-{{ e.id }}">🎂 Cumpleaños <span class="meta">(opcional)</span></label>
+      <input type="date" id="nacimiento-{{ e.id }}" name="nacimiento"
+             value="{{ e.nacimiento.isoformat() if e.nacimiento else '' }}">
+      <div class="acciones">
+        <button type="submit" class="secundario boton-guardar">Guardar</button>
+        <span class="estado-guardado" data-estado=""></span>
+      </div>
+    </form>
 
     {% if e.debe_cambiar_clave %}
       <p class="chips"><span class="chip">🔑 todavía no entró a poner su contraseña</span></p>

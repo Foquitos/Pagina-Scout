@@ -192,6 +192,12 @@ class Usuario(Base):
     patrulla_id: Mapped[int | None] = mapped_column(ForeignKey("patrullas.id"), nullable=True)
     etapa: Mapped[str] = mapped_column(String(20), default="pistas")
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Opcional, y que siga siéndolo. Es el único dato personal además del nombre
+    # que la aplicación guarda, así que no se pide para poder usar la cuenta:
+    # quien no lo quiera dar, no lo da, y todo lo demás funciona igual. La edad
+    # nunca se guarda calculada —se saca de acá cuando hace falta— porque un
+    # número que envejece solo en la base es un número que en algún momento miente.
+    nacimiento: Mapped[date | None] = mapped_column(Date, nullable=True)
     # Toda cuenta nace con su propio nombre de usuario como contraseña, así que
     # hasta que la persona ponga una suya no sirve para nada más que para
     # cambiarla: con esto encendido, la única página que abre es /clave. Ver
@@ -209,6 +215,18 @@ class Usuario(Base):
     @property
     def etapa_nombre(self) -> str:
         return ETAPAS_NOMBRE.get(self.etapa, self.etapa)
+
+    def edad_al(self, dia: date) -> int | None:
+        """Años cumplidos a esa fecha. `None` si no cargó el cumpleaños.
+
+        La resta de años menos uno si todavía no llegó el día: comparar tuplas
+        `(mes, día)` resuelve de una el caso del 29 de febrero, que restando
+        fechas hay que pensarlo aparte.
+        """
+        if self.nacimiento is None:
+            return None
+        cumplio_ya = (dia.month, dia.day) >= (self.nacimiento.month, self.nacimiento.day)
+        return dia.year - self.nacimiento.year - (0 if cumplio_ya else 1)
 
 
 # --- Cartas de Exploración ---------------------------------------------------

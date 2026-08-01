@@ -29,10 +29,10 @@ from __future__ import annotations
 import re
 import secrets
 
-from sqlalchemy import exists, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db import Base
+from app.db import hay_referencias_a
 from app.models import Usuario
 from app.seguridad import hashear_clave, verificar_clave
 
@@ -162,24 +162,10 @@ def blanquear(usuario: Usuario) -> str:
 def dejo_rastro(sesion: Session, usuario_id: int) -> bool:
     """¿Hay alguna fila en toda la base que apunte a esta persona?
 
-    Se recorre el esquema en vez de escribir a mano la lista de tablas. Son casi
-    treinta columnas que referencian `usuarios` repartidas por veinticinco
-    tablas, y esa lista escrita a mano se desactualiza en cuanto alguien suma un
-    modelo: quedaría borrando cuentas que sí dejaron rastro, que es el error que
-    no se puede cometer acá. Preguntándole al esquema, una tabla nueva queda
-    cubierta el día que se crea.
-
-    Corta en el primer hallazgo. En el peor caso son unas treinta consultas de
-    existencia sobre tablas chicas, en una página que se abre muy de vez en
-    cuando.
+    El recorrido del esquema vive en `app/db.py` porque sirve igual para una
+    patrulla; acá queda el nombre que se lee bien desde una pantalla de cuentas.
     """
-    for tabla in Base.metadata.sorted_tables:
-        for columna in tabla.columns:
-            if not any(fk.column.table.name == "usuarios" for fk in columna.foreign_keys):
-                continue
-            if sesion.scalar(select(exists().where(columna == usuario_id))):
-                return True
-    return False
+    return hay_referencias_a(sesion, "usuarios", usuario_id)
 
 
 def dar_de_baja(sesion: Session, usuario: Usuario) -> bool:

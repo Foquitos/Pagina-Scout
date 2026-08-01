@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import PUNTAJE_POR_DEFECTO
-from app.db import obtener_sesion
+from app.db import hay_referencias_a, obtener_sesion
 from app.dependencias import (
     quiere_json,
     recordar_provisoria,
@@ -45,6 +45,7 @@ from app.models import (
 from app.servicios import (
     agenda,
     cuentas,
+    cumpleanos,
     especialidades,
     moderacion,
     participacion,
@@ -121,6 +122,9 @@ def panel(
         # Alguien pidió que el equipo mire una foto publicada. Es lo único de
         # este panel que puede ser urgente, así que se muestra arriba de todo.
         avisadas=moderacion.cuantas_sin_mirar(sesion, unidad_id),
+        # Los que vienen en el mes. Acá se muestran con la edad, que del lado de
+        # los jóvenes no se muestra: ver `servicios/cumpleanos.py`.
+        cumples=cumpleanos.proximos(sesion, unidad_id, fecha),
     )
 
 
@@ -528,17 +532,24 @@ def listar_patrullas(
     sesion: Session = Depends(obtener_sesion),
 ):
     unidad_id = _unidad_de(usuario)
+    todas = list(
+        sesion.scalars(
+            select(Patrulla).where(Patrulla.unidad_id == unidad_id).order_by(Patrulla.nombre)
+        )
+    )
     return render(
         request,
         "educador/patrullas.html",
         usuario=usuario,
-        patrullas=list(
-            sesion.scalars(
-                select(Patrulla)
-                .where(Patrulla.unidad_id == unidad_id)
-                .order_by(Patrulla.nombre)
-            )
-        ),
+        patrullas=[p for p in todas if p.activa],
+        disueltas=[p for p in todas if not p.activa],
+        # Qué va a pasar con cada una si la disuelven, para poder decirlo antes:
+        # con gente adentro no se puede, vacía con historia se desactiva, y
+        # vacía sin rastro se borra. Ver `servicios/patrulla.py`.
+        integrantes={
+            p.id: vida_de_patrulla.integrantes_activos(sesion, p.id) for p in todas
+        },
+        deja_rastro={p.id: hay_referencias_a(sesion, "patrullas", p.id) for p in todas},
     )
 
 
@@ -558,6 +569,56 @@ def crear_patrulla(
             color=color,
         )
     )
+    sesion.commit()
+    return redirigir("/patrullas")
+
+
+def _patrulla_de_la_unidad(sesion: Session, patrulla_id: int, educador: Usuario) -> Patrulla:
+    patrulla = sesion.get(Patrulla, patrulla_id)
+    if patrulla is None or patrulla.unidad_id != _unidad_de(educador):
+        raise HTTPException(404, "Esa patrulla no existe.")
+    return patrulla
+
+
+@router.post("/patrullas/{patrulla_id}/disolver")
+def disolver_patrulla(
+    patrulla_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Saca una patrulla de circulación.
+
+    Con gente adentro no se puede, y no es un trámite: a dónde va cada uno lo
+    decide la Unidad, no puede ser el efecto secundario de disolver una etiqueta.
+    Vacía se desactiva —el Libro de Oro y los Consejos son la memoria de quienes
+    pasaron por ahí, y no se borran porque la patrulla dejó de reunirse— salvo
+    que no haya dejado ningún rastro, y ahí sí se borra. Ver `servicios/patrulla.py`.
+    """
+    patrulla = _patrulla_de_la_unidad(sesion, patrulla_id, usuario)
+    if not patrulla.activa:
+        raise HTTPException(400, "Esa patrulla ya está disuelta.")
+
+    try:
+        vida_de_patrulla.disolver(sesion, patrulla)
+    except vida_de_patrulla.NoSePuedeDisolver as error:
+        raise HTTPException(400, str(error)) from error
+
+    sesion.commit()
+    return redirigir("/patrullas")
+
+
+@router.post("/patrullas/{patrulla_id}/reabrir")
+def reabrir_patrulla(
+    patrulla_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Vuelve a estar en juego, con su Libro de Oro y su historia intactos."""
+    patrulla = _patrulla_de_la_unidad(sesion, patrulla_id, usuario)
+    if patrulla.activa:
+        raise HTTPException(400, "Esa patrulla ya está en juego.")
+
+    vida_de_patrulla.reabrir(patrulla)
     sesion.commit()
     return redirigir("/patrullas")
 
@@ -663,7 +724,11 @@ def listar_jovenes(
         request,
         "educador/jovenes.html",
         usuario=usuario,
-        jovenes=jovenes,
+        jovenes=[j for j in jovenes if j.activo],
+        ya_no_estan=[j for j in jovenes if not j.activo],
+        # Igual que en el equipo: una ficha que no dejó rastro se borra, una con
+        # progresión escrita se archiva. Se dice antes de que aprieten.
+        deja_rastro={j.id: cuentas.dejo_rastro(sesion, j.id) for j in jovenes},
         conteos=progresion.conteo_por_joven(sesion, jovenes),
         patrullas=list(
             sesion.scalars(
@@ -674,6 +739,9 @@ def listar_jovenes(
         ),
         etapas=ETAPAS,
         min_cartas=progresion.MIN_CARTAS,
+        # Para calcular la edad en la plantilla sin que cada tarjeta pregunte
+        # qué día es hoy: la respuesta es la misma para todas.
+        hoy=retos.hoy(),
         # Si se viene de un alta o de un blanqueo, la provisoria se muestra acá
         # y desaparece: al recargar ya no está, porque leerla la consume.
         provisoria=tomar_provisoria(request),
@@ -687,6 +755,7 @@ def crear_joven(
     usuario_nuevo: str = Form(...),
     patrulla_id: str = Form(""),
     etapa: str = Form("pistas"),
+    nacimiento: str = Form(""),
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
@@ -710,6 +779,7 @@ def crear_joven(
             unidad_id=unidad_id,
             patrulla_id=int(patrulla_id) if patrulla_id.strip() else None,
             etapa=etapa,
+            nacimiento=_nacimiento(nacimiento),
         )
     except cuentas.DatoInvalido as error:
         raise HTTPException(400, error.motivo) from error
@@ -724,17 +794,22 @@ def actualizar_joven(
     joven_id: int,
     request: Request,
     patrulla_id: str = Form(""),
+    nacimiento: str = Form(""),
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
-    """Cambia la patrulla. La etapa no: esa se toca en /progresion.
+    """Cambia la patrulla y el cumpleaños. La etapa no: esa se toca en /progresion.
 
-    Son dos decisiones de naturaleza distinta. Mover a alguien de patrulla es
-    organizar la Unidad; cambiarle la etapa es cerrar un tramo de su progresión
-    personal, y para eso hay que estar mirando sus cartas.
+    Son decisiones de naturaleza distinta. Mover a alguien de patrulla u ordenar
+    un dato de su ficha es organizar la Unidad; cambiarle la etapa es cerrar un
+    tramo de su progresión personal, y para eso hay que estar mirando sus cartas.
+
+    El cumpleaños vacío se guarda vacío: es opcional, así que borrarlo tiene que
+    ser tan fácil como ponerlo.
     """
     joven = _joven_de_la_unidad(sesion, joven_id, usuario)
     joven.patrulla_id = int(patrulla_id) if patrulla_id.strip() else None
+    joven.nacimiento = _nacimiento(nacimiento)
     sesion.commit()
     if quiere_json(request):
         # Acomodar treinta chicos en sus patrullas eran treinta recargas de una
@@ -764,6 +839,49 @@ def blanquear_joven(
     return redirigir("/jovenes")
 
 
+@router.post("/jovenes/{joven_id}/baja")
+def dar_de_baja_joven(
+    joven_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Alguien que dejó la Unidad.
+
+    Lo que esa persona escribió es **suyo**: su Bitácora de Aventura, la
+    autoevaluación con la que cerró cada carta, lo que contó en cada entrega. Por
+    eso una ficha con progresión adentro no se borra, se archiva: deja de entrar,
+    sale del tablero y de las listas, y su patrulla deja de contarla —pero los
+    puntos que le dio a su patrulla se quedan donde se ganaron, porque esos días
+    pasaron. Si nunca llegó a hacer nada, la ficha se borra de verdad.
+
+    Se puede reincorporar: un chico que vuelve el año que viene se encuentra con
+    sus cartas donde las dejó, que es exactamente lo que tiene que pasar.
+    """
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
+    if not joven.activo:
+        raise HTTPException(400, "Esa persona ya está fuera de la Unidad.")
+
+    cuentas.dar_de_baja(sesion, joven)
+    sesion.commit()
+    return redirigir("/jovenes")
+
+
+@router.post("/jovenes/{joven_id}/reincorporar")
+def reincorporar_joven(
+    joven_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Vuelve, con sus cartas y su bitácora donde las dejó."""
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
+    if joven.activo:
+        raise HTTPException(400, "Esa persona ya está en la Unidad.")
+
+    cuentas.reincorporar(joven)
+    sesion.commit()
+    return redirigir("/jovenes")
+
+
 # --- Equipo de educadores ----------------------------------------------------
 #
 # No hay un rol de administrador aparte: cualquier educador de la Unidad puede
@@ -771,6 +889,24 @@ def blanquear_joven(
 # la responsabilidad del programa; inventar una jerarquía adentro sería inventar
 # un cargo que en la Unidad no existe. Lo que sí queda cerrado es el borde de
 # afuera: solo se ve y se toca el equipo de la propia Unidad.
+
+
+def _nacimiento(texto: str) -> date | None:
+    """La fecha que vino del formulario, o nada si está vacía o no se entiende.
+
+    Vacío es un valor válido y significa «no lo cargó»: el cumpleaños es
+    opcional y borrarlo tiene que ser tan fácil como ponerlo. Una fecha futura
+    se descarta —nadie nació mañana— y también una imposible, como el año 200 de
+    un dedo que se resbaló en el teclado.
+    """
+    try:
+        fecha = date.fromisoformat((texto or "").strip())
+    except (AttributeError, ValueError):
+        return None
+    hoy = retos.hoy()
+    if fecha > hoy or fecha.year < hoy.year - 120:
+        return None
+    return fecha
 
 
 def _del_equipo(sesion: Session, educador_id: int, usuario: Usuario) -> Usuario:
@@ -808,6 +944,7 @@ def listar_educadores(
             e.id: cuentas.dejo_rastro(sesion, e.id) for e in equipo if e.id != usuario.id
         },
         provisoria=tomar_provisoria(request),
+        hoy=retos.hoy(),
     )
 
 
@@ -816,6 +953,7 @@ def crear_educador(
     request: Request,
     nombre: str = Form(...),
     usuario_nuevo: str = Form(...),
+    nacimiento: str = Form(""),
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
@@ -828,13 +966,41 @@ def crear_educador(
     """
     try:
         nuevo, clave = cuentas.alta(
-            sesion, usuario_nuevo, nombre, ROL_EDUCADOR, unidad_id=_unidad_de(usuario)
+            sesion,
+            usuario_nuevo,
+            nombre,
+            ROL_EDUCADOR,
+            unidad_id=_unidad_de(usuario),
+            nacimiento=_nacimiento(nacimiento),
         )
     except cuentas.DatoInvalido as error:
         raise HTTPException(400, error.motivo) from error
 
     sesion.commit()
     recordar_provisoria(request, nuevo.usuario, clave)
+    return redirigir("/educadores")
+
+
+@router.post("/educadores/{educador_id}/nacimiento")
+def cumpleanos_de_educador(
+    educador_id: int,
+    request: Request,
+    nacimiento: str = Form(""),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Pone o saca el cumpleaños de alguien del equipo, el propio incluido.
+
+    Cualquiera del equipo puede tocar el de cualquiera, igual que con el alta y
+    el blanqueo: son tres o cuatro personas que se conocen y no hay jerarquía
+    adentro. Vacío lo borra, porque el dato es opcional y tiene que poder
+    sacarse.
+    """
+    otro = _del_equipo(sesion, educador_id, usuario)
+    otro.nacimiento = _nacimiento(nacimiento)
+    sesion.commit()
+    if quiere_json(request):
+        return {"ok": True}
     return redirigir("/educadores")
 
 

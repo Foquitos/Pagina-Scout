@@ -18,6 +18,7 @@ from datetime import date
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.db import hay_referencias_a
 from app.models import (
     ROL_JOVEN,
     Acuerdo,
@@ -260,3 +261,69 @@ def resumen(sesion: Session, patrulla_id: int, integrantes: list[Usuario]) -> Re
         ultimo_consejo=ultimo,
         sin_cargo=[j for j in integrantes if not porta.get(j.id)],
     )
+
+
+# --- Disolver una patrulla ----------------------------------------------------
+#
+# Tres caminos, y el primero no es una traba burocrática:
+#
+# **Con integrantes adentro no se disuelve.** Una patrulla no es una etiqueta:
+# es a quiénes pertenecen esos chicos. Sacarla de circulación con gente adentro
+# los dejaría sin patrulla de un plumazo y sin que nadie decidiera a dónde van
+# —y a dónde va cada uno es una conversación de la Unidad, no un efecto
+# secundario. Primero se los mueve, después se disuelve lo que quedó vacío.
+#
+# **Vacía pero con historia se desactiva.** Su Libro de Oro, sus Consejos, los
+# puntos que ganó: eso es la memoria de las personas que pasaron por ahí y no se
+# borra porque la patrulla dejó de reunirse. Deja de aparecer en el tablero, en
+# las asignaciones y en el select de la ficha de cada joven —`Patrulla.activa`
+# ya se respeta en los cuatro lugares—, y se puede reabrir.
+#
+# **Vacía y sin rastro se borra.** La patrulla que se creó con el nombre mal
+# escrito hace dos minutos.
+
+
+class NoSePuedeDisolver(Exception):
+    """Con el motivo escrito para mostrárselo al educador."""
+
+
+def integrantes_activos(sesion: Session, patrulla_id: int) -> list[Usuario]:
+    return list(
+        sesion.scalars(
+            select(Usuario)
+            .where(
+                Usuario.patrulla_id == patrulla_id,
+                Usuario.rol == ROL_JOVEN,
+                Usuario.activo.is_(True),
+            )
+            .order_by(Usuario.nombre)
+        )
+    )
+
+
+def disolver(sesion: Session, patrulla) -> bool:
+    """Saca una patrulla de circulación. Devuelve True si además se borró.
+
+    No hace commit. Levanta `NoSePuedeDisolver` si todavía tiene gente adentro,
+    con los nombres puestos: un «no se puede» sin decir quiénes obliga al
+    educador a ir a buscarlos de a uno.
+    """
+    adentro = integrantes_activos(sesion, patrulla.id)
+    if adentro:
+        nombres = ", ".join(j.nombre for j in adentro)
+        raise NoSePuedeDisolver(
+            f"La patrulla {patrulla.nombre} todavía tiene "
+            f"{len(adentro)} integrante{'s' if len(adentro) != 1 else ''}: {nombres}. "
+            "Movelos a otra patrulla desde «Jóvenes» y después disolvela."
+        )
+
+    if hay_referencias_a(sesion, "patrullas", patrulla.id):
+        patrulla.activa = False
+        return False
+    sesion.delete(patrulla)
+    return True
+
+
+def reabrir(patrulla) -> None:
+    """Vuelve a estar en juego, con su Libro de Oro y su historia intactos."""
+    patrulla.activa = True

@@ -3,9 +3,10 @@
 
 {% block contenido %}
 <h1>🧭 Jóvenes de la Unidad</h1>
-<p class="sub">Cada ingreso se hace con usuario y contraseña propios. No pedimos ni
-  guardamos datos personales más allá del nombre. La etapa se cambia desde la
-  progresión de cada uno, mirando cómo vienen sus cartas.</p>
+<p class="sub">Cada ingreso se hace con usuario y contraseña propios. Lo único que
+  se guarda de cada persona es su nombre y, <strong>si lo quieren dar</strong>, la
+  fecha de cumpleaños: no hay documento, ni dirección, ni teléfono, ni correo. La
+  etapa se cambia desde la progresión de cada uno, mirando cómo vienen sus cartas.</p>
 
 {% include "educador/_provisoria.html" %}
 
@@ -27,6 +28,13 @@
       provisoria y te la muestra acá una sola vez, para que se la digas. Al entrar
       la cambia sola. Vos no llegás a saber cuál eligió, y si se la olvida se la
       blanqueás desde su tarjeta.</p>
+    <div class="fila">
+      <div>
+        <label for="nacimiento">🎂 Cumpleaños <span class="meta">(opcional)</span></label>
+        <input type="date" id="nacimiento" name="nacimiento">
+      </div>
+    </div>
+
     <div class="fila">
       <div>
         <label for="patrulla_id">Patrulla</label>
@@ -61,10 +69,13 @@
       <div class="encabezado-tarjeta">
         <span class="avatar" style="--color: {{ color_de(j.nombre) }}" aria-hidden="true">{{ iniciales(j.nombre) }}</span>
         <div>
-          <h3>{{ j.nombre }} {% if not j.activo %}<span class="etiqueta">inactivo</span>{% endif %}</h3>
+          <h3>{{ j.nombre }}</h3>
           <p class="meta">
             <span>usuario: {{ j.usuario }}</span>
             <span>Etapa {{ ETAPAS_NOMBRE[j.etapa] }}</span>
+            {% if j.nacimiento %}
+              <span>🎂 {{ j.nacimiento.strftime('%d/%m') }} · {{ j.edad_al(hoy) }} años</span>
+            {% endif %}
             <span>🃏 {{ elegidas }} · 🏅 {{ logradas }} de {{ min_cartas }}</span>
           </p>
         </div>
@@ -78,6 +89,8 @@
         <p class="chips"><span class="chip">🔑 todavía no entró a poner su contraseña</span></p>
       {% endif %}
 
+      {# El cumpleaños viaja en el mismo formulario que la patrulla y se guarda
+         solo, igual que el select. Dejarlo vacío lo borra: el dato es opcional. #}
       <form method="post" action="/jovenes/{{ j.id }}" data-autoguardar>
         <label for="patrulla-{{ j.id }}">Patrulla</label>
         <select id="patrulla-{{ j.id }}" name="patrulla_id">
@@ -86,6 +99,9 @@
             <option value="{{ p.id }}" {{ 'selected' if p.id == j.patrulla_id }}>{{ p.nombre }}</option>
           {% endfor %}
         </select>
+        <label for="nacimiento-{{ j.id }}">🎂 Cumpleaños <span class="meta">(opcional)</span></label>
+        <input type="date" id="nacimiento-{{ j.id }}" name="nacimiento"
+               value="{{ j.nacimiento.isoformat() if j.nacimiento else '' }}">
         <div class="acciones">
           <button type="submit" class="secundario boton-guardar">Guardar</button>
           <span class="estado-guardado" data-estado=""></span>
@@ -111,6 +127,59 @@
         <button type="submit" class="secundario">
           {{ '🔑 Mostrarme otra provisoria' if nunca_entro else '🔑 Se olvidó la contraseña' }}
         </button>
+      </form>
+
+      {% set con_historia = deja_rastro.get(j.id) %}
+      <form method="post" action="/jovenes/{{ j.id }}/baja"
+            onsubmit="return confirm('{{ '¿' ~ j.nombre ~ ' dejó la Unidad? Sus cartas y su bitácora se guardan, y la podés reincorporar.' if con_historia else '¿Borrar la ficha de ' ~ j.nombre ~ '? No llegó a hacer nada, así que se borra del todo.' }}')"
+            data-confirmar="{{ '¿Dejó la Unidad? Sus cartas y su bitácora se guardan, y lo podés reincorporar.' if con_historia else '¿Borrar esta ficha? No llegó a hacer nada, se borra del todo.' }}"
+            data-sin-recarga="{{ 'Ficha archivada.' if con_historia else 'Ficha borrada.' }}"
+            class="acciones">
+        <button type="submit" class="peligro">
+          {{ '🚪 Dejó la Unidad' if con_historia else '🗑️ Borrar ficha' }}
+        </button>
+      </form>
+      <p class="meta">
+        {% if con_historia %}
+          Ya tiene progresión escrita, así que la ficha no se borra: se archiva.
+          Lo que escribió es suyo y sigue estando, y los puntos que le dio a su
+          patrulla quedan donde se ganaron. Si vuelve, se reincorpora con todo.
+        {% else %}
+          Esta ficha no tiene nada adentro —ni cartas, ni entregas, ni bitácora—,
+          así que se borra de verdad.
+        {% endif %}
+      </p>
+    </article>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if ya_no_estan %}
+  <h2>Ya no están en la Unidad</h2>
+  <p class="sub">No entran a la aplicación, no aparecen en el tablero ni en su
+    patrulla, y no se les asigna nada. Lo que escribieron se guarda entero: si
+    vuelven, se reincorporan con sus cartas donde las dejaron.</p>
+  <div class="rejilla">
+    {% for j in ya_no_estan %}
+    {% set elegidas, logradas = conteos[j.id] %}
+    <article class="tarjeta apagada">
+      <div class="encabezado-tarjeta">
+        <span class="avatar" style="--color: {{ color_de(j.nombre) }}" aria-hidden="true">{{ iniciales(j.nombre) }}</span>
+        <div>
+          <h3>{{ j.nombre }} <span class="etiqueta">fuera de la Unidad</span></h3>
+          <p class="meta">
+            <span>usuario: {{ j.usuario }}</span>
+            <span>Etapa {{ ETAPAS_NOMBRE[j.etapa] }}</span>
+            <span>🃏 {{ elegidas }} · 🏅 {{ logradas }}</span>
+          </p>
+        </div>
+      </div>
+      <div class="acciones">
+        <a class="boton secundario" href="/cartas-de/{{ j.id }}">Ver sus cartas</a>
+      </div>
+      <form method="post" action="/jovenes/{{ j.id }}/reincorporar"
+            data-sin-recarga="De vuelta en la Unidad." class="acciones">
+        <button type="submit" class="secundario">↩️ Reincorporar</button>
       </form>
     </article>
     {% endfor %}

@@ -53,6 +53,57 @@
         <a class="boton secundario" href="/patrulla/{{ p.id }}">🤝 Su vida interna</a>
         <a class="boton secundario" href="/libro-de-oro/{{ p.id }}">📖 Libro de Oro</a>
       </div>
+
+      {# Tres estados y no un botón que a veces falla: con gente adentro ni
+         siquiera se ofrece, porque a dónde va cada uno lo decide la Unidad y no
+         puede ser el efecto secundario de disolver una etiqueta. #}
+      {% set adentro = integrantes.get(p.id, []) %}
+      {% if adentro %}
+        <p class="meta">Para disolverla, primero movés sus
+          {{ adentro|length }} integrante{{ 's' if adentro|length != 1 }} a otra patrulla
+          desde <a href="/jovenes">Jóvenes</a>.</p>
+      {% else %}
+        {% set con_historia = deja_rastro.get(p.id) %}
+        <form method="post" action="/patrullas/{{ p.id }}/disolver"
+              onsubmit="return confirm('{{ '¿Disolver la patrulla ' ~ p.nombre ~ '? Su Libro de Oro y su historia quedan, y la podés reabrir.' if con_historia else '¿Borrar la patrulla ' ~ p.nombre ~ '? Está vacía y sin historia, así que se borra del todo.' }}')"
+              data-confirmar="{{ '¿Disolver esta patrulla? Su Libro de Oro queda y la podés reabrir.' if con_historia else '¿Borrar esta patrulla? Está vacía y sin historia, se borra del todo.' }}"
+              data-sin-recarga="{{ 'Patrulla disuelta.' if con_historia else 'Patrulla borrada.' }}"
+              class="acciones">
+          <button type="submit" class="peligro">
+            {{ '🚪 Disolver patrulla' if con_historia else '🗑️ Borrar patrulla' }}
+          </button>
+        </form>
+        <p class="meta">
+          {% if con_historia %}
+            Está vacía. Al disolverla sale del tablero y de las asignaciones; su
+            Libro de Oro y sus Consejos quedan, porque son la memoria de quienes
+            pasaron por ella. Se puede reabrir.
+          {% else %}
+            Está vacía y no dejó rastro en ningún lado, así que se borra de verdad.
+          {% endif %}
+        </p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if disueltas %}
+  <h2>Disueltas</h2>
+  <p class="sub">No están en el tablero, no se les puede asignar un reto y no
+    aparecen al acomodar a un joven. Su Libro de Oro sigue entero y se puede leer.</p>
+  <div class="rejilla">
+    {% for p in disueltas %}
+    <article class="tarjeta apagada" style="border-left: 6px solid {{ p.color }}">
+      <h3>{{ p.nombre }} <span class="etiqueta">disuelta</span></h3>
+      {% if p.lema %}<p class="meta">«{{ p.lema }}»</p>{% endif %}
+      <div class="acciones">
+        <a class="boton secundario" href="/libro-de-oro/{{ p.id }}">📖 Su Libro de Oro</a>
+      </div>
+      <form method="post" action="/patrullas/{{ p.id }}/reabrir"
+            data-sin-recarga="Patrulla de vuelta en juego." class="acciones">
+        <button type="submit" class="secundario">↩️ Reabrir</button>
+      </form>
     </article>
     {% endfor %}
   </div>

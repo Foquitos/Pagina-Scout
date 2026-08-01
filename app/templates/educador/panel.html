@@ -116,6 +116,34 @@
   </div>
 {% endif %}
 
+{% if cumples %}
+  <h2>🎂 Cumpleaños del mes</h2>
+  <p class="sub">De toda la Unidad, equipo incluido. Con los años que cumple,
+    que de este lado sirve: la edad conversa con la etapa.</p>
+  <div class="rejilla angosta">
+    {% for c in cumples %}
+    <article class="tarjeta {{ 'acento' if c.es_hoy }}"
+             {% if c.es_hoy %}style="border-left-color:#E0A526"{% endif %}>
+      <div class="encabezado-tarjeta">
+        <span class="avatar" style="--color: {{ color_de(c.usuario.nombre) }}" aria-hidden="true">{{ iniciales(c.usuario.nombre) }}</span>
+        <div>
+          <h3>{{ c.usuario.nombre }}</h3>
+          <p class="meta">
+            <span>{{ c.fecha.strftime('%d/%m') }}</span>
+            <span>cumple {{ c.cumple }}</span>
+            {% if c.usuario.es_educador %}<span>educador/a</span>
+            {% elif c.usuario.patrulla %}<span>{{ c.usuario.patrulla.nombre }}</span>{% endif %}
+          </p>
+        </div>
+        {% if c.es_hoy %}<span class="etiqueta">🎉 hoy</span>
+        {% elif c.faltan == 1 %}<span class="etiqueta">mañana</span>
+        {% else %}<span class="etiqueta">en {{ c.faltan }} días</span>{% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <h2>🗓️ El ciclo de programa</h2>
 <div class="rejilla angosta">
   <a class="tarjeta enlazada" href="/ideas" style="text-decoration:none; color:inherit">

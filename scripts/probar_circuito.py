@@ -59,7 +59,7 @@ from app.models import (  # noqa: E402
     Usuario,
 )
 from app import seguridad  # noqa: E402
-from app.servicios import cuentas, medios  # noqa: E402
+from app.servicios import cuentas, cumpleanos, medios, retos  # noqa: E402
 from app.servicios.progresion import MIN_CARTAS  # noqa: E402
 from scripts.inicializar_db import asegurar_cargos, cargar_cartas, cargar_demo  # noqa: E402
 
@@ -1815,6 +1815,161 @@ def main() -> int:
     check("un joven no entra al catálogo de cargos", joven.get("/cargos").status_code == 403)
     check("un joven no ve el catálogo de especialidades del equipo",
           "Sumar una especialidad" not in joven.get("/especialidades").text)
+
+    # --- 14. Bajas de jóvenes y de patrullas ---------------------------------
+    #
+    # Mismo criterio que en el equipo —sin rastro se borra, con historia se
+    # archiva— más una regla propia de las patrullas: con gente adentro, no.
+
+    check("un joven no da de baja a nadie",
+          joven.post(f"/jovenes/{ana_id}/baja").status_code == 403)
+
+    # a) Una ficha vacía se borra de verdad.
+    edu.post("/jovenes", data={"nombre": "Nunca Vino", "usuario_nuevo": "nuncavino",
+                               "etapa": "pistas"})
+    with SesionLocal() as s:
+        vacia_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "nuncavino"))
+    check("una ficha recién creada ofrece borrado real",
+          "Borrar ficha" in edu.get("/jovenes").text)
+    edu.post(f"/jovenes/{vacia_id}/baja")
+    with SesionLocal() as s:
+        check("borrar una ficha sin nada adentro la saca de la base",
+              s.get(Usuario, vacia_id) is None)
+
+    # b) Ana tiene cartas, entregas y bitácora: se archiva, y sus puntos quedan.
+    antes = next(f for f in edu.get("/api/tablero").json() if f["patrulla"] == "Halcones")
+    check("y una con progresión ofrece archivarla", "Dejó la Unidad" in edu.get("/jovenes").text)
+    edu.post(f"/jovenes/{ana_id}/baja")
+    with SesionLocal() as s:
+        archivada = s.get(Usuario, ana_id)
+        check("la ficha con historia no se borra", archivada is not None)
+        check("se archiva", not archivada.activo)
+        check("y su bitácora sigue entera",
+              s.scalar(select(func.count(EntradaBitacora.id))
+                       .where(EntradaBitacora.joven_id == ana_id)) > 0)
+    despues = next(f for f in edu.get("/api/tablero").json() if f["patrulla"] == "Halcones")
+    check("los puntos que le dio a su patrulla se quedan donde se ganaron",
+          despues["puntos"] == antes["puntos"], f'{antes["puntos"]} → {despues["puntos"]}')
+    check("pero deja de contarse como integrante",
+          despues["integrantes"] == antes["integrantes"] - 1)
+    check("su sesión se corta sola", joven.get("/hoy").url.path == "/ingresar")
+    check("aparece en «ya no están»", "Ya no están en la Unidad" in edu.get("/jovenes").text)
+
+    edu.post(f"/jovenes/{ana_id}/reincorporar")
+    with SesionLocal() as s:
+        check("reincorporar la devuelve a la Unidad", s.get(Usuario, ana_id).activo)
+    check("y sus cartas siguen donde las dejó",
+          "🃏" in edu.get("/jovenes").text and edu.get(f"/cartas-de/{ana_id}").status_code == 200)
+    # Vuelve a entrar con la contraseña que ella misma se puso más arriba: la
+    # baja le cortó la sesión pero no le tocó la contraseña. El resto del
+    # recorrido sigue usando este cliente, así que tiene que quedar adentro.
+    check("y vuelve a entrar con su contraseña de siempre",
+          joven.post("/ingresar", data={"usuario": "ana", "clave": "linterna-77"}).url.path == "/hoy")
+
+    # c) Patrullas: con gente adentro no se disuelve.
+    r = edu.post(f"/patrullas/{ana_patrulla}/disolver")
+    check("una patrulla con integrantes no se disuelve", r.status_code == 400, r.status_code)
+    check("y el motivo dice a quiénes hay que mover",
+          "Ana" in r.text and "Movelos" in r.text)
+    check("la pantalla ni siquiera ofrece el botón",
+          "primero movés sus" in edu.get("/patrullas").text)
+
+    # d) Una patrulla nueva y vacía se borra de verdad.
+    edu.post("/patrullas", data={"nombre": "Erratas", "lema": "", "color": "#123456"})
+    with SesionLocal() as s:
+        erratas_id = s.scalar(select(Patrulla.id).where(Patrulla.nombre == "Erratas"))
+    check("una patrulla vacía y sin historia ofrece borrado real",
+          "Borrar patrulla" in edu.get("/patrullas").text)
+    edu.post(f"/patrullas/{erratas_id}/disolver")
+    with SesionLocal() as s:
+        check("y se borra de la base", s.get(Patrulla, erratas_id) is None)
+
+    # e) Una patrulla vacía pero con Libro de Oro se desactiva y conserva todo.
+    edu.post("/patrullas", data={"nombre": "Los Que Fueron", "lema": "", "color": "#654321"})
+    with SesionLocal() as s:
+        fueron_id = s.scalar(select(Patrulla.id).where(Patrulla.nombre == "Los Que Fueron"))
+    edu.post(f"/libro-de-oro/{fueron_id}",
+             data={"titulo": "Nuestro último campamento", "texto": "Estuvo bueno.",
+                   "fecha": "2026-05-10"})
+    edu.post(f"/patrullas/{fueron_id}/disolver")
+    with SesionLocal() as s:
+        disuelta = s.get(Patrulla, fueron_id)
+        check("una patrulla con historia no se borra", disuelta is not None)
+        check("se disuelve", not disuelta.activa)
+    check("su Libro de Oro se sigue leyendo",
+          "último campamento" in edu.get(f"/libro-de-oro/{fueron_id}").text)
+    check("sale del tablero",
+          not any(f["patrulla"] == "Los Que Fueron" for f in edu.get("/api/tablero").json()))
+    check("y ya no se le puede asignar un reto",
+          "Los Que Fueron" not in edu.get("/asignar").text)
+    check("aparece entre las disueltas", "Disueltas" in edu.get("/patrullas").text)
+    check("no se disuelve dos veces",
+          edu.post(f"/patrullas/{fueron_id}/disolver").status_code == 400)
+
+    edu.post(f"/patrullas/{fueron_id}/reabrir")
+    with SesionLocal() as s:
+        check("reabrirla la devuelve al juego", s.get(Patrulla, fueron_id).activa)
+    check("y vuelve al tablero",
+          any(f["patrulla"] == "Los Que Fueron" for f in edu.get("/api/tablero").json()))
+
+    # --- 15. Cumpleaños ------------------------------------------------------
+    #
+    # El cálculo tiene dos bordes que se rompen solos: el salto de año —el 5 de
+    # enero visto desde diciembre— y el 29 de febrero, que tres de cada cuatro
+    # años no existe y hace estallar un `date()`.
+
+    for nombre, nac, desde, esperado in (
+        ("cumple hoy", date(2012, 8, 1), date(2026, 8, 1), date(2026, 8, 1)),
+        ("ya pasó este año", date(2012, 3, 15), date(2026, 8, 1), date(2027, 3, 15)),
+        ("de diciembre salta a enero", date(2012, 1, 5), date(2026, 12, 30), date(2027, 1, 5)),
+        ("el 29/2 cae en su día si el año es bisiesto",
+         date(2012, 2, 29), date(2028, 1, 10), date(2028, 2, 29)),
+        ("y pasa al 1/3 si no lo es",
+         date(2012, 2, 29), date(2026, 1, 10), date(2026, 3, 1)),
+    ):
+        check(nombre, cumpleanos._proxima_vez(nac, desde) == esperado,
+              cumpleanos._proxima_vez(nac, desde))
+
+    quince = Usuario(nombre="Prueba", nacimiento=date(2012, 8, 15))
+    check("la edad no se adelanta un día", quince.edad_al(date(2026, 8, 14)) == 13)
+    check("y cambia el día del cumpleaños", quince.edad_al(date(2026, 8, 15)) == 14)
+    check("sin fecha cargada no hay edad", Usuario(nombre="X").edad_al(date(2026, 8, 1)) == None)
+
+    # De punta a punta: cargar la fecha desde la pantalla y verla aparecer.
+    hoy_es = retos.hoy()
+    edu.post(f"/jovenes/{ana_id}", data={"patrulla_id": str(ana_patrulla),
+                                         "nacimiento": hoy_es.replace(year=2012).isoformat()})
+    with SesionLocal() as s:
+        check("el cumpleaños se guarda desde la ficha",
+              s.get(Usuario, ana_id).nacimiento == hoy_es.replace(year=2012))
+    check("y la ficha muestra la edad", "🎂" in edu.get("/jovenes").text)
+    check("el panel avisa que cumple hoy", "Cumpleaños del mes" in edu.get("/panel").text)
+    check("y el joven lo ve sin la edad",
+          "Hoy cumple años Ana" in joven.get("/hoy").text
+          and "cumple 14" not in joven.get("/hoy").text)
+
+    # Guardar vacío lo borra: el dato es opcional y tiene que poder sacarse.
+    edu.post(f"/jovenes/{ana_id}", data={"patrulla_id": str(ana_patrulla), "nacimiento": ""})
+    with SesionLocal() as s:
+        check("dejarlo vacío lo borra", s.get(Usuario, ana_id).nacimiento is None)
+    check("y desaparece de los cumpleaños", "Cumpleaños del mes" not in edu.get("/panel").text)
+
+    # Una fecha imposible no se guarda en vez de romper la pantalla.
+    edu.post(f"/jovenes/{ana_id}", data={"patrulla_id": str(ana_patrulla),
+                                         "nacimiento": "2099-01-01"})
+    with SesionLocal() as s:
+        check("una fecha futura se descarta", s.get(Usuario, ana_id).nacimiento is None)
+    edu.post(f"/jovenes/{ana_id}", data={"patrulla_id": str(ana_patrulla),
+                                         "nacimiento": "cualquier cosa"})
+    with SesionLocal() as s:
+        check("y un texto que no es fecha, también", s.get(Usuario, ana_id).nacimiento is None)
+
+    # El equipo también cumple años, y se carga desde su propia pantalla.
+    edu.post(f"/educadores/{educador_id}/nacimiento", data={"nacimiento": "1990-06-20"})
+    with SesionLocal() as s:
+        check("un educador también tiene cumpleaños",
+              s.get(Usuario, educador_id).nacimiento == date(1990, 6, 20))
+    check("y se ve en su ficha", "20/06" in edu.get("/educadores").text)
 
     print()
     if fallos:

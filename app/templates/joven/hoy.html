@@ -96,6 +96,40 @@
   </ul>
 {% endif %}
 
+{# --- Cumpleaños ---
+   Sin la edad, y es a propósito: acá esto está para saludar, y para saludar
+   alcanza con el día. Los años se ven del lado del equipo (`servicios/cumpleanos.py`). #}
+{% if cumples %}
+  {% set hoy_cumplen = cumples | selectattr('es_hoy') | list %}
+  <h2>🎂 Cumpleaños</h2>
+  {% if hoy_cumplen %}
+    <div class="aviso" style="border-left:4px solid #E0A526">
+      <span class="icono" aria-hidden="true">🎉</span>
+      <div>
+        <strong>Hoy cumple{{ 'n' if hoy_cumplen|length != 1 }} años
+          {%- for c in hoy_cumplen %}
+            {{- ' ' if loop.first }}{{ c.usuario.nombre }}
+            {%- if loop.revindex0 == 1 %} y {% elif not loop.last %}, {% endif -%}
+          {% endfor -%}.</strong>
+        <p>Si lo cruzás en la reunión, ya sabés.</p>
+      </div>
+    </div>
+  {% endif %}
+  {% set vienen = cumples | rejectattr('es_hoy') | list %}
+  {% if vienen %}
+    <p class="chips">
+      {% for c in vienen %}
+        <span class="chip" style="display:inline-flex; align-items:center; gap:.35rem; padding-left:.25rem">
+          <span class="avatar chico" style="--color: {{ color_de(c.usuario.nombre) }}; width:24px; height:24px; font-size:.62rem"
+                aria-hidden="true">{{ iniciales(c.usuario.nombre) }}</span>
+          {{ primer_nombre(c.usuario.nombre) }} · {{ c.fecha.strftime('%d/%m') }}
+          {%- if c.faltan == 1 %} (mañana){% endif %}
+        </span>
+      {% endfor %}
+    </p>
+  {% endif %}
+{% endif %}
+
 {# --- Qué viene --- #}
 {% if proximas %}
   <h2>📆 Lo que viene</h2>

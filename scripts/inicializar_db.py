@@ -62,6 +62,9 @@ COLUMNAS_NUEVAS = {
     # contraseña alguna vez, así que no hay nada que obligarlas a cambiar.
     "usuarios": {
         "debe_cambiar_clave": "BOOLEAN DEFAULT 0",
+        # Vacío para todo el mundo, y se llena a mano. No se puede deducir de
+        # nada de lo que ya hay, y adivinarlo sería peor que no tenerlo.
+        "nacimiento": "DATE",
     },
     "patrullas": {
         "grito": "TEXT DEFAULT ''",

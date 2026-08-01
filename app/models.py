@@ -447,6 +447,15 @@ class Entrega(Base):
     # Compartida en el muro de la Unidad. Lo decide quien la escribió, y por eso
     # arranca apagada: mostrar lo que hizo un chico sin preguntarle no se hace.
     compartida: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Cuándo se publicó, que no es cuándo se entregó: alguien puede compartir en
+    # noviembre algo que entregó en marzo. El feed del equipo se ordena por esto,
+    # o lo nuevo aparecería enterrado ocho meses atrás.
+    compartida_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # El equipo la bajó del muro. Es una segunda llave, no la misma: `compartida`
+    # sigue siendo del autor y nadie se la toca, pero mientras esto tenga fecha
+    # no se ve. Que sean dos evita la discusión de quién pisó a quién.
+    oculta_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    oculta_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
 
     estado: Mapped[str] = mapped_column(String(20), default=ESTADO_PENDIENTE)
     devolucion: Mapped[str] = mapped_column(Text, default="")
@@ -459,6 +468,22 @@ class Entrega(Base):
     joven: Mapped[Usuario] = relationship(foreign_keys=[joven_id])
     patrulla: Mapped[Patrulla | None] = relationship(foreign_keys=[patrulla_id])
     validada_por: Mapped[Usuario | None] = relationship(foreign_keys=[validada_por_id])
+    oculta_por: Mapped[Usuario | None] = relationship(foreign_keys=[oculta_por_id])
+    # Un aviso señala una publicación: si la publicación se va —sacar el reto de
+    # la agenda se lleva sus entregas—, el aviso se va con ella. Sin esto la
+    # clave foránea impide el borrado y sale un 500 en una pantalla del educador.
+    avisos: Mapped[list["Aviso"]] = relationship(
+        back_populates="entrega", cascade="all, delete-orphan"
+    )
+
+    @property
+    def oculta(self) -> bool:
+        return self.oculta_en is not None
+
+    @property
+    def en_el_muro(self) -> bool:
+        """Las tres condiciones juntas. La consulta del muro dice lo mismo en SQL."""
+        return self.compartida and self.estado == ESTADO_APROBADA and not self.oculta
 
 
 class EntradaBitacora(Base):
@@ -866,6 +891,77 @@ class EntradaLibroOro(Base):
     video_id: Mapped[str | None] = mapped_column(String(40), nullable=True)
     fecha: Mapped[date] = mapped_column(Date, index=True)
     creada_en: Mapped[datetime] = mapped_column(DateTime, default=_ahora)
+    # Bajada por el equipo. La página no se borra —borrarla es del autor, y es
+    # otra cosa—: deja de verse y queda a la vista de quien la bajó, para poder
+    # devolverla si fue un error.
+    oculta_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    oculta_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
 
     patrulla: Mapped[Patrulla] = relationship()
-    autor: Mapped[Usuario | None] = relationship()
+    autor: Mapped[Usuario | None] = relationship(foreign_keys=[autor_id])
+    oculta_por: Mapped[Usuario | None] = relationship(foreign_keys=[oculta_por_id])
+    # Igual que en Entrega: borrar la página se lleva los avisos que la señalaban.
+    avisos: Mapped[list["Aviso"]] = relationship(
+        back_populates="libro", cascade="all, delete-orphan"
+    )
+
+    @property
+    def oculta(self) -> bool:
+        return self.oculta_en is not None
+
+
+# --- Avisar al equipo --------------------------------------------------------
+
+
+class Aviso(Base):
+    """«Esto que se publicó no está bien». Lo levanta cualquiera, lo mira el equipo.
+
+    Acá se publica en el momento: una foto entra al muro o al Libro de Oro sin
+    que un adulto la haya visto antes. La contraparte de esa inmediatez es que
+    bajar algo tiene que ser rápido y que cualquiera pueda pedirlo — sobre todo
+    quien aparece en la foto, que es el que primero se da cuenta y el que hoy no
+    tenía ninguna forma de decirlo salvo esperar a la reunión del sábado.
+
+    No decide nada por sí solo: no oculta la publicación ni la marca. Pone la
+    foto arriba de todo en `/novedades` para que un educador la mire. Ocultar es
+    siempre de una persona, igual que rechazar una entrega (ver
+    `servicios/validacion.py`).
+
+    Apunta a una entrega o a una página del libro, nunca a las dos. Son dos
+    columnas y no una tabla polimórfica: son dos, se leen de un vistazo y el
+    motor puede exigir la integridad de las dos.
+    """
+
+    __tablename__ = "avisos"
+    # Uno por persona y por publicación: avisar dos veces no hace más ruido, y
+    # sin esto un mismo aviso repetido tapa el resto de la lista.
+    __table_args__ = (
+        UniqueConstraint("entrega_id", "avisa_id"),
+        UniqueConstraint("libro_id", "avisa_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    unidad_id: Mapped[int] = mapped_column(ForeignKey("unidades.id"), index=True)
+    entrega_id: Mapped[int | None] = mapped_column(ForeignKey("entregas.id"), nullable=True)
+    libro_id: Mapped[int | None] = mapped_column(ForeignKey("libro_oro.id"), nullable=True)
+    avisa_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    # Por qué. Puede venir vacío a propósito: exigir que un chico escriba un
+    # párrafo para poder decir «esa foto es mía y no quiero que esté» sería
+    # ponerle un peaje justo a quien más rápido tiene que poder avisar.
+    motivo: Mapped[str] = mapped_column(Text, default="")
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=_ahora)
+
+    atendido_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    atendido_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    # Qué hizo el equipo. Se le muestra a quien avisó: alguien que avisa y no se
+    # entera de nada no vuelve a avisar.
+    resolucion: Mapped[str] = mapped_column(Text, default="")
+
+    entrega: Mapped[Entrega | None] = relationship(back_populates="avisos")
+    libro: Mapped[EntradaLibroOro | None] = relationship(back_populates="avisos")
+    avisa: Mapped[Usuario] = relationship(foreign_keys=[avisa_id])
+    atendido_por: Mapped[Usuario | None] = relationship(foreign_keys=[atendido_por_id])
+
+    @property
+    def atendido(self) -> bool:
+        return self.atendido_en is not None

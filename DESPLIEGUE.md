@@ -191,12 +191,18 @@ python scripts/crear_educador.py educador "Nombre y Apellido"
 Si no hay ninguna Unidad todavía la crea de paso, y si el usuario ya existe
 avisa y no pisa nada.
 
-**La contraseña no se elige acá: arranca siendo el mismo nombre de usuario y la
-aplicación obliga a cambiarla al entrar.** Entrá con `educador` / `educador`,
-poné la tuya, y de ahí en más el resto del equipo se suma desde `/educadores`
-sin volver a esta consola. Si el servidor está abierto a internet y preferís que
-la provisoria no sea el usuario, pasala como tercer argumento —hay que cambiarla
-al entrar igual—:
+**La contraseña no se elige acá: el script sortea una provisoria y la imprime.**
+Es la única vez que se puede ver, así que copiala de la consola antes de cerrarla:
+
+```
+    usuario: educador
+    contraseña provisoria: fogata-remo-47
+```
+
+Entrá con eso, poné la tuya —la aplicación te obliga antes de dejarte ir a ningún
+lado— y de ahí en más el resto del equipo se suma desde `/educadores` sin volver
+a esta consola. Si preferís elegir la provisoria vos, pasala como tercer
+argumento; hay que cambiarla al entrar igual:
 
 ```bash
 python scripts/crear_educador.py educador "Nombre y Apellido" "una-provisoria"

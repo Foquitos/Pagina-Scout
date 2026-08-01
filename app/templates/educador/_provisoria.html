@@ -1,0 +1,19 @@
+{# La contraseña provisoria recién sorteada, la única vez que se puede ver.
+
+   Sale de la sesión del educador y leerla la borra (ver `tomar_provisoria` en
+   `app/dependencias.py`), así que al recargar la página ya no está. Si se
+   pierde, no hay de dónde sacarla: se blanquea de nuevo y sale otra. #}
+{% if provisoria %}
+  <div class="aviso" style="border-left:4px solid #E0A526">
+    <span class="icono" aria-hidden="true">🔑</span>
+    <div>
+      <strong>Decile esto ahora, es la única vez que se muestra.</strong>
+      <p class="meta" style="font-size:1.15rem; margin:.6rem 0">
+        usuario <strong>{{ provisoria.login }}</strong> ·
+        contraseña <strong style="letter-spacing:.02em">{{ provisoria.clave }}</strong>
+      </p>
+      <p>Al entrar con eso, la aplicación le va a pedir que elija una contraseña
+        suya. Si se pierde antes de que entre, blanqueale la cuenta y sale otra.</p>
+    </div>
+  </div>
+{% endif %}

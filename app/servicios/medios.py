@@ -15,6 +15,11 @@ reproductor de ellos: cero bytes en el servidor y cero ancho de banda al servir.
 El enlace nunca se mete crudo en el `iframe`. Se extrae el identificador, se
 valida contra una expresión estricta y la URL de reproducción la arma esta
 función. Un `src` armado con texto de un formulario es una puerta abierta.
+
+Y dos topes, porque lo que entra por un formulario lo elige otro: nunca se lee
+más de `MAX_BYTES_FOTO` en memoria (`leer_subida`) y nunca se descomprime una
+imagen de más de `MAX_PIXELES_FOTO` píxeles. El segundo no es paranoia: el peso
+del archivo no dice nada de lo que ocupa abierto.
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ import uuid
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import parse_qs, urlparse
 
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -34,7 +40,11 @@ from app.config import (
     FOTO_CALIDAD,
     FOTO_LADO_MAXIMO,
     MAX_BYTES_FOTO,
+    MAX_PIXELES_FOTO,
 )
+
+if TYPE_CHECKING:  # pragma: no cover — solo para el tipo, no en tiempo de ejecución
+    from fastapi import UploadFile
 
 
 class MedioInvalido(Exception):
@@ -42,6 +52,33 @@ class MedioInvalido(Exception):
 
 
 # --- Fotos --------------------------------------------------------------------
+
+
+def leer_subida(archivo: UploadFile, tope: int = MAX_BYTES_FOTO) -> bytes:
+    """Lee lo que subieron sin pasar de `tope` bytes en memoria.
+
+    `archivo.file.read()` a secas trae el archivo entero antes de que nadie mire
+    el tamaño: un celular puede mandar 300 MB y el contenedor tiene 0,5 GiB.
+    Leyendo de a pedazos, lo que no entra se corta y nunca se reserva.
+
+    Esto acota la **memoria**, que es lo que tira el proceso abajo. El cuerpo de
+    la petición ya lo escribió Starlette en un temporal antes de llegar acá; de
+    eso se ocupa el tope de `MAX_BYTES_PETICION` en `app/main.py`, que mira el
+    Content-Length y rechaza antes de leer nada.
+    """
+    trozos: list[bytes] = []
+    total = 0
+    while True:
+        trozo = archivo.file.read(64 * 1024)
+        if not trozo:
+            break
+        total += len(trozo)
+        if total > tope:
+            raise MedioInvalido(
+                f"La foto es demasiado grande (máximo {tope // (1024 * 1024)} MB)."
+            )
+        trozos.append(trozo)
+    return b"".join(trozos)
 
 
 def guardar_foto(nombre_original: str | None, contenido: bytes) -> str:
@@ -57,11 +94,22 @@ def guardar_foto(nombre_original: str | None, contenido: bytes) -> str:
         raise MedioInvalido(f"La foto es demasiado grande (máximo {tope} MB).")
 
     try:
+        # `open` lee el encabezado y nada más: acá todavía no se reservó el mapa
+        # de bits, así que se pueden mirar las medidas antes de que cueste algo.
         imagen = Image.open(BytesIO(contenido))
+        ancho, alto = imagen.size
+        if ancho * alto > MAX_PIXELES_FOTO:
+            raise MedioInvalido(
+                f"Esa imagen es enorme ({ancho}×{alto}). Mandá una foto normal "
+                "de la cámara del celular."
+            )
         imagen.load()
-    except (UnidentifiedImageError, OSError) as error:
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as error:
         # Cae acá el .heic de iPhone si Pillow no lo puede abrir. Casi siempre
         # Safari lo convierte a JPEG antes de subirlo, pero no siempre.
+        #
+        # `DecompressionBombError` no hereda de OSError, así que sin nombrarla
+        # se escapaba de este `except` y salía un 500 en vez de un motivo.
         raise MedioInvalido(
             "No pudimos abrir esa imagen. Si la sacaste con un iPhone, "
             "probá exportarla como JPG."

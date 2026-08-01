@@ -57,6 +57,25 @@
             <button type="submit" class="secundario">Sacarlo del muro</button>
           </form>
         </div>
+      {% elif not usuario.es_educador %}
+        {# Cualquiera puede pedir que el equipo mire algo, y sobre todo quien
+           aparece en la foto. No baja nada: lo pone primero en la lista del
+           equipo. Va dentro de un <details> para que esté a mano sin gritar. #}
+        {% if e.id in avisados %}
+          <p class="meta">✓ Avisaste al equipo sobre esta publicación.</p>
+        {% else %}
+          <details class="avisar">
+            <summary>⚠️ Avisar al equipo</summary>
+            <form method="post" action="/muro/{{ e.id }}/avisar"
+                  data-sin-recarga="Listo: el equipo lo va a mirar.">
+              <label for="motivo-{{ e.id }}">¿Qué pasa con esta publicación? (opcional)</label>
+              <textarea id="motivo-{{ e.id }}" name="motivo" style="min-height:3.5rem"
+                placeholder="Salgo yo en la foto y no quiero, o hay algo que no está bien."></textarea>
+              <p class="meta">No se baja sola: la mira un educador y te cuenta qué hizo.</p>
+              <button type="submit" class="secundario">Avisar al equipo</button>
+            </form>
+          </details>
+        {% endif %}
       {% endif %}
     </article>
   {% endfor %}

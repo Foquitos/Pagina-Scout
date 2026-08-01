@@ -8,10 +8,9 @@ inicializada no hay ninguna cuenta, así que sin esto no se puede ni entrar. Una
 vez adentro, el resto del equipo se suma desde `/educadores` y esta consola no
 hace falta nunca más.
 
-La contraseña no se pide: como toda cuenta, arranca siendo el mismo nombre de
-usuario y la aplicación obliga a cambiarla al entrar. Se puede pasar otra como
-tercer argumento —por si el usuario es demasiado obvio en un servidor expuesto—
-y sigue siendo provisoria igual.
+La contraseña no se pide: como toda cuenta, se sortea una provisoria que este
+script imprime una sola vez, y la aplicación obliga a cambiarla al entrar. Se
+puede pasar otra como tercer argumento y sigue siendo provisoria igual.
 
 Si no existe ninguna Unidad todavía la crea, porque un usuario sin Unidad no
 puede ver nada. Si el nombre de usuario ya está tomado no lo pisa: avisa y sale
@@ -46,7 +45,7 @@ def main() -> int:
     parser.add_argument(
         "clave",
         nargs="?",
-        help="opcional: contraseña provisoria. Por defecto, el mismo nombre de usuario",
+        help="opcional: contraseña provisoria. Por defecto se sortea una",
     )
     parser.add_argument("--unidad", default="Unidad Scout", help="solo si hay que crearla")
     parser.add_argument("--grupo", default="Grupo Scout", help="solo si hay que crearla")
@@ -61,7 +60,7 @@ def main() -> int:
             print(f"Se creó la Unidad «{unidad.nombre}» del {unidad.grupo}.")
 
         try:
-            educador = cuentas.alta(
+            educador, clave = cuentas.alta(
                 sesion, args.usuario, args.nombre, ROL_EDUCADOR, unidad_id=unidad.id
             )
         except cuentas.DatoInvalido as error:
@@ -69,13 +68,15 @@ def main() -> int:
             return 1
 
         if args.clave:
-            cuentas.establecer_provisoria(educador, args.clave)
+            clave = cuentas.establecer_provisoria(educador, args.clave)
         sesion.commit()
         login = educador.usuario
 
-    provisoria = "la que pasaste" if args.clave else f"«{login}», su mismo usuario"
-    print(f"Educador «{login}» dado de alta. Entra con {provisoria}.")
-    print("Al entrar la aplicación le va a pedir que elija una contraseña propia.")
+    print(f"Educador «{login}» dado de alta.")
+    # La única vez que esta contraseña existe fuera del hash. Si se pierde esta
+    # línea no hay de dónde sacarla: hay que volver a correr el script.
+    print(f"\n    usuario: {login}\n    contraseña provisoria: {clave}\n")
+    print("Anotala ahora. Al entrar, la aplicación le va a pedir que elija una propia.")
     return 0
 
 

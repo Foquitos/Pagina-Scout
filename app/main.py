@@ -5,12 +5,19 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.config import CLAVE_SECRETA, COOKIES_SEGURAS, DIR_ESTATICOS, DIR_SUBIDAS
-from app.db import SesionLocal
+from app.config import (
+    CLAVE_SECRETA,
+    COOKIES_SEGURAS,
+    DIR_ESTATICOS,
+    DIR_SUBIDAS,
+    MAX_BYTES_PETICION,
+)
+from app.db import SesionLocal, obtener_sesion
 from app.dependencias import Redireccion, plantillas, usuario_actual
 from app.models import Usuario
 from app.routers import (
@@ -23,6 +30,7 @@ from app.routers import (
     participacion,
     patrulla,
 )
+from app.servicios import moderacion
 
 app = FastAPI(title="Método Scout — Retos de Unidad", docs_url="/api/docs")
 
@@ -32,18 +40,51 @@ DIR_SUBIDAS.mkdir(parents=True, exist_ok=True)
 app.mount("/estaticos", StaticFiles(directory=str(DIR_ESTATICOS)), name="estaticos")
 
 
-@app.get("/fotos/{nombre}")
-def ver_foto(nombre: str, usuario: Usuario = Depends(usuario_actual)):
-    """Las fotos subidas piden sesión.
+@app.middleware("http")
+async def _cuerpo_acotado(request: Request, call_next):
+    """Rechaza una petición enorme antes de leerle un solo byte.
 
-    Antes esto era un StaticFiles montado. El nombre de archivo es un uuid, pero
-    aun así cualquiera con el link entraba sin cuenta, y son fotos de chicos.
-    Ahora hace falta estar dentro de la aplicación.
+    El contenedor corre con 0,5 GiB. Sin esto, un POST de 300 MB lo tumba
+    mientras Starlette todavía está armando el formulario, mucho antes de que
+    ninguna validación nuestra pueda opinar.
 
-    `Path(nombre).name` descarta cualquier intento de salir del directorio.
+    Se mira el Content-Length, que el navegador siempre manda en un `multipart`.
+    Quien lo omita a propósito pasa de largo por acá y lo frena `leer_subida`,
+    que nunca acumula más del tope en memoria. Son dos redes: esta corta barato
+    el caso normal, la otra sostiene el caso raro.
     """
-    ruta = DIR_SUBIDAS / Path(nombre).name
-    if not ruta.is_file():
+    largo = request.headers.get("content-length")
+    if largo is not None and largo.isdigit() and int(largo) > MAX_BYTES_PETICION:
+        return JSONResponse(
+            {"detail": f"Eso pesa demasiado (máximo {MAX_BYTES_PETICION // (1024 * 1024)} MB)."},
+            status_code=413,
+        )
+    return await call_next(request)
+
+
+@app.get("/fotos/{nombre}")
+def ver_foto(
+    nombre: str,
+    usuario: Usuario = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Una foto se sirve a quien podría ver la página donde vive, y a nadie más.
+
+    Antes esto era un StaticFiles montado y cualquiera con el link entraba sin
+    cuenta. Pedir sesión arregló eso pero dejaba lo otro: con sesión, cualquiera
+    de cualquier patrulla veía cualquier foto si tenía el uuid. Y el uuid se
+    filtra solo —el historial, «copiar dirección de la imagen», una captura
+    reenviada—, así que el Libro de Oro quedaba protegido por página y abierto
+    por archivo. `moderacion.puede_ver_foto` aplica acá la misma regla que la
+    página, y por eso vive en un solo lugar.
+
+    404 y no 403 cuando no corresponde: que exista una foto que no podés ver ya
+    es contar algo. `Path(nombre).name` descarta cualquier intento de salir del
+    directorio.
+    """
+    nombre = Path(nombre).name
+    ruta = DIR_SUBIDAS / nombre
+    if not ruta.is_file() or not moderacion.puede_ver_foto(sesion, nombre, usuario):
         raise HTTPException(404, "Esa foto no existe.")
     # Privada: que la cachee el navegador de quien la vio, no un proxy.
     return FileResponse(ruta, headers={"Cache-Control": "private, max-age=3600"})

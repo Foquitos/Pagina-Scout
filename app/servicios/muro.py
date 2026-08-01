@@ -7,7 +7,7 @@ doce años a hacer algo: ver que otro lo hizo. La guía lo dice de otra manera
 tomando parte en actividades (…) compartiendo ideas»— y llama a eso educación
 entre pares.
 
-Tres reglas, y las tres importan:
+Cuatro reglas, y las cuatro importan:
 
 - **Se comparte porque uno quiso.** El interruptor arranca apagado y lo mueve
   quien escribió la entrega, en cualquier momento, para los dos lados.
@@ -16,18 +16,29 @@ Tres reglas, y las tres importan:
 - **No hay número al lado.** Se ve qué hizo cada uno, no cuánto sumó: convertir
   el muro en un ranking de personas es exactamente lo que la guía evita al hacer
   que el puntaje sea siempre de la patrulla.
+- **El equipo puede bajar algo, y cualquiera puede pedirlo.** Se publica en el
+  momento, sin que un adulto lo mire antes; el precio de esa inmediatez es que
+  sacar una foto del muro tenga que ser inmediato también. Eso vive en
+  `servicios/moderacion.py`, que es de dónde sale `oculta_en`.
 """
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import datetime, timezone
+
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import ESTADO_APROBADA, Asignacion, Entrega, Usuario
 
 
 def publicaciones(sesion: Session, unidad_id: int, tope: int = 40) -> list[Entrega]:
-    """Lo compartido en la Unidad, lo último primero."""
+    """Lo compartido en la Unidad, lo último publicado primero.
+
+    Ordena por cuándo se compartió y no por cuándo se entregó: compartir algo de
+    marzo en noviembre lo pone arriba, que es donde tiene que estar, porque para
+    la Unidad la novedad es de noviembre.
+    """
     return list(
         sesion.scalars(
             select(Entrega)
@@ -36,16 +47,19 @@ def publicaciones(sesion: Session, unidad_id: int, tope: int = 40) -> list[Entre
                 Asignacion.unidad_id == unidad_id,
                 Entrega.compartida.is_(True),
                 Entrega.estado == ESTADO_APROBADA,
+                # Lo que el equipo bajó no está en el muro para nadie, tampoco
+                # para su autor: si lo viera solo él, creería que sigue puesto.
+                Entrega.oculta_en.is_(None),
             )
-            .order_by(Entrega.enviada_en.desc())
+            .order_by(func.coalesce(Entrega.compartida_en, Entrega.enviada_en).desc())
             .limit(tope)
         )
     )
 
 
 def puede_compartir(entrega: Entrega) -> bool:
-    """Solo lo que ya está validado va al muro."""
-    return entrega.estado == ESTADO_APROBADA
+    """Solo lo que ya está validado va al muro, y nada que el equipo haya bajado."""
+    return entrega.estado == ESTADO_APROBADA and not entrega.oculta
 
 
 def alternar(entrega: Entrega, joven: Usuario) -> bool:
@@ -56,4 +70,7 @@ def alternar(entrega: Entrega, joven: Usuario) -> bool:
         entrega.compartida = False
         return False
     entrega.compartida = not entrega.compartida
+    # La fecha se pisa cada vez que se prende: sacar algo del muro y volver a
+    # ponerlo lo publica de nuevo, y el equipo tiene que volver a verlo arriba.
+    entrega.compartida_en = datetime.now(timezone.utc) if entrega.compartida else None
     return entrega.compartida

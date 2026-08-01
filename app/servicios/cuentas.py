@@ -1,11 +1,18 @@
 """Cuentas: altas, contraseñas y blanqueos.
 
 Una sola regla, en un solo lugar: la contraseña inicial de cualquier cuenta
-—joven o educador— es su propio nombre de usuario, y mientras siga siendo esa
-la cuenta no sirve para nada más que para cambiarla. El educador que da de alta
-a alguien le dice «tu usuario es `ana` y tu contraseña también»: no tiene que
-inventar contraseñas para otros, ni anotarlas en un papel, ni dictarlas en la
-reunión, y nadie termina usando una que eligió un tercero.
+—joven o educador— es **provisoria y aleatoria**, y mientras siga siendo esa la
+cuenta no sirve para nada más que para cambiarla. La pantalla del alta la
+muestra una vez para que el educador se la diga a la persona ahí mismo.
+
+Antes la provisoria era el propio nombre de usuario, y la razón era buena: el
+educador no tenía que inventar contraseñas para otros ni anotarlas en un papel.
+El problema es que los nombres de usuario de una Unidad son adivinables —`ana`,
+`mateo`, `juanp`— y en una aplicación abierta a internet eso convertía cada
+cuenta recién dada de alta en una puerta de una sola prueba. Un freno a la
+fuerza bruta no ayuda contra un ataque que acierta en el primer intento: había
+que cambiar la provisoria. El freno está igual, en `app/seguridad.py`, para lo
+demás.
 
 El blanqueo es exactamente el mismo movimiento —volver al día uno—, así que
 comparte el cuerpo con el alta: si un día cambia cómo arranca una cuenta,
@@ -20,10 +27,12 @@ Quién puede blanquear a quién es una cuestión de permisos y vive en el router
 from __future__ import annotations
 
 import re
+import secrets
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
+from app.db import Base
 from app.models import Usuario
 from app.seguridad import hashear_clave, verificar_clave
 
@@ -52,24 +61,57 @@ def normalizar_login(texto: str) -> str:
     return texto.strip().lower()
 
 
-def establecer_provisoria(usuario: Usuario, clave: str | None = None) -> None:
+# De acá salen las provisorias. Palabras cortas, sin acentos y sin letras que se
+# confundan al dictarlas en una reunión con ruido: nada de b/v ni de c/s/z en el
+# lugar donde se juegan la diferencia. Se dicen en voz alta una vez y se tipean
+# en el teclado de un celular, ese es todo el requisito.
+_PALABRAS = (
+    "carpa", "fogata", "nudo", "brujula", "mochila", "linterna", "mapa", "remo",
+    "sendero", "rio", "monte", "puente", "estrella", "lupa", "pala", "hacha",
+    "olla", "manta", "pino", "roble", "halcon", "puma", "zorro", "condor",
+    "tigre", "lobo", "gaviota", "delfin", "aguila", "jaguar", "norte", "sur",
+    "farol", "tronco", "piedra", "arroyo", "cumbre", "valle", "duna", "faro",
+)
+
+
+def provisoria() -> str:
+    """Una contraseña de un solo uso, fácil de dictar y difícil de adivinar.
+
+    Dos palabras y dos dígitos: `fogata-remo-47`. Son 40×40×100 = 160.000
+    combinaciones, que contra el freno de cinco intentos de `app/seguridad.py`
+    es de sobra —y sirve para las horas que pasan entre el alta y el primer
+    ingreso, que es todo lo que tiene que durar.
+    """
+    return (
+        f"{secrets.choice(_PALABRAS)}-{secrets.choice(_PALABRAS)}-"
+        f"{secrets.randbelow(90) + 10}"
+    )
+
+
+def establecer_provisoria(usuario: Usuario, clave: str | None = None) -> str:
     """Deja una contraseña provisoria y la obligación de cambiarla al entrar.
 
-    Sin `clave`, la provisoria es el propio nombre de usuario: es el caso normal
-    —el alta y el blanqueo—. Se puede pasar otra desde la consola, y sigue
-    siendo provisoria igual, porque el punto no es que sea fácil de adivinar
-    sino que la eligió alguien que no es el dueño de la cuenta.
+    Devuelve la contraseña en claro, y es la única vez que existe fuera del
+    hash: quien llama tiene que mostrarla en pantalla para que el educador se la
+    diga a su dueño. No se guarda en ningún lado ni se puede volver a ver.
+
+    Sin `clave`, se sortea una. Se puede pasar otra desde la consola, y sigue
+    siendo provisoria igual, porque el punto no es cuánto cuesta adivinarla sino
+    que la eligió alguien que no es el dueño de la cuenta.
     """
-    usuario.hash_clave = hashear_clave(clave or usuario.usuario)
+    en_claro = clave or provisoria()
+    usuario.hash_clave = hashear_clave(en_claro)
     usuario.debe_cambiar_clave = True
+    return en_claro
 
 
-def alta(sesion: Session, login: str, nombre: str, rol: str, **campos) -> Usuario:
+def alta(sesion: Session, login: str, nombre: str, rol: str, **campos) -> tuple[Usuario, str]:
     """Crea una cuenta con su contraseña inicial. No hace commit.
 
-    `**campos` es lo que cambia según el rol —unidad, patrulla, etapa—. Lo que
-    no cambia nunca es cómo arranca la contraseña, y por eso el alta pasa por
-    acá y no se arma un `Usuario` a mano en cada router.
+    Devuelve la cuenta y su contraseña provisoria en claro, para mostrarla una
+    vez. `**campos` es lo que cambia según el rol —unidad, patrulla, etapa—. Lo
+    que no cambia nunca es cómo arranca la contraseña, y por eso el alta pasa
+    por acá y no se arma un `Usuario` a mano en cada router.
     """
     login = normalizar_login(login)
     if not _LOGIN_VALIDO.match(login):
@@ -83,19 +125,84 @@ def alta(sesion: Session, login: str, nombre: str, rol: str, **campos) -> Usuari
         raise DatoInvalido(f"El usuario «{login}» ya existe.")
 
     usuario = Usuario(usuario=login, nombre=nombre.strip(), rol=rol, **campos)
-    establecer_provisoria(usuario)
+    en_claro = establecer_provisoria(usuario)
     sesion.add(usuario)
-    return usuario
+    return usuario, en_claro
 
 
-def blanquear(usuario: Usuario) -> None:
-    """Vuelve la cuenta al día uno: la contraseña pasa a ser su nombre de usuario.
+def blanquear(usuario: Usuario) -> str:
+    """Vuelve la cuenta al día uno con una provisoria nueva. Devuelve cuál.
 
     Lo que se hace cuando alguien se la olvidó. La sesión que tuviera abierta no
     se corta —no hace falta: al entrar de nuevo la va a tener que cambiar—, y
     quien blanquea no se enteró de la contraseña vieja en ningún momento.
     """
-    establecer_provisoria(usuario)
+    return establecer_provisoria(usuario)
+
+
+# --- Bajas ---------------------------------------------------------------------
+#
+# Sacar a alguien del equipo son dos cosas distintas según lo que esa cuenta haya
+# hecho, y la diferencia importa:
+#
+# **Alguien que trabajó en la Unidad se da de baja, no se borra.** Un educador
+# firma cosas: la carta que acordó, el cambio de etapa que decidió, la entrega
+# que validó, la página que bajó del libro. Todo eso queda con su nombre porque
+# la aplicación entera está construida sobre que se sepa quién decidió qué.
+# Borrar la cuenta borraría esas firmas —o dejaría huecos donde había un nombre—,
+# y el historial de progresión de un chico dejaría de decir quién estuvo.
+#
+# **Una cuenta que no dejó rastro se borra de verdad.** El usuario que se escribió
+# mal, el educador que se dio de alta dos veces. Esa cuenta no existió para nadie
+# y dejarla como «inactiva» en una lista es guardar basura con nombre de persona.
+#
+# No hay que elegir a mano: se mira la base y se hace lo que corresponde.
+
+
+def dejo_rastro(sesion: Session, usuario_id: int) -> bool:
+    """¿Hay alguna fila en toda la base que apunte a esta persona?
+
+    Se recorre el esquema en vez de escribir a mano la lista de tablas. Son casi
+    treinta columnas que referencian `usuarios` repartidas por veinticinco
+    tablas, y esa lista escrita a mano se desactualiza en cuanto alguien suma un
+    modelo: quedaría borrando cuentas que sí dejaron rastro, que es el error que
+    no se puede cometer acá. Preguntándole al esquema, una tabla nueva queda
+    cubierta el día que se crea.
+
+    Corta en el primer hallazgo. En el peor caso son unas treinta consultas de
+    existencia sobre tablas chicas, en una página que se abre muy de vez en
+    cuando.
+    """
+    for tabla in Base.metadata.sorted_tables:
+        for columna in tabla.columns:
+            if not any(fk.column.table.name == "usuarios" for fk in columna.foreign_keys):
+                continue
+            if sesion.scalar(select(exists().where(columna == usuario_id))):
+                return True
+    return False
+
+
+def dar_de_baja(sesion: Session, usuario: Usuario) -> bool:
+    """Saca a alguien de la Unidad. Devuelve True si además se borró la cuenta.
+
+    No hace commit. La sesión que la persona tuviera abierta se corta sola en el
+    pedido siguiente: `usuario_opcional` la vacía al ver la cuenta inactiva, y
+    `/ingresar` tampoco la deja volver a entrar.
+    """
+    if dejo_rastro(sesion, usuario.id):
+        usuario.activo = False
+        return False
+    sesion.delete(usuario)
+    return True
+
+
+def reincorporar(usuario: Usuario) -> None:
+    """Vuelve al equipo. Su contraseña es la que tenía: la baja no la tocó.
+
+    Existe porque una baja por error tiene que arreglarse desde la pantalla. Si
+    la persona además se olvidó la contraseña, se blanquea aparte.
+    """
+    usuario.activo = True
 
 
 def cambiar_clave(usuario: Usuario, actual: str, nueva: str, repetida: str) -> None:
@@ -120,8 +227,8 @@ def cambiar_clave(usuario: Usuario, actual: str, nueva: str, repetida: str) -> N
         )
     if normalizar_login(nueva) == usuario.usuario:
         raise DatoInvalido(
-            "Esa es la contraseña con la que te dieron de alta: elegí una "
-            "distinta de tu usuario."
+            "Tu contraseña no puede ser tu nombre de usuario: es lo primero "
+            "que probaría cualquiera."
         )
     if verificar_clave(nueva, usuario.hash_clave):
         raise DatoInvalido("Esa ya es tu contraseña. Poné una nueva.")

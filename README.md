@@ -24,6 +24,13 @@ secreta y cualquier cosa que no deba viajar en el repositorio. Sin `.env` la
 aplicación igual levanta, con los valores por defecto del código. Para generar
 una clave: `python -c "import secrets; print(secrets.token_hex(32))"`.
 
+`python main.py` **pone la base al día antes de levantar el servidor**, igual que
+hace el contenedor en el servidor (`docker/entrypoint.sh`). Así, después de un
+`git pull` que traiga una tabla o una columna nueva, no hay ningún paso que
+acordarse: arranca y ya está. Correr `scripts/inicializar_db.py` a mano sigue
+sirviendo —es idempotente— y es lo que hay que hacer si la base está en otro
+lado o si se quieren los usuarios de prueba con `--demo`.
+
 Sin `--demo` se crean las tablas y se cargan las cartas, pero ningún usuario:
 para producción hay que dar de alta el primer educador a mano
 (`python scripts/crear_educador.py educador "Nombre y Apellido"`). El resto del
@@ -132,18 +139,28 @@ el historial no se mueve con él.
 
 ## Cuentas y contraseñas
 
-**La contraseña inicial de toda cuenta es su propio nombre de usuario.** Vale
-igual para un joven y para un educador. Mientras siga siendo esa, la cuenta no
-abre ninguna página que no sea `/clave`: la única forma de usarla es ponerle una
-contraseña propia. La regla entera vive en `app/servicios/cuentas.py` y el corte
-lo hace `usuario_actual` en `dependencias.py`, así que una pantalla nueva queda
-cubierta sin que nadie se acuerde de sumarla.
+**La contraseña inicial de toda cuenta es provisoria y sorteada**, y se muestra
+una sola vez. Vale igual para un joven y para un educador. Mientras siga siendo
+esa, la cuenta no abre ninguna página que no sea `/clave`: la única forma de
+usarla es ponerle una contraseña propia. La regla entera vive en
+`app/servicios/cuentas.py` y el corte lo hace `usuario_actual` en
+`dependencias.py`, así que una pantalla nueva queda cubierta sin que nadie se
+acuerde de sumarla.
 
 Antes el educador escribía una contraseña inicial en el formulario de alta, y
 era el peor de los dos mundos: tenía que inventarla, dictarla en la reunión, y
-quedaba sabiendo con qué entra otra persona. Ahora el alta se cuenta en una
-frase —«tu usuario es `ana` y tu contraseña también»— y la de verdad la elige
-cada uno.
+quedaba sabiendo con qué entra otra persona. Sigue sin haber ese campo: la
+aplicación sortea una provisoria del tipo `fogata-remo-47` y la muestra una sola
+vez para que el educador se la diga ahí mismo. La de verdad la elige cada uno al
+entrar.
+
+Durante un tiempo la provisoria fue el propio nombre de usuario, y la idea era
+buena —nadie tenía que inventar ni anotar nada—, pero los nombres de usuario de
+una Unidad son adivinables (`ana`, `mateo`, `juanp`) y eso convertía cada cuenta
+recién dada de alta en una puerta que se abría en **una sola prueba**. Un freno
+a la fuerza bruta no sirve contra un ataque que acierta al primer intento, así
+que hubo que cambiar la provisoria. El freno está igual, en `app/seguridad.py`:
+cinco intentos fallidos por cuenta y la cuenta descansa quince minutos.
 
 | Qué | Dónde | Quién |
 | --- | --- | --- |
@@ -152,6 +169,32 @@ cada uno.
 | Cambiar la contraseña propia | `/clave` | cada uno |
 | Blanquear la de un joven | `/jovenes` | cualquier educador |
 | Blanquear la de un educador | `/educadores` | otro educador del equipo |
+| Sacar a un educador del equipo | `/educadores` | otro educador del equipo |
+
+### Sacar a alguien del equipo
+
+Un educador **firma** cosas: la carta que acordó, la etapa que cambió, la entrega
+que validó, la página que bajó del libro. La aplicación entera está construida
+sobre que se sepa quién decidió qué, así que borrar la cuenta dejaría huecos en
+el historial de progresión de chicos que hoy dice quién los acompañó.
+
+Por eso hay dos caminos y la aplicación **elige sola** mirando la base
+(`cuentas.dejo_rastro` recorre el esquema buscando filas que apunten a esa
+persona; se recorre el esquema y no una lista escrita a mano para que una tabla
+nueva quede cubierta el día que se crea):
+
+- **Firmó algo** → se desactiva. Deja de entrar, la sesión abierta se corta en el
+  pedido siguiente —`usuario_opcional` la vacía al ver la cuenta inactiva—, su
+  nombre sigue donde está, y se puede reincorporar con la contraseña que tenía.
+- **No firmó nada** → se borra de verdad. Es el usuario que se escribió mal:
+  no existió para nadie, y dejarlo como «inactivo» sería guardar basura con
+  nombre de persona.
+
+La pantalla dice cuál de las dos va a pasar **antes** de que aprieten.
+
+**Nadie se da de baja a sí mismo.** No es una formalidad: es lo que garantiza que
+la Unidad no pueda quedarse sin ningún educador activo, porque cada baja la firma
+alguien que se queda adentro.
 
 A `/clave` y a `/educadores` se llega desde el **menú de la cuenta**, arriba a la
 derecha: son cosas de la persona, no secciones del programa (ver [La
@@ -592,7 +635,7 @@ Un reto entregado lo ven quien lo entregó y el equipo, y nadie más. Eso está 
 para lo íntimo, pero desaprovecha lo que más empuja a un chico de doce años a
 hacer algo: ver que otro lo hizo. La guía lo llama educación entre pares.
 
-`/muro` muestra lo que cada uno **quiso** mostrar. Tres reglas, y las tres
+`/muro` muestra lo que cada uno **quiso** mostrar. Cuatro reglas, y las cuatro
 importan:
 
 - **Se comparte porque uno quiso.** El interruptor arranca apagado, está en el
@@ -603,6 +646,8 @@ importan:
 - **No hay número al lado.** Se ve qué hizo cada uno, no cuánto sumó. Convertir
   el muro en un ranking de personas es exactamente lo que evita que el puntaje
   sea siempre de la patrulla.
+- **Se publica en el momento, y por eso hay que poder bajarlo en el momento.**
+  Ver más abajo.
 
 ## El Libro de Oro
 
@@ -610,7 +655,34 @@ La memoria colectiva de cada patrulla, en `/libro-de-oro/{patrulla_id}`: título
 texto, una foto y un video por página. Es la contraparte de la Bitácora de
 Aventura, que es personal. Lo escribe y lo lee la patrulla, más el equipo de
 educadores; otra patrulla recibe 404. Borrar puede quien escribió la página, o
-un educador —hace falta poder moderar.
+un educador.
+
+## Publicar en el momento, y qué lo sostiene
+
+Ni el muro ni el Libro de Oro esperan que un adulto mire la foto antes de que la
+vean los demás. Es una decisión, no un olvido: el libro es **de la patrulla**, y
+pedirle permiso a un grande para escribir en el propio libro lo desnaturaliza
+(cap. 4). La alternativa —pre-moderar— también convierte al equipo en un cuello
+de botella para algo que pasa todos los días.
+
+Lo que esa inmediatez obliga a tener está en `app/servicios/moderacion.py`:
+
+- **`/novedades`.** Todo lo que se publicó en la Unidad, lo último primero, con
+  la foto a la vista: el muro y las páginas de los siete libros en una sola
+  pantalla. No es una cola de aprobación —todo lo que está ahí ya está
+  publicado—; es dónde el equipo se entera sin recorrer siete libros.
+- **Avisar.** Cualquiera puede pedir que el equipo mire una publicación, y sobre
+  todo quien aparece en la foto: es el que primero se da cuenta y el que antes no
+  tenía forma de decirlo hasta la reunión del sábado. Un aviso no baja nada: la
+  pone arriba de todo en `/novedades` y aparece en el panel.
+- **Bajar, y poder deshacerlo.** `oculta_en` saca la publicación de circulación
+  sin borrar nada: la entrega conserva sus puntos y la página sigue en el libro
+  para su autor y el equipo. Tampoco toca `compartida`, que es el interruptor del
+  joven. Un educador que baja algo por error a las once de la noche lo devuelve
+  desde la misma pantalla, sin entrar a la base.
+
+Un aviso también se puede cerrar **sin** bajar nada («lo miramos y queda»). Que
+esa salida exista es lo que impide que avisar sea, en los hechos, sacar del muro.
 
 ### Cuánto ocupa
 
@@ -769,11 +841,15 @@ Lo único que hay que montar en un volumen es `/datos-persistentes`: ahí viven
   procesos y ahí no existe.
 - Las fotos viven en `uploads/`, fuera de la base. Entran en el backup por
   separado: si copiás solo `scout.db`, el Libro de Oro queda sin imágenes.
-- `/fotos/{nombre}` pide sesión, pero no comprueba a qué patrulla pertenece cada
-  archivo: alguien con cuenta que consiga la URL de una foto de otra patrulla la
-  puede abrir. El nombre es un uuid y solo aparece en páginas a las que esa
-  persona no entra, así que hay que conseguirlo a propósito. Si el grupo crece,
-  vale atar cada archivo a su entrada y verificar el permiso ahí.
+- `/fotos/{nombre}` resuelve de quién es cada archivo y aplica la misma regla que
+  la página donde se muestra (`moderacion.puede_ver_foto`). Tener sesión no
+  alcanza: la foto del Libro de Oro de una patrulla no se sirve a otra ni con el
+  uuid en la mano. Es importante que siga siendo así —un uuid se filtra solo, en
+  el historial o en una captura reenviada— y por eso hay pruebas que lo fijan.
+- Hay dos topes contra un archivo hostil: el cuerpo de la petición se corta por
+  `Content-Length` en `app/main.py` antes de leer un byte, y ninguna imagen de
+  más de `MAX_PIXELES_FOTO` se descomprime. Un PNG de 300 kB puede declarar
+  20000×20000 y convertirse en 1,2 GB abiertos, y el contenedor tiene 0,5 GiB.
 - SQLite aguanta bien una Unidad. Si esto crece a varios grupos, migrar a
   PostgreSQL es cambiar `BASE_DATOS_URL`, pero conviene sumar Alembic para las
   migraciones antes de tener datos que no se puedan perder.

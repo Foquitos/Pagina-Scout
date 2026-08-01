@@ -41,6 +41,7 @@ from app.models import (  # noqa: E402
     Area,
     Asignacion,
     AvanceDesafio,
+    Aviso,
     CambioEtapa,
     Cargo,
     CompetenciaElegida,
@@ -57,7 +58,8 @@ from app.models import (  # noqa: E402
     Reto,
     Usuario,
 )
-from app.servicios import medios  # noqa: E402
+from app import seguridad  # noqa: E402
+from app.servicios import cuentas, medios  # noqa: E402
 from app.servicios.progresion import MIN_CARTAS  # noqa: E402
 from scripts.inicializar_db import asegurar_cargos, cargar_cartas, cargar_demo  # noqa: E402
 
@@ -70,6 +72,17 @@ def check(nombre: str, condicion: bool, extra: object = "") -> None:
     print(f"{'ok   ' if condicion else 'FALLA'} {nombre}{'  → ' + str(extra) if extra != '' else ''}")
     if not condicion:
         fallos.append(nombre)
+
+
+def provisoria_de(html: str) -> str:
+    """La contraseña que la pantalla muestra una sola vez tras un alta o blanqueo.
+
+    Se lee de la página y no de la base a propósito: es el único lugar donde
+    esa contraseña existe en claro, así que si el cartel se rompe el test tiene
+    que enterarse.
+    """
+    hallado = re.search(r"contraseña <strong[^>]*>([^<]+)</strong>", html)
+    return hallado.group(1).strip() if hallado else ""
 
 
 def _rechaza(url: str) -> bool:
@@ -101,8 +114,26 @@ def main() -> int:
         "contraseña incorrecta rechazada",
         "incorrectos" in joven.post("/ingresar", data={"usuario": "ana", "clave": "x"}).text,
     )
+
+    # El freno a la fuerza bruta. Se prueba contra un usuario de descarte para no
+    # dejar bloqueada ninguna cuenta que el resto del recorrido necesita, y se
+    # limpia después: el contador vive en memoria del proceso y este proceso
+    # sigue corriendo el resto de las pruebas.
+    fuerza = TestClient(app, follow_redirects=True)
+    for _ in range(5):
+        fuerza.post("/ingresar", data={"usuario": "ana", "clave": "probando"})
+    frenado = fuerza.post("/ingresar", data={"usuario": "ana", "clave": "probando"}).text
+    check("cinco intentos fallidos y la cuenta se frena", "Demasiados intentos" in frenado)
+    check("el mensaje dice a quién pedirle ayuda", "blanquee" in frenado)
+    check(
+        "y el freno no cede ni con la contraseña correcta",
+        "Demasiados intentos"
+        in fuerza.post("/ingresar", data={"usuario": "ana", "clave": "scout1907"}).text,
+    )
+    seguridad.olvidar_fallos("ana", "testclient")
+
     r = joven.post("/ingresar", data={"usuario": "ana", "clave": "scout1907"})
-    check("un joven entra a /hoy", r.url.path == "/hoy", r.url.path)
+    check("un joven entra a /hoy, con el freno ya limpio", r.url.path == "/hoy", r.url.path)
 
     # --- reto del día automático --------------------------------------------
     datos = joven.get("/api/hoy").json()
@@ -405,14 +436,14 @@ def main() -> int:
         "/jovenes",
         data={
             "nombre": "Nadia",
-            "usuario_nuevo": "nadia",
+            "usuario_nuevo": "nadialopez",
             "patrulla_id": str(una_patrulla),
             "etapa": "pistas",
         },
     )
     check(
         "el alta de un joven no pide contraseña",
-        "nadia" in r.text and 'name="clave"' not in r.text,
+        "Nadia" in r.text and 'name="clave"' not in r.text,
     )
     check(
         "un usuario con espacios se rechaza",
@@ -423,13 +454,27 @@ def main() -> int:
     check(
         "un usuario repetido se rechaza",
         edu.post(
-            "/jovenes", data={"nombre": "Otra", "usuario_nuevo": "nadia", "etapa": "pistas"}
+            "/jovenes", data={"nombre": "Otra", "usuario_nuevo": "nadialopez", "etapa": "pistas"}
         ).status_code == 400,
     )
 
+    # La provisoria se sortea y la pantalla la muestra una sola vez: el test la
+    # lee de ahí, que es exactamente lo que hace el educador.
+    clave_nadia = provisoria_de(r.text)
+    check("el alta muestra una provisoria sorteada", bool(clave_nadia), clave_nadia)
+    check("y no es el nombre de usuario", clave_nadia != "nadialopez")
+    check(
+        "leerla la consume: al recargar ya no está",
+        provisoria_de(edu.get("/jovenes").text) == "",
+    )
+
     nadia = TestClient(app, follow_redirects=True)
-    r = nadia.post("/ingresar", data={"usuario": "nadia", "clave": "nadia"})
-    check("se entra con el usuario como contraseña", r.url.path == "/clave", r.url.path)
+    check(
+        "con el usuario como contraseña ya no se entra",
+        "incorrectos" in nadia.post("/ingresar", data={"usuario": "nadialopez", "clave": "nadialopez"}).text,
+    )
+    r = nadia.post("/ingresar", data={"usuario": "nadialopez", "clave": clave_nadia})
+    check("se entra con la provisoria que se mostró", r.url.path == "/clave", r.url.path)
     check("con la contraseña del alta no hay navegación", "/mis-cartas" not in r.text)
     check("y ninguna otra página abre", nadia.get("/hoy").url.path == "/clave")
     check("tampoco la API", nadia.get("/api/yo").url.path == "/clave")
@@ -440,33 +485,69 @@ def main() -> int:
             data={"actual": actual, "nueva": nueva, "repetida": repetida or nueva},
         )
 
-    check("la nueva no puede ser el propio usuario", "distinta de tu usuario" in cambiar("nadia", "Nadia").text)
-    check("ni más corta que el mínimo", "al menos" in cambiar("nadia", "abc").text)
-    check("las dos escrituras tienen que coincidir", "no coinciden" in cambiar("nadia", "brujula24", "brujula25").text)
+    # El usuario tiene diez letras a propósito: con uno de cinco esta regla no
+    # se alcanza nunca, porque antes salta la del largo mínimo. La versión vieja
+    # de este check pasaba por el texto de ayuda de la plantilla, no por el error.
+    check(
+        "la nueva no puede ser el propio usuario",
+        "no puede ser tu nombre de usuario" in cambiar(clave_nadia, "nadialopez").text,
+    )
+    check("ni más corta que el mínimo", "al menos" in cambiar(clave_nadia, "abc").text)
+    check("las dos escrituras tienen que coincidir", "no coinciden" in cambiar(clave_nadia, "brujula24", "brujula25").text)
     check("y hay que saber la actual", "actual no es esa" in cambiar("puse-cualquiera", "brujula24").text)
 
-    check("con todo bien, la contraseña se cambia", "Contraseña cambiada" in cambiar("nadia", "brujula24").text)
+    check("con todo bien, la contraseña se cambia", "Contraseña cambiada" in cambiar(clave_nadia, "brujula24").text)
     check("recién ahí abre el resto de la aplicación", nadia.get("/hoy").url.path == "/hoy")
     sin_cambiar = TestClient(app, follow_redirects=True)
     check(
-        "la contraseña del alta ya no entra",
-        "incorrectos" in sin_cambiar.post("/ingresar", data={"usuario": "nadia", "clave": "nadia"}).text,
+        "la provisoria ya no entra después de cambiarla",
+        "incorrectos" in sin_cambiar.post("/ingresar", data={"usuario": "nadialopez", "clave": clave_nadia}).text,
     )
 
     with SesionLocal() as s:
-        nadia_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "nadia"))
+        nadia_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "nadialopez"))
     check("un joven no blanquea a nadie", joven.post(f"/jovenes/{nadia_id}/blanquear").status_code == 403)
-    edu.post(f"/jovenes/{nadia_id}/blanquear")
+
+    # Perder la provisoria antes de que la persona entre tiene que tener arreglo.
+    # Es el único camino de vuelta: no se guarda en ningún lado, se mostró una vez.
+    # La pantalla escondía justo acá el botón de blanquear, heredado de cuando la
+    # provisoria era el nombre de usuario y no hacía falta.
+    r = edu.post("/jovenes", data={"nombre": "Perdida Provisoria",
+                                   "usuario_nuevo": "perdida", "etapa": "pistas"})
+    with SesionLocal() as s:
+        perdida_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "perdida"))
+        check("la cuenta nueva arranca sin haber entrado",
+              s.get(Usuario, perdida_id).debe_cambiar_clave)
+    lista = edu.get("/jovenes").text
+    check("una cuenta que nunca entró ofrece generar otra provisoria",
+          "Mostrarme otra provisoria" in lista)
+    check("y ya no dice que entra con su nombre de usuario",
+          "elige su contraseña" not in lista and "entra con «perdida»" not in lista)
+
+    otra = provisoria_de(edu.post(f"/jovenes/{perdida_id}/blanquear").text)
+    check("blanquear una cuenta que nunca entró da una provisoria nueva",
+          bool(otra) and otra != provisoria_de(r.text), otra)
+    recuperada = TestClient(app, follow_redirects=True)
+    check("y con esa se entra",
+          recuperada.post("/ingresar", data={"usuario": "perdida", "clave": otra}).url.path == "/clave")
+    check("mientras que la primera ya no sirve",
+          "incorrectos" in TestClient(app, follow_redirects=True).post(
+              "/ingresar", data={"usuario": "perdida", "clave": provisoria_de(r.text)}).text)
+    blanqueada = provisoria_de(edu.post(f"/jovenes/{nadia_id}/blanquear").text)
+    check("el blanqueo muestra una provisoria nueva", blanqueada not in ("", clave_nadia), blanqueada)
     otra_vez = TestClient(app, follow_redirects=True)
     check(
-        "blanquear la devuelve a entrar con su usuario",
-        otra_vez.post("/ingresar", data={"usuario": "nadia", "clave": "nadia"}).url.path == "/clave",
+        "blanquear la devuelve a la pantalla de elegir contraseña",
+        otra_vez.post("/ingresar", data={"usuario": "nadialopez", "clave": blanqueada}).url.path == "/clave",
     )
 
     # --- equipo de educadores ------------------------------------------------
     check("un joven no entra al equipo", joven.get("/educadores").status_code == 403)
     r = edu.post("/educadores", data={"nombre": "Sofía Ruiz", "usuario_nuevo": "sofia"})
     check("un educador da de alta a otro educador", "Sofía Ruiz" in r.text)
+    # El POST sigue el redirect, así que esta respuesta ya es la página que
+    # muestra la provisoria. Hay que leerla acá: el próximo GET no la tiene.
+    clave_sofia = provisoria_de(r.text)
     check(
         "el alta repetida se rechaza",
         edu.post("/educadores", data={"nombre": "Otra", "usuario_nuevo": "sofia"}).status_code == 400,
@@ -481,19 +562,82 @@ def main() -> int:
         edu.post(f"/jovenes/{sofia_id}/blanquear").status_code == 404,
     )
 
+    check("el alta de un educador también muestra su provisoria", bool(clave_sofia), clave_sofia)
+
     sofia = TestClient(app, follow_redirects=True)
-    r = sofia.post("/ingresar", data={"usuario": "sofia", "clave": "sofia"})
+    r = sofia.post("/ingresar", data={"usuario": "sofia", "clave": clave_sofia})
     check("el educador nuevo también elige su contraseña", r.url.path == "/clave", r.url.path)
     check("y el panel no abre hasta entonces", sofia.get("/panel").url.path == "/clave")
-    sofia.post("/clave", data={"actual": "sofia", "nueva": "morse-1907", "repetida": "morse-1907"})
+    sofia.post("/clave", data={"actual": clave_sofia, "nueva": "morse-1907", "repetida": "morse-1907"})
     check("después entra al panel como cualquier educador", sofia.get("/panel").status_code == 200)
 
-    edu.post(f"/educadores/{sofia_id}/blanquear")
+    de_nuevo = provisoria_de(edu.post(f"/educadores/{sofia_id}/blanquear").text)
     de_cero = TestClient(app, follow_redirects=True)
     check(
         "un educador blanquea a otro del equipo",
-        de_cero.post("/ingresar", data={"usuario": "sofia", "clave": "sofia"}).url.path == "/clave",
+        de_cero.post("/ingresar", data={"usuario": "sofia", "clave": de_nuevo}).url.path == "/clave",
     )
+
+    # --- sacar a alguien del equipo ------------------------------------------
+    #
+    # Dos caminos distintos según lo que la cuenta haya hecho, y la aplicación
+    # elige sola mirando la base. Ver `servicios/cuentas.py`.
+
+    # a) Una cuenta que no llegó a firmar nada se borra de verdad.
+    r = edu.post("/educadores", data={"nombre": "Se Escribió Mal", "usuario_nuevo": "tpyo"})
+    with SesionLocal() as s:
+        tpyo_id = s.scalar(select(Usuario.id).where(Usuario.usuario == "tpyo"))
+    with SesionLocal() as s:
+        check("una cuenta recién creada no dejó rastro", not cuentas.dejo_rastro(s, tpyo_id))
+    check("y la pantalla ofrece borrarla, no darla de baja", "Borrar cuenta" in r.text)
+    edu.post(f"/educadores/{tpyo_id}/baja")
+    with SesionLocal() as s:
+        check("borrar una cuenta sin rastro la saca de la base",
+              s.get(Usuario, tpyo_id) is None)
+
+    # b) Sofía ya firmó cosas: se desactiva y su nombre se queda donde está.
+    with SesionLocal() as s:
+        s.add(CambioEtapa(joven_id=ana_id, etapa_anterior="pistas",
+                          etapa_nueva="pistas", educador_id=sofia_id,
+                          nota="firma de prueba"))
+        s.commit()
+    with SesionLocal() as s:
+        check("quien firmó algo sí deja rastro", cuentas.dejo_rastro(s, sofia_id))
+    check("y la pantalla ofrece sacarla del equipo", "Sacar del equipo" in edu.get("/educadores").text)
+
+    check("nadie se da de baja a sí mismo",
+          edu.post(f"/educadores/{educador_id}/baja").status_code == 400)
+    check("por la puerta del equipo no se saca a un joven",
+          edu.post(f"/educadores/{ana_id}/baja").status_code == 404)
+    check("y un joven no saca a nadie del equipo",
+          joven.post(f"/educadores/{sofia_id}/baja").status_code == 403)
+
+    activa = TestClient(app, follow_redirects=True)
+    activa.post("/ingresar", data={"usuario": "sofia", "clave": de_nuevo})
+    edu.post(f"/educadores/{sofia_id}/baja")
+    with SesionLocal() as s:
+        fuera = s.get(Usuario, sofia_id)
+        check("la cuenta con historia no se borra", fuera is not None)
+        check("se desactiva", not fuera.activo)
+        check("y su firma sigue en pie",
+              s.scalar(select(CambioEtapa).where(CambioEtapa.educador_id == sofia_id)) is not None)
+    check("la sesión que tenía abierta se corta sola",
+          activa.get("/panel").url.path == "/ingresar")
+    check("y no puede volver a entrar",
+          "incorrectos" in activa.post("/ingresar", data={"usuario": "sofia", "clave": de_nuevo}).text)
+    equipo_html = edu.get("/educadores").text
+    check("aparece en «ya no están»", "Ya no están en el equipo" in equipo_html)
+    check("no se la puede dar de baja dos veces",
+          edu.post(f"/educadores/{sofia_id}/baja").status_code == 400)
+
+    edu.post(f"/educadores/{sofia_id}/reincorporar")
+    with SesionLocal() as s:
+        check("reincorporar la devuelve al equipo", s.get(Usuario, sofia_id).activo)
+    de_vuelta = TestClient(app, follow_redirects=True)
+    check("y vuelve a entrar con la contraseña que tenía",
+          de_vuelta.post("/ingresar", data={"usuario": "sofia", "clave": de_nuevo}).url.path == "/clave")
+    # Se la vuelve a sacar: el resto del recorrido cuenta educadores activos.
+    edu.post(f"/educadores/{sofia_id}/baja")
 
     # Cambiarla sin que nadie la obligue: el mismo formulario, desde el pie.
     r = joven.post(
@@ -748,6 +892,52 @@ def main() -> int:
     check("las fotos piden sesión", anonimo.get(f"/fotos/{nombre_foto}").status_code == 303)
     check("con sesión la foto se sirve", joven.get(f"/fotos/{nombre_foto}").status_code == 200)
 
+    # Tener sesión no alcanza: la foto se sirve a quien podría ver la página
+    # donde vive. El uuid se filtra solo —el historial, una captura reenviada— y
+    # sin esto el link suelto valía más que el permiso sobre el Libro de Oro.
+    check("la patrulla ve la foto de su libro",
+          companiera.get(f"/fotos/{nombre_foto}").status_code == 200)
+    check("otra patrulla no ve esa foto ni con el uuid en la mano",
+          de_otra.get(f"/fotos/{nombre_foto}").status_code == 404)
+    check("el equipo sí la ve", edu.get(f"/fotos/{nombre_foto}").status_code == 200)
+    check("un archivo que no es de nadie no se sirve",
+          joven.get("/fotos/00000000000000000000000000000000.jpg").status_code == 404)
+    check("no se puede salir del directorio de subidas",
+          joven.get("/fotos/..%2F..%2Fscout.db").status_code == 404)
+
+    # --- lo que puede tumbar el contenedor ------------------------------------
+    #
+    # 0,5 GiB de memoria: lo que entra por un formulario lo elige otro, y hay dos
+    # formas de convertir un archivo chico en un problema grande.
+
+    # Una bomba de descompresión: 20000x20000 en blanco son unos pocos kB
+    # comprimidos y 1,2 GB abiertos. El tope de bytes no la ve pasar.
+    bomba = BytesIO()
+    Image.new("L", (20000, 20000)).save(bomba, "PNG")
+    bomba = bomba.getvalue()
+    check("una bomba de descompresión pesa poquísimo",
+          len(bomba) < 1024 * 1024, f"{len(bomba) // 1024} kB")
+    # Ojo con `r`: más abajo se sigue usando la respuesta del alta de la página
+    # del libro, así que estas dos van a variables propias.
+    rechazo = joven.post(
+        f"/libro-de-oro/{halcones_id}",
+        data={"titulo": "Bomba", "texto": "x", "fecha": "2026-07-18"},
+        files={"foto": ("bomba.png", bomba, "image/png")},
+    )
+    check("y se rechaza con un motivo, no con un 500",
+          rechazo.status_code == 400, rechazo.status_code)
+
+    # Un cuerpo enorme se corta por Content-Length antes de leer un solo byte.
+    gigante = joven.post(
+        f"/libro-de-oro/{halcones_id}",
+        data={"titulo": "Gigante", "texto": "x", "fecha": "2026-07-18"},
+        files={"foto": ("gigante.jpg", b"\xff\xd8" + b"\x00" * (12 * 1024 * 1024), "image/jpeg")},
+    )
+    check("un cuerpo de 12 MB se rechaza antes de leerlo",
+          gigante.status_code == 413, gigante.status_code)
+    check("y ninguna de las dos dejó basura en el disco",
+          len(list(SUBIDAS.glob("*.jpg"))) == 1, len(list(SUBIDAS.glob("*.jpg"))))
+
     check(
         "borrar una página pregunta dentro de la tarjeta, y con confirm() si no hay JavaScript",
         "data-confirmar=" in r.text and "onsubmit=" in r.text,
@@ -764,6 +954,40 @@ def main() -> int:
         "nadie borra la página de otro",
         companiera.post(f"/libro-de-oro/{halcones_id}/{entrada_id}/borrar").status_code == 403,
     )
+
+    # El libro se publica en el momento y es de la patrulla: no espera permiso de
+    # ningún adulto. Lo que sí hay es avisar y bajar, igual que en el muro.
+    check("quien no escribió la página puede avisar",
+          "Avisar al equipo" in companiera.get(f"/libro-de-oro/{halcones_id}").text)
+    check("avisar sobre una página del libro",
+          companiera.post(f"/libro-de-oro/{halcones_id}/{entrada_id}/avisar",
+                          data={"motivo": "Sale mi hermano y no quiere."}).status_code == 200)
+    check("otra patrulla no puede avisar sobre un libro que no ve",
+          de_otra.post(f"/libro-de-oro/{halcones_id}/{entrada_id}/avisar").status_code == 404)
+    check("la página del libro llega al feed del equipo",
+          recuerdo in edu.get("/novedades?filtro=avisadas").text)
+
+    edu.post(f"/novedades/libro/{entrada_id}",
+             data={"decision": "bajar", "resolucion": "La bajamos, lo hablamos el sábado."})
+    check("bajada, la patrulla ya no la ve",
+          recuerdo not in companiera.get(f"/libro-de-oro/{halcones_id}").text)
+    check("su autor la sigue viendo, marcada",
+          "El equipo bajó esta página" in joven.get(f"/libro-de-oro/{halcones_id}").text)
+    check("y la foto de una página bajada no se sirve a la patrulla",
+          companiera.get(f"/fotos/{nombre_foto}").status_code == 404)
+    edu.post(f"/novedades/libro/{entrada_id}", data={"decision": "devolver"})
+    check("devuelta, la patrulla la ve de nuevo",
+          recuerdo in companiera.get(f"/libro-de-oro/{halcones_id}").text)
+
+    # Cerrar un aviso sin bajar nada: que exista esta salida es lo que impide que
+    # avisar sea, en los hechos, sacar algo del muro.
+    companiera.post(f"/libro-de-oro/{halcones_id}/{entrada_id}/avisar", data={"motivo": "otra"})
+    edu.post(f"/novedades/libro/{entrada_id}",
+             data={"decision": "esta_bien", "resolucion": "Lo miramos y queda."})
+    check("un aviso se puede cerrar dejando la página publicada",
+          recuerdo in companiera.get(f"/libro-de-oro/{halcones_id}").text)
+    check("y el panel deja de marcarlo",
+          "con un aviso sin mirar" not in edu.get("/panel").text)
     edu.post(f"/libro-de-oro/{halcones_id}/{entrada_id}/borrar")
     check(
         "el educador puede borrar",
@@ -849,6 +1073,16 @@ def main() -> int:
     joven.post(f"/reto/{con_foto}", data={"texto": "corto"},
                files={"foto": ("entrega.jpg", original, "image/jpeg")})
     check("la entrega deja su foto en disco", len(list(SUBIDAS.glob("*.jpg"))) == 1)
+
+    # Reentregar con otra foto: la anterior se va del disco. Antes quedaba ahí
+    # para siempre, sin nada que la referenciara y accesible por su dirección.
+    vieja = list(SUBIDAS.glob("*.jpg"))[0]
+    joven.post(f"/reto/{con_foto}", data={"texto": "corto, de nuevo"},
+               files={"foto": ("otra.jpg", original, "image/jpeg")})
+    check("reentregar con otra foto borra la anterior", not vieja.exists())
+    check("y no deja dos fotos para una sola entrega",
+          len(list(SUBIDAS.glob("*.jpg"))) == 1, len(list(SUBIDAS.glob("*.jpg"))))
+
     edu.post(f"/asignar/{con_foto}/borrar", data={"confirmado": "true"})
     check("sacar el reto borra las fotos de sus entregas", not list(SUBIDAS.glob("*.jpg")))
 
@@ -1398,6 +1632,78 @@ def main() -> int:
         "no se comparte algo que no está validado",
         joven.post(f"/reto/{para_muro}/compartir").status_code == 400,
     )
+
+    # --- 8b. Avisar y bajar: lo que sostiene publicar en el momento ----------
+    #
+    # Acá una foto entra al muro sin que un adulto la mire antes. La contraparte
+    # es que cualquiera pueda pedir que la miren y que el equipo pueda bajarla
+    # en dos toques, sin borrar nada. Ver `servicios/moderacion.py`.
+    edu.post("/asignar", data={"reto_id": str(reto_id), "fecha": date.today().isoformat(),
+                               "alcance": "unidad"})
+    with SesionLocal() as s:
+        para_avisar = s.scalar(select(func.max(Asignacion.id)))
+
+    relato_aviso = ("Ordenamos el depósito del grupo y tiramos tres bolsas de cosas "
+                    "rotas que estaban desde el campamento pasado.")
+    joven.post(f"/reto/{para_avisar}", data={"texto": relato_aviso, "compartir": "true"})
+    with SesionLocal() as s:
+        pub = s.scalar(select(Entrega).where(Entrega.asignacion_id == para_avisar,
+                                             Entrega.joven_id == ana_id))
+        pub_id = pub.id
+        check("compartir en la entrega publica de una", pub.compartida and not pub.oculta)
+        check("y queda la fecha de publicación", pub.compartida_en is not None)
+
+    check("se publica sin que ningún adulto lo mire antes",
+          relato_aviso in elisa.get("/muro").text)
+
+    novedades = edu.get("/novedades").text
+    check("el equipo lo ve en /novedades", relato_aviso in novedades)
+    check("y sabe que no es una cola de aprobación",
+          "ya está publicado" in novedades)
+
+    check("el autor no se avisa a sí mismo: ve el botón de sacarlo",
+          "Sacarlo del muro" in joven.get("/muro").text)
+    check("otro joven sí puede avisar",
+          "Avisar al equipo" in elisa.get("/muro").text)
+
+    r = elisa.post(f"/muro/{pub_id}/avisar", data={"motivo": "Salgo yo en esa foto."})
+    check("avisar deja constancia", r.status_code == 200)
+    with SesionLocal() as s:
+        av = s.scalar(select(Aviso).where(Aviso.entrega_id == pub_id))
+        check("el aviso guarda quién y por qué",
+              av is not None and av.motivo == "Salgo yo en esa foto." and not av.atendido)
+    check("avisar no baja nada por sí solo",
+          relato_aviso in elisa.get("/muro").text)
+    check("y no se avisa dos veces",
+          elisa.post(f"/muro/{pub_id}/avisar", data={"motivo": "otra vez"}).status_code == 400)
+    check("quien ya avisó lo ve en la página",
+          "Avisaste al equipo" in elisa.get("/muro").text)
+    check("el panel del equipo lo pone arriba de todo",
+          "con un aviso sin mirar" in edu.get("/panel").text)
+
+    # El equipo mira y baja. La entrega no se borra: conserva sus puntos.
+    edu.post(f"/novedades/muro/{pub_id}",
+             data={"decision": "bajar", "resolucion": "Lo hablamos con Ana."})
+    with SesionLocal() as s:
+        bajada = s.get(Entrega, pub_id)
+        check("bajar no toca la entrega ni sus puntos",
+              bajada.estado == "aprobada" and bajada.puntaje_otorgado > 0)
+        check("ni el interruptor del autor", bajada.compartida)
+        check("pero la marca como bajada", bajada.oculta and bajada.oculta_por_id is not None)
+        check("y cierra el aviso con lo que se hizo",
+              s.scalar(select(Aviso).where(Aviso.entrega_id == pub_id)).resolucion
+              == "Lo hablamos con Ana.")
+    check("una publicación bajada no está en el muro para nadie",
+          relato_aviso not in elisa.get("/muro").text)
+    check("tampoco para su autor",
+          relato_aviso not in joven.get("/muro").text)
+    check("y el autor no la puede volver a poner",
+          joven.post(f"/reto/{para_avisar}/compartir").status_code == 400)
+
+    edu.post(f"/novedades/muro/{pub_id}", data={"decision": "devolver"})
+    with SesionLocal() as s:
+        check("devolverla la desmarca", not s.get(Entrega, pub_id).oculta)
+    check("y vuelve a verse en el muro", relato_aviso in elisa.get("/muro").text)
 
     # La lista de entregas del educador no es una cola de aprobación.
     entregas_html = edu.get("/validaciones").text

@@ -9,6 +9,8 @@
   cerrada, un cambio de etapa, una entrega aprobada— queda firmado con el nombre
   de quien lo hizo.</p>
 
+{% include "educador/_provisoria.html" %}
+
 <details class="tarjeta" {{ 'open' if educadores|length < 2 }}>
   <summary>➕ Sumar a alguien al equipo</summary>
   <form method="post" action="/educadores" data-sin-recarga="Educador dado de alta.">
@@ -23,9 +25,9 @@
                autocapitalize="none" autocomplete="off">
       </div>
     </div>
-    <p class="meta">La contraseña no se elige acá: arranca siendo el mismo nombre de
-      usuario y la persona pone la suya la primera vez que entra. Decile «tu usuario
-      y tu contraseña son los dos <em>lo-que-pusiste</em>» y listo.</p>
+    <p class="meta">La contraseña no se elige acá: la aplicación sortea una provisoria
+      y te la muestra una sola vez, para que se la digas en el momento. La persona
+      pone la suya la primera vez que entra.</p>
     <p style="margin-top:1.2rem"><button type="submit" class="grande">Dar de alta</button></p>
   </form>
 </details>
@@ -38,7 +40,6 @@
       <div>
         <h3>{{ e.nombre }}
           {% if e.id == usuario.id %}<span class="etiqueta">vos</span>{% endif %}
-          {% if not e.activo %}<span class="etiqueta">inactivo</span>{% endif %}
         </h3>
         <p class="meta">
           <span>usuario: {{ e.usuario }}</span>
@@ -48,24 +49,80 @@
     </div>
 
     {% if e.debe_cambiar_clave %}
-      <p class="chips"><span class="chip">🔑 todavía no cambió su contraseña inicial</span></p>
+      <p class="chips"><span class="chip">🔑 todavía no entró a poner su contraseña</span></p>
     {% endif %}
 
     {% if e.id == usuario.id %}
       <div class="acciones">
         <a class="boton secundario" href="/clave">🔑 Cambiar mi contraseña</a>
       </div>
+      <p class="meta">Para salir del equipo, pedíselo a otra persona: nadie se da de
+        baja a sí mismo, y eso es lo que impide que la Unidad se quede sin nadie.</p>
     {% else %}
       {# El `onsubmit` es el plan B de quien no tiene JavaScript; con JavaScript
          se pregunta acá adentro y no en un cartel del navegador. #}
+      {# Si nunca entró, lo que se está pidiendo no es «blanquear» sino «volveme
+         a mostrar la provisoria, que la perdí»: es el mismo movimiento y se dice
+         distinto porque el motivo es otro. #}
+      {% set nunca_entro = e.debe_cambiar_clave %}
       <form method="post" action="/educadores/{{ e.id }}/blanquear"
-            onsubmit="return confirm('¿Blanquear la contraseña de {{ e.nombre }}? Va a volver a ser «{{ e.usuario }}».')"
-            data-confirmar="¿Blanquear su contraseña? Va a volver a ser «{{ e.usuario }}»."
-            data-sin-recarga="Contraseña blanqueada." class="acciones">
-        <button type="submit" class="secundario">🔑 Blanquear contraseña</button>
+            onsubmit="return confirm('{{ '¿Generar otra contraseña provisoria para ' ~ e.nombre ~ '? La anterior deja de servir.' if nunca_entro else '¿Blanquear la contraseña de ' ~ e.nombre ~ '? Se sortea una provisoria y te la mostramos.' }}')"
+            data-confirmar="{{ '¿Generar otra provisoria? La anterior deja de servir.' if nunca_entro else '¿Blanquear su contraseña? Se sortea una provisoria y te la mostramos.' }}"
+            data-sin-recarga="Contraseña nueva generada." class="acciones">
+        <button type="submit" class="secundario">
+          {{ '🔑 Mostrarme otra provisoria' if nunca_entro else '🔑 Blanquear contraseña' }}
+        </button>
       </form>
+
+      {# Dos textos y una sola acción: lo que va a pasar ya se sabe acá, así que
+         se dice antes de apretar en vez de sorprender después. #}
+      {% set con_historia = deja_rastro.get(e.id) %}
+      <form method="post" action="/educadores/{{ e.id }}/baja"
+            onsubmit="return confirm('{{ '¿Sacar a ' ~ e.nombre ~ ' del equipo? Lo que firmó queda con su nombre y podés reincorporarla.' if con_historia else '¿Borrar la cuenta de ' ~ e.nombre ~ '? No llegó a usarse, así que se borra del todo.' }}')"
+            data-confirmar="{{ '¿Sacarla del equipo? Lo que firmó queda con su nombre y la podés reincorporar.' if con_historia else '¿Borrar esta cuenta? No llegó a usarse, así que se borra del todo.' }}"
+            data-sin-recarga="{{ 'Sacada del equipo.' if con_historia else 'Cuenta borrada.' }}"
+            class="acciones">
+        <button type="submit" class="peligro">
+          {{ '🚪 Sacar del equipo' if con_historia else '🗑️ Borrar cuenta' }}
+        </button>
+      </form>
+      <p class="meta">
+        {% if con_historia %}
+          Ya firmó decisiones en la Unidad, así que la cuenta no se borra: deja de
+          entrar y su nombre sigue donde está. Se puede reincorporar.
+        {% else %}
+          Esta cuenta no dejó rastro en ningún lado —no llegó a firmar nada—, así
+          que se borra de verdad y no queda en ninguna lista.
+        {% endif %}
+      </p>
     {% endif %}
   </article>
   {% endfor %}
 </div>
+
+{% if ya_no_estan %}
+  <h2>Ya no están en el equipo</h2>
+  <p class="sub">No entran a la aplicación y su sesión se corta apenas la baja se
+    guarda. Siguen firmando lo que decidieron cuando estaban: por eso la cuenta no
+    se borró.</p>
+  <div class="rejilla">
+    {% for e in ya_no_estan %}
+    <article class="tarjeta apagada">
+      <div class="encabezado-tarjeta">
+        <span class="avatar" style="--color: {{ color_de(e.nombre) }}" aria-hidden="true">{{ iniciales(e.nombre) }}</span>
+        <div>
+          <h3>{{ e.nombre }} <span class="etiqueta">fuera del equipo</span></h3>
+          <p class="meta"><span>usuario: {{ e.usuario }}</span></p>
+        </div>
+      </div>
+      <form method="post" action="/educadores/{{ e.id }}/reincorporar"
+            data-sin-recarga="De vuelta en el equipo." class="acciones">
+        <button type="submit" class="secundario">↩️ Reincorporar</button>
+      </form>
+      <p class="meta">Vuelve con la contraseña que tenía. Si se la olvidó, se la
+        blanqueás después.</p>
+    </article>
+    {% endfor %}
+  </div>
+{% endif %}
 {% endblock %}

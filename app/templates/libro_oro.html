@@ -89,6 +89,11 @@
 
       {% if e.texto %}<p class="texto-libro">{{ e.texto }}</p>{% endif %}
 
+      {% if e.oculta %}
+        <p class="meta">🚫 El equipo bajó esta página: la ven solo vos y los
+          educadores. Si no entendés por qué, preguntales.</p>
+      {% endif %}
+
       {% if usuario.es_educador or e.autor_id == usuario.id %}
         {# El `onsubmit` es el plan B de quien no tiene JavaScript; con
            JavaScript se pregunta acá adentro y no en un cartel del navegador. #}
@@ -98,6 +103,23 @@
               data-sin-recarga="Página borrada." class="acciones">
           <button type="submit" class="secundario">Borrar página</button>
         </form>
+      {% elif e.id in avisados %}
+        <p class="meta">✓ Avisaste al equipo sobre esta página.</p>
+      {% else %}
+        {# El libro es de la patrulla y se publica sin que un adulto lo mire
+           antes. Esto es lo que hace que eso se sostenga: cualquiera de la
+           patrulla puede pedir que lo miren, sin borrar nada de nadie. #}
+        <details class="avisar">
+          <summary>⚠️ Avisar al equipo</summary>
+          <form method="post" action="/libro-de-oro/{{ patrulla.id }}/{{ e.id }}/avisar"
+                data-sin-recarga="Listo: el equipo lo va a mirar.">
+            <label for="motivo-libro-{{ e.id }}">¿Qué pasa con esta página? (opcional)</label>
+            <textarea id="motivo-libro-{{ e.id }}" name="motivo" style="min-height:3.5rem"
+              placeholder="Salgo yo en la foto y no quiero, o hay algo que no está bien."></textarea>
+            <p class="meta">No se baja sola: la mira un educador y te cuenta qué hizo.</p>
+            <button type="submit" class="secundario">Avisar al equipo</button>
+          </form>
+        </details>
       {% endif %}
     </article>
   {% endfor %}

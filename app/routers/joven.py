@@ -38,6 +38,7 @@ from app.models import (
 from app.servicios import (
     agenda,
     medios,
+    moderacion,
     muro,
     progresion,
     puntajes,
@@ -53,7 +54,7 @@ router = APIRouter()
 def _guardar_foto(archivo: UploadFile) -> str:
     """Toda foto pasa por el servicio de medios: se comprime antes de ir a disco."""
     try:
-        return medios.guardar_foto(archivo.filename, archivo.file.read())
+        return medios.guardar_foto(archivo.filename, medios.leer_subida(archivo))
     except medios.MedioInvalido as error:
         raise HTTPException(400, str(error)) from error
 
@@ -148,6 +149,10 @@ def entregar_reto(
     )
     entrega.texto = texto.strip()
     if nombre_foto:
+        # La foto que se reemplaza se va del disco. Antes quedaba ahí para
+        # siempre, sin nada que la referenciara y accesible por su dirección:
+        # una foto de un chico que ya nadie sabía que existía.
+        medios.borrar_foto(entrega.archivo_foto)
         entrega.archivo_foto = nombre_foto
     entrega.enviada_en = datetime.now(timezone.utc)
     entrega.patrulla_id = usuario.patrulla_id
@@ -179,6 +184,8 @@ def entregar_reto(
     # mirando, la marca queda apagada y se puede prender después desde la
     # entrega: no se publica algo que la Unidad no dio por hecho.
     entrega.compartida = compartir and muro.puede_compartir(entrega)
+    # Cuándo se publicó, para que el equipo lo vea arriba en /novedades.
+    entrega.compartida_en = datetime.now(timezone.utc) if entrega.compartida else None
 
     sesion.add(entrega)
     sesion.commit()
@@ -214,12 +221,14 @@ def ver_muro(
     nunca cuánto sumó.
     """
     if usuario.unidad_id is None:
-        return render(request, "muro.html", usuario=usuario, publicaciones=[])
+        return render(request, "muro.html", usuario=usuario, publicaciones=[], avisados=set())
+    avisados, _ = moderacion.avisados_por(sesion, usuario)
     return render(
         request,
         "muro.html",
         usuario=usuario,
         publicaciones=muro.publicaciones(sesion, usuario.unidad_id),
+        avisados=avisados,
     )
 
 
@@ -246,6 +255,62 @@ def compartir_entrega(
     muro.alternar(entrega, usuario)
     sesion.commit()
     return redirigir(f"/reto/{asignacion.id}#compartir")
+
+
+# --- Avisar al equipo ---------------------------------------------------------
+#
+# Acá se publica en el momento, sin que un adulto lo mire antes. Esto es la
+# contraparte: quien ve algo que no debería estar puede decirlo en dos toques,
+# sin esperar a la reunión del sábado. Sobre todo quien aparece en la foto.
+#
+# No oculta nada. Pone la publicación arriba de todo en `/novedades` para que la
+# mire un educador, que es quien decide. Ver `servicios/moderacion.py`.
+
+
+@router.post("/muro/{entrega_id}/avisar")
+def avisar_del_muro(
+    entrega_id: int,
+    motivo: str = Form(""),
+    usuario: Usuario = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    entrega = sesion.get(Entrega, entrega_id)
+    # Solo se avisa de lo que se está viendo: si no está en el muro de tu
+    # Unidad, para vos no existe y tampoco hay de qué avisar.
+    if (
+        entrega is None
+        or entrega.asignacion.unidad_id != usuario.unidad_id
+        or not entrega.en_el_muro
+    ):
+        raise HTTPException(404, "Esa publicación no existe.")
+
+    try:
+        moderacion.avisar(sesion, usuario, motivo, entrega=entrega)
+    except moderacion.NoSePuede as error:
+        raise HTTPException(400, str(error)) from error
+    sesion.commit()
+    return redirigir("/muro")
+
+
+@router.post("/libro-de-oro/{patrulla_id}/{entrada_id}/avisar")
+def avisar_del_libro(
+    patrulla_id: int,
+    entrada_id: int,
+    motivo: str = Form(""),
+    usuario: Usuario = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    _patrulla_visible(sesion, patrulla_id, usuario)
+    entrada = sesion.get(EntradaLibroOro, entrada_id)
+    if entrada is None or entrada.patrulla_id != patrulla_id or entrada.oculta:
+        raise HTTPException(404, "Esa página no existe.")
+
+    try:
+        moderacion.avisar(sesion, usuario, motivo, pagina=entrada)
+    except moderacion.NoSePuede as error:
+        raise HTTPException(400, str(error)) from error
+    sesion.commit()
+    return redirigir(f"/libro-de-oro/{patrulla_id}")
 
 
 @router.get("/bitacora")
@@ -629,6 +694,12 @@ def libro_de_oro(
             .order_by(EntradaLibroOro.fecha.desc(), EntradaLibroOro.id.desc())
         )
     )
+    # Una página bajada por el equipo la siguen viendo el equipo y su autor, y
+    # aparece marcada. Para el resto de la patrulla no está: mostrarla tachada
+    # sería publicar dos veces lo que se pidió bajar.
+    if not usuario.es_educador:
+        entradas = [e for e in entradas if not e.oculta or e.autor_id == usuario.id]
+    _, avisados = moderacion.avisados_por(sesion, usuario)
     return render(
         request,
         "libro_oro.html",
@@ -638,6 +709,7 @@ def libro_de_oro(
         hoy=retos.hoy(),
         con_foto=sum(1 for e in entradas if e.archivo_foto),
         con_video=sum(1 for e in entradas if e.video_id),
+        avisados=avisados,
     )
 
 

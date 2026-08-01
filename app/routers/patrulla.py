@@ -141,7 +141,7 @@ def guardar_identidad(
 
     if banderin is not None and banderin.filename:
         try:
-            nombre = medios.guardar_foto(banderin.filename, banderin.file.read())
+            nombre = medios.guardar_foto(banderin.filename, medios.leer_subida(banderin))
         except medios.MedioInvalido as error:
             raise HTTPException(400, str(error)) from error
         # El banderín viejo se va del disco: hay uno solo por patrulla.

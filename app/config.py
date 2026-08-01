@@ -57,6 +57,18 @@ VALIDADOR = os.environ.get("VALIDADOR", "simulado")
 MAX_BYTES_FOTO = int(os.environ.get("MAX_BYTES_FOTO", 8 * 1024 * 1024))
 EXTENSIONES_FOTO = {".jpg", ".jpeg", ".png", ".webp", ".heic"}
 
+# Tope del cuerpo de cualquier petición, que se mira antes de leer un solo byte.
+# El contenedor tiene 0,5 GiB: sin esto, un POST de 300 MB lo tumba antes de que
+# ninguna validación nuestra llegue a correr. Es el tope de la foto más el
+# margen del resto del formulario multipart.
+MAX_BYTES_PETICION = int(os.environ.get("MAX_BYTES_PETICION", MAX_BYTES_FOTO + 1024 * 1024))
+
+# Cuántos píxeles se aceptan descomprimir. Un PNG de 2 MB puede declarar
+# 30000x30000 y convertirse en 3,6 GB de mapa de bits al abrirlo: el límite de
+# bytes no lo detiene, porque comprimido pesa nada. 50 megapíxeles deja pasar
+# cualquier cámara de celular y corta la bomba.
+MAX_PIXELES_FOTO = int(os.environ.get("MAX_PIXELES_FOTO", 50_000_000))
+
 # Lado mayor al que se reduce cada foto, y calidad del JPEG resultante. Con
 # 1600/82 una foto de celular de 4 MB queda en 250-350 kB: alcanza para verla
 # en pantalla y para imprimirla chica, que es lo que un Libro de Oro necesita.

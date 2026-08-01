@@ -162,3 +162,24 @@ def fragmento(plantilla: str, **contexto) -> str:
 def redirigir(destino: str) -> RedirectResponse:
     """Redirección tras un POST: 303 para que el navegador use GET."""
     return RedirectResponse(destino, status_code=status.HTTP_303_SEE_OTHER)
+
+
+# --- La contraseña provisoria, una sola vez -----------------------------------
+#
+# El alta y el blanqueo sortean una contraseña que el educador tiene que poder
+# leerle en voz alta a su dueño. Existe un instante y hay que mostrarla en la
+# página siguiente, que es la que se ve después del redirect.
+#
+# Va por la sesión y no por la URL: en el querystring quedaría en el historial
+# del navegador, en el botón «atrás» y en cualquier registro del servidor que
+# guarde la línea del pedido. La sesión es una cookie firmada del propio
+# educador y se vacía al leerla.
+
+
+def recordar_provisoria(request: Request, login: str, clave: str) -> None:
+    request.session["provisoria"] = {"login": login, "clave": clave}
+
+
+def tomar_provisoria(request: Request) -> dict | None:
+    """La devuelve y la borra: se muestra una vez y no vuelve a estar."""
+    return request.session.pop("provisoria", None)

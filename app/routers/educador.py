@@ -10,7 +10,14 @@ from sqlalchemy.orm import Session
 
 from app.config import PUNTAJE_POR_DEFECTO
 from app.db import obtener_sesion
-from app.dependencias import quiere_json, redirigir, render, solo_educador
+from app.dependencias import (
+    quiere_json,
+    recordar_provisoria,
+    redirigir,
+    render,
+    solo_educador,
+    tomar_provisoria,
+)
 from app.models import (
     ALCANCE_JOVEN,
     ALCANCE_PATRULLA,
@@ -28,6 +35,7 @@ from app.models import (
     Cargo,
     Competencia,
     Desafio,
+    EntradaLibroOro,
     Entrega,
     Patrulla,
     PeriodoCargo,
@@ -38,6 +46,7 @@ from app.servicios import (
     agenda,
     cuentas,
     especialidades,
+    moderacion,
     participacion,
     progresion,
     puntajes,
@@ -109,7 +118,110 @@ def panel(
         especialidades_pedidas=especialidades.sin_preparar(sesion, unidad_id),
         ideas_sin_mirar=participacion.sin_mirar(sesion, unidad_id),
         proximas=agenda.proximas(sesion, usuario, fecha, tope=3),
+        # Alguien pidió que el equipo mire una foto publicada. Es lo único de
+        # este panel que puede ser urgente, así que se muestra arriba de todo.
+        avisadas=moderacion.cuantas_sin_mirar(sesion, unidad_id),
     )
+
+
+# --- Novedades: todo lo que se publicó ----------------------------------------
+#
+# En esta aplicación una foto entra al muro o al Libro de Oro en el momento, sin
+# que ningún adulto la mire antes. Es deliberado —pedirle permiso a un grande
+# para escribir en el libro de la propia patrulla lo desnaturaliza— y esta
+# pantalla es lo que lo hace sostenible: el equipo se entera de todo en un solo
+# lugar, sin recorrer siete libros de patrulla, y puede bajar algo en dos toques.
+#
+# No es una cola de aprobación. Todo lo que está acá ya está publicado.
+
+
+@router.get("/novedades")
+def novedades(
+    request: Request,
+    filtro: str = "todas",
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    unidad_id = _unidad_de(usuario)
+    lista = moderacion.novedades(sesion, unidad_id)
+
+    if filtro == "avisadas":
+        lista = [n for n in lista if n.avisos_abiertos]
+    elif filtro == "con_foto":
+        lista = [n for n in lista if n.foto]
+    elif filtro == "bajadas":
+        lista = [n for n in lista if n.oculta]
+
+    return render(
+        request,
+        "educador/novedades.html",
+        usuario=usuario,
+        novedades=lista,
+        filtro=filtro,
+        avisadas=moderacion.cuantas_sin_mirar(sesion, unidad_id),
+    )
+
+
+def _publicacion(sesion: Session, clase: str, cosa_id: int, educador: Usuario):
+    """La entrega o la página de libro que la acción quiere tocar, de esta Unidad."""
+    unidad_id = _unidad_de(educador)
+    if clase == "muro":
+        entrega = sesion.get(Entrega, cosa_id)
+        if entrega is None or entrega.asignacion.unidad_id != unidad_id:
+            raise HTTPException(404, "Esa publicación no existe.")
+        return entrega
+    if clase == "libro":
+        pagina = sesion.get(EntradaLibroOro, cosa_id)
+        if pagina is None or pagina.patrulla.unidad_id != unidad_id:
+            raise HTTPException(404, "Esa página no existe.")
+        return pagina
+    raise HTTPException(404, "Esa publicación no existe.")
+
+
+@router.post("/novedades/{clase}/{cosa_id}")
+def resolver_novedad(
+    clase: str,
+    cosa_id: int,
+    decision: str = Form(...),
+    resolucion: str = Form(""),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Bajar una publicación, devolverla, o cerrar el aviso dejándola como está.
+
+    Las tres son de una persona y las tres se pueden deshacer. Bajar no borra:
+    la entrega conserva sus puntos y la página del libro sigue existiendo, con
+    lo cual un error a las once de la noche se arregla desde acá y no entrando
+    a la base de datos.
+    """
+    cosa = _publicacion(sesion, clase, cosa_id, usuario)
+    abiertos = [
+        a
+        for a in moderacion.avisos_abiertos(sesion, _unidad_de(usuario))
+        if (a.entrega_id == cosa_id if clase == "muro" else a.libro_id == cosa_id)
+    ]
+
+    if decision == "bajar":
+        if clase == "muro":
+            moderacion.bajar_entrega(cosa, usuario)
+        else:
+            moderacion.bajar_pagina(cosa, usuario)
+        moderacion.atender(abiertos, usuario, resolucion or "Se bajó la publicación.")
+    elif decision == "devolver":
+        if clase == "muro":
+            moderacion.devolver_entrega(cosa)
+        else:
+            moderacion.devolver_pagina(cosa)
+        moderacion.atender(abiertos, usuario, resolucion or "Se volvió a publicar.")
+    elif decision == "esta_bien":
+        # El aviso se mira y se cierra sin bajar nada. Que exista esta salida es
+        # lo que hace que avisar no sea automáticamente sacar algo del muro.
+        moderacion.atender(abiertos, usuario, resolucion or "Lo miramos y queda.")
+    else:
+        raise HTTPException(400, "Decisión desconocida.")
+
+    sesion.commit()
+    return redirigir("/novedades")
 
 
 # --- Validación --------------------------------------------------------------
@@ -562,11 +674,15 @@ def listar_jovenes(
         ),
         etapas=ETAPAS,
         min_cartas=progresion.MIN_CARTAS,
+        # Si se viene de un alta o de un blanqueo, la provisoria se muestra acá
+        # y desaparece: al recargar ya no está, porque leerla la consume.
+        provisoria=tomar_provisoria(request),
     )
 
 
 @router.post("/jovenes")
 def crear_joven(
+    request: Request,
     nombre: str = Form(...),
     usuario_nuevo: str = Form(...),
     patrulla_id: str = Form(""),
@@ -574,19 +690,19 @@ def crear_joven(
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
-    """Da de alta a un joven. La contraseña no se pide: es su nombre de usuario.
+    """Da de alta a un joven. La contraseña se sortea y se muestra una sola vez.
 
-    Antes había un campo «contraseña inicial» y era el peor de los dos mundos: el
-    educador tenía que inventar algo, dictarlo, y quedaba sabiendo con qué entra
-    otra persona. Ahora el alta se cuenta en una frase —«tu usuario es `ana` y tu
-    contraseña también»— y la contraseña de verdad la elige el joven al entrar.
+    Nunca hubo un campo «contraseña inicial» y sigue sin haberlo: el educador no
+    tiene que inventar nada. Lo que cambió es que la provisoria ya no es el
+    nombre de usuario —era adivinable, y adivinable en una sola prueba—, así que
+    ahora la pantalla se la muestra una vez para que se la diga en el momento.
     """
     unidad_id = _unidad_de(usuario)
     if etapa not in ETAPAS:
         raise HTTPException(400, "Etapa desconocida.")
 
     try:
-        cuentas.alta(
+        joven, clave = cuentas.alta(
             sesion,
             usuario_nuevo,
             nombre,
@@ -599,6 +715,7 @@ def crear_joven(
         raise HTTPException(400, error.motivo) from error
 
     sesion.commit()
+    recordar_provisoria(request, joven.usuario, clave)
     return redirigir("/jovenes")
 
 
@@ -629,19 +746,21 @@ def actualizar_joven(
 @router.post("/jovenes/{joven_id}/blanquear")
 def blanquear_joven(
     joven_id: int,
+    request: Request,
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
-    """«Me olvidé la contraseña». Vuelve a ser su nombre de usuario.
+    """«Me olvidé la contraseña». Se sortea una provisoria y se muestra una vez.
 
     Es todo el sistema de recuperación que hay, y alcanza: el educador está en la
     misma reunión que el joven. La contraseña vieja no se muestra en ningún lado
-    —nadie la sabe, ni acá ni en la base— y la nueva la vuelve a elegir el joven
-    en cuanto entre.
+    —nadie la sabe, ni acá ni en la base— y la definitiva la vuelve a elegir el
+    joven en cuanto entre.
     """
     joven = _joven_de_la_unidad(sesion, joven_id, usuario)
-    cuentas.blanquear(joven)
+    clave = cuentas.blanquear(joven)
     sesion.commit()
+    recordar_provisoria(request, joven.usuario, clave)
     return redirigir("/jovenes")
 
 
@@ -654,6 +773,14 @@ def blanquear_joven(
 # afuera: solo se ve y se toca el equipo de la propia Unidad.
 
 
+def _del_equipo(sesion: Session, educador_id: int, usuario: Usuario) -> Usuario:
+    """Otro educador de la propia Unidad. El borde de afuera, en un solo lugar."""
+    otro = sesion.get(Usuario, educador_id)
+    if otro is None or otro.rol != ROL_EDUCADOR or otro.unidad_id != _unidad_de(usuario):
+        raise HTTPException(404, "Esa persona no está en el equipo de tu Unidad.")
+    return otro
+
+
 @router.get("/educadores")
 def listar_educadores(
     request: Request,
@@ -661,22 +788,32 @@ def listar_educadores(
     sesion: Session = Depends(obtener_sesion),
 ):
     unidad_id = _unidad_de(usuario)
+    equipo = list(
+        sesion.scalars(
+            select(Usuario)
+            .where(Usuario.unidad_id == unidad_id, Usuario.rol == ROL_EDUCADOR)
+            .order_by(Usuario.nombre)
+        )
+    )
     return render(
         request,
         "educador/educadores.html",
         usuario=usuario,
-        educadores=list(
-            sesion.scalars(
-                select(Usuario)
-                .where(Usuario.unidad_id == unidad_id, Usuario.rol == ROL_EDUCADOR)
-                .order_by(Usuario.nombre)
-            )
-        ),
+        educadores=[e for e in equipo if e.activo],
+        ya_no_estan=[e for e in equipo if not e.activo],
+        # Qué va a pasar si se le da de baja a cada uno, para poder decirlo antes
+        # de que apriete: una cuenta sin rastro se borra, una con historia se
+        # desactiva. Ver el porqué en `servicios/cuentas.py`.
+        deja_rastro={
+            e.id: cuentas.dejo_rastro(sesion, e.id) for e in equipo if e.id != usuario.id
+        },
+        provisoria=tomar_provisoria(request),
     )
 
 
 @router.post("/educadores")
 def crear_educador(
+    request: Request,
     nombre: str = Form(...),
     usuario_nuevo: str = Form(...),
     usuario: Usuario = Depends(solo_educador),
@@ -684,25 +821,27 @@ def crear_educador(
 ):
     """Suma a alguien al equipo, en la misma Unidad de quien lo da de alta.
 
-    Entra con su nombre de usuario como contraseña y lo primero que hace es
-    cambiarla, igual que un joven. Que el alta la pueda hacer cualquiera del
-    equipo es lo que saca el `scripts/crear_educador.py` del camino: la consola
-    del servidor queda solo para el primer educador de todos.
+    Entra con una provisoria sorteada y lo primero que hace es cambiarla, igual
+    que un joven. Que el alta la pueda hacer cualquiera del equipo es lo que saca
+    el `scripts/crear_educador.py` del camino: la consola del servidor queda solo
+    para el primer educador de todos.
     """
     try:
-        cuentas.alta(
+        nuevo, clave = cuentas.alta(
             sesion, usuario_nuevo, nombre, ROL_EDUCADOR, unidad_id=_unidad_de(usuario)
         )
     except cuentas.DatoInvalido as error:
         raise HTTPException(400, error.motivo) from error
 
     sesion.commit()
+    recordar_provisoria(request, nuevo.usuario, clave)
     return redirigir("/educadores")
 
 
 @router.post("/educadores/{educador_id}/blanquear")
 def blanquear_educador(
     educador_id: int,
+    request: Request,
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
@@ -713,13 +852,65 @@ def blanquear_educador(
     de la sesión para poder pedirlo— y dejaría la cuenta con la contraseña más
     fácil de adivinar que existe.
     """
-    otro = sesion.get(Usuario, educador_id)
-    if otro is None or otro.rol != ROL_EDUCADOR or otro.unidad_id != _unidad_de(usuario):
-        raise HTTPException(404, "Esa persona no está en el equipo de tu Unidad.")
+    otro = _del_equipo(sesion, educador_id, usuario)
     if otro.id == usuario.id:
         raise HTTPException(400, "La tuya se cambia desde «Cambiar mi contraseña».")
 
-    cuentas.blanquear(otro)
+    clave = cuentas.blanquear(otro)
+    sesion.commit()
+    recordar_provisoria(request, otro.usuario, clave)
+    return redirigir("/educadores")
+
+
+# --- Sacar a alguien del equipo ----------------------------------------------
+
+
+@router.post("/educadores/{educador_id}/baja")
+def dar_de_baja_educador(
+    educador_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Saca a un educador de la Unidad.
+
+    Si esa cuenta firmó algo —una carta acordada, una etapa cambiada, una entrega
+    validada— se desactiva y se puede reincorporar: la aplicación entera está
+    construida sobre que se sepa quién decidió qué, y borrarla dejaría huecos en
+    la progresión de chicos que hoy dice quién los acompañó. Si no firmó nada
+    —el usuario que se escribió mal— se borra de verdad. Lo decide
+    `cuentas.dar_de_baja` mirando la base, no un botón distinto.
+
+    **Nadie se da de baja a sí mismo.** No es una formalidad: es lo que garantiza
+    que la Unidad no se pueda quedar sin ningún educador activo, porque cada baja
+    la tiene que firmar alguien que se queda adentro. Quien se va del Grupo le
+    pide a un compañero de equipo que lo saque, que además es como pasa afuera.
+    """
+    otro = _del_equipo(sesion, educador_id, usuario)
+    if otro.id == usuario.id:
+        raise HTTPException(
+            400,
+            "No podés darte de baja vos mismo: pedíselo a otra persona del equipo.",
+        )
+    if not otro.activo:
+        raise HTTPException(400, "Esa persona ya está fuera del equipo.")
+
+    cuentas.dar_de_baja(sesion, otro)
+    sesion.commit()
+    return redirigir("/educadores")
+
+
+@router.post("/educadores/{educador_id}/reincorporar")
+def reincorporar_educador(
+    educador_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Vuelve al equipo, con la contraseña que tenía. Una baja por error se arregla acá."""
+    otro = _del_equipo(sesion, educador_id, usuario)
+    if otro.activo:
+        raise HTTPException(400, "Esa persona ya está en el equipo.")
+
+    cuentas.reincorporar(otro)
     sesion.commit()
     return redirigir("/educadores")
 

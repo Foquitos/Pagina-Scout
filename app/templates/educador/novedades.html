@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block titulo %}Novedades{% endblock %}
+
+{% block contenido %}
+<h1>📣 Lo que se publicó</h1>
+<p class="sub">Todo lo que las y los jóvenes pusieron a la vista de otros: el muro
+  de la Unidad y las páginas de los siete Libros de Oro, en un solo lugar y lo
+  último primero.</p>
+
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">📖</span>
+  <div>
+    <strong>Esto no es una cola de aprobación: todo lo de acá ya está publicado.</strong>
+    <p>Una foto entra al muro o al libro en el momento, sin esperar permiso. Es a
+      propósito —el Libro de Oro es de la patrulla, no del equipo— y esta pantalla
+      es la otra mitad de esa decisión: que el equipo se entere de todo y pueda
+      bajar algo en dos toques. Bajar no borra nada y se puede deshacer.</p>
+  </div>
+</div>
+
+{% if avisadas %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">⚠️</span>
+    <div>
+      <strong>{{ avisadas }} publicaci{{ 'ones' if avisadas != 1 else 'ón' }}
+        {{ 'tienen' if avisadas != 1 else 'tiene' }} un aviso sin mirar.</strong>
+      <p>Alguien de la Unidad pidió que las miren. Están arriba de todo.
+        <a href="/novedades?filtro=avisadas">Ver solo esas</a>.</p>
+    </div>
+  </div>
+{% endif %}
+
+{% set filtros = [
+  ('todas', 'Todas'),
+  ('avisadas', '⚠️ Con aviso'),
+  ('con_foto', '📷 Con foto'),
+  ('bajadas', '🚫 Bajadas')
+] %}
+<p class="chips">
+  {% for valor, texto in filtros %}
+    <a class="chip {{ 'activo' if filtro == valor }}" href="/novedades?filtro={{ valor }}">{{ texto }}</a>
+  {% endfor %}
+</p>
+
+{% if not novedades %}
+  <div class="vacio" style="margin-top:1rem">
+    <img src="/estaticos/img/vacio/carpa.svg" alt="">
+    <strong>No hay nada publicado en este filtro</strong>
+    <p>Cuando alguien comparta un reto en el muro o escriba una página del Libro
+      de Oro, aparece acá.</p>
+  </div>
+{% else %}
+  {% for n in novedades %}
+  <article class="tarjeta {{ 'acento' if n.avisos_abiertos }}"
+           {% if n.avisos_abiertos %}style="border-left-color: #D64550"{% endif %}>
+    <div class="encabezado-tarjeta">
+      {% if n.autor %}
+        <span class="avatar" style="--color: {{ color_de(n.autor.nombre) }}" aria-hidden="true">{{ iniciales(n.autor.nombre) }}</span>
+      {% endif %}
+      <div>
+        <h3>{{ n.titulo }}</h3>
+        <p class="meta">
+          {% if n.autor %}<span>{{ n.autor.nombre }}</span>{% endif %}
+          <span>{{ n.donde }}</span>
+          <span>{{ n.cuando.strftime('%d/%m/%Y %H:%M') }}</span>
+        </p>
+      </div>
+      {% if n.oculta %}
+        <span class="etiqueta rechazada">🚫 Bajada</span>
+      {% endif %}
+    </div>
+
+    {% if n.avisos_abiertos %}
+      <div class="aviso">
+        <span class="icono" aria-hidden="true">⚠️</span>
+        <div>
+          <strong>{{ n.avisos_abiertos|length }}
+            aviso{{ 's' if n.avisos_abiertos|length != 1 }} sin mirar</strong>
+          {% for a in n.avisos_abiertos %}
+            <p>{{ a.avisa.nombre }}, el {{ a.creado_en.strftime('%d/%m %H:%M') }}{% if a.motivo %}:
+              «{{ a.motivo }}»{% else %}. Sin escribir un motivo.{% endif %}</p>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if n.texto %}<p>{{ n.texto }}</p>{% endif %}
+
+    {% if n.foto %}
+      <a href="/fotos/{{ n.foto }}">
+        <img class="foto" src="/fotos/{{ n.foto }}" alt="Foto de {{ n.titulo }}" loading="lazy">
+      </a>
+    {% endif %}
+
+    {% if n.oculta %}
+      <p class="meta">La bajó {{ n.oculta_por.nombre if n.oculta_por else 'el equipo' }}.
+        {% if n.clase == 'muro' %}La entrega y sus puntos siguen estando; lo que se
+        sacó es la publicación.{% else %}La página sigue en el libro para su autor
+        y para el equipo.{% endif %}</p>
+    {% endif %}
+
+    <form method="post" action="/novedades/{{ n.clase }}/{{ n.id }}"
+          data-sin-recarga="Listo.">
+      <label for="resolucion-{{ n.clase }}-{{ n.id }}">Qué pasó (lo ve quien avisó)</label>
+      <textarea id="resolucion-{{ n.clase }}-{{ n.id }}" name="resolucion" style="min-height:3.5rem"
+        placeholder="Lo hablamos con quien la subió."></textarea>
+      <div class="acciones">
+        {% if n.oculta %}
+          <button type="submit" name="decision" value="devolver">Volver a publicarla</button>
+        {% else %}
+          <button type="submit" name="decision" value="bajar" class="peligro">Bajarla</button>
+        {% endif %}
+        {% if n.avisos_abiertos %}
+          <button type="submit" name="decision" value="esta_bien" class="secundario">
+            Está bien, cerrar el aviso
+          </button>
+        {% endif %}
+        <a class="boton secundario" href="{{ n.enlace }}">Verla donde está</a>
+      </div>
+    </form>
+  </article>
+  {% endfor %}
+{% endif %}
+{% endblock %}

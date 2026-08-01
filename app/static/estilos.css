@@ -615,6 +615,21 @@ details[open] > summary::after { transform: rotate(180deg); }
 details ul { margin: .4rem 0; padding-left: 1.2rem; }
 details li { margin: .3rem 0; }
 
+/* «Avisar al equipo», debajo de una publicación. Discreto a propósito: tiene que
+   estar siempre a mano y no competir con la foto ni parecer un botón de denuncia.
+   Abierto se separa del resto para que se vea que es otra cosa. */
+details.avisar { margin-top: .8rem; }
+details.avisar > summary {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--tenue, #6b6b6b);
+  padding: .3rem 0;
+}
+details.avisar[open] {
+  border-top: 1px solid var(--borde);
+  padding-top: .5rem;
+}
+
 /* Una etapa ya recorrida. Se lee como lo que es —un archivo, no lo de ahora—,
    pero con el dorado del Libro de Oro: es algo que se logró, no algo viejo. */
 .etapa-vieja { border-left: 6px solid #c8a951; background: #fbf8ef; }
@@ -1109,6 +1124,10 @@ button.chip[aria-pressed="true"]:hover { background: var(--verde-oscuro); color:
 }
 
 tr.apagada { opacity: .55; }
+/* Una tarjeta de algo que ya no está activo —un educador fuera del equipo—.
+   Apagada, no escondida: sigue siendo alguien cuyo nombre firma cosas. */
+.tarjeta.apagada { opacity: .62; }
+.tarjeta.apagada:hover, .tarjeta.apagada:focus-within { opacity: 1; }
 
 /* --- Utilidades ---------------------------------------------- */
 

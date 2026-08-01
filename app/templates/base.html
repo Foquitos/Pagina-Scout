@@ -29,16 +29,20 @@
 {# Siete y no ocho: en el celular la barra de abajo son siete botones y el
    octavo no entra. Lo que no está acá se llega desde su sección: el Libro de Oro
    desde la patrulla —que es de quien es—, el calendario y la Asamblea desde
-   «Hoy», las especialidades desde las cartas. #}
+   «Hoy», las especialidades desde las cartas.
+
+   Del lado del educador el séptimo lugar lo ocupa «Novedades», que es lo que se
+   publicó en la Unidad. El tablero salió de la barra y no se perdió: el panel lo
+   muestra entero al pie, así que era el único de los siete que estaba dos veces. #}
 {% if usuario and usuario.es_educador %}
   {% set enlaces = [
-    {'href': '/panel',        'icono': '🏕️', 'texto': 'Panel',     'prefijos': ['/panel', '/calendario', '/ideas', '/muro']},
+    {'href': '/panel',        'icono': '🏕️', 'texto': 'Panel',     'prefijos': ['/panel', '/calendario', '/ideas', '/tablero']},
+    {'href': '/novedades',    'icono': '📣',  'texto': 'Novedades', 'prefijos': ['/novedades', '/muro']},
     {'href': '/validaciones', 'icono': '✅',  'texto': 'Entregas',  'prefijos': ['/validaciones']},
     {'href': '/retos',        'icono': '🎯',  'texto': 'Retos',     'prefijos': ['/retos']},
     {'href': '/asignar',      'icono': '📅',  'texto': 'Asignar',   'prefijos': ['/asignar']},
     {'href': '/patrullas',    'icono': '🤝',  'texto': 'Patrullas', 'prefijos': ['/patrullas', '/patrulla', '/libro-de-oro', '/cargos']},
-    {'href': '/jovenes',      'icono': '🧭',  'texto': 'Jóvenes',   'prefijos': ['/jovenes', '/cartas-de', '/progresion', '/especialidades']},
-    {'href': '/tablero',      'icono': '🏆',  'texto': 'Tablero',   'prefijos': ['/tablero']}
+    {'href': '/jovenes',      'icono': '🧭',  'texto': 'Jóvenes',   'prefijos': ['/jovenes', '/cartas-de', '/progresion', '/especialidades']}
   ] %}
 {% else %}
   {% set enlaces = [

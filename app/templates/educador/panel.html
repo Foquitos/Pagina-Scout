@@ -40,6 +40,21 @@
 
 {# --- Lo que pide una respuesta del equipo y no es una entrega ------------- #}
 
+{# Primero de todo, y separado del resto: lo demás son conversaciones que pueden
+   esperar al sábado. Un aviso sobre una foto publicada, no. #}
+{% if avisadas %}
+  <div class="aviso" style="border-left:4px solid #D64550">
+    <span class="icono" aria-hidden="true">⚠️</span>
+    <div>
+      <strong>{{ avisadas }} publicaci{{ 'ones' if avisadas != 1 else 'ón' }}
+        con un aviso sin mirar.</strong>
+      <p>Alguien de la Unidad pidió que el equipo mire una foto o una página que
+        está publicada. Es lo único de este panel que puede no poder esperar.</p>
+      <p><a class="boton" href="/novedades?filtro=avisadas">Mirarlas ahora</a></p>
+    </div>
+  </div>
+{% endif %}
+
 {% if cartas_a_conversar %}
   <div class="aviso">
     <span class="icono" aria-hidden="true">💬</span>

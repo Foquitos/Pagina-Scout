@@ -7,6 +7,8 @@
   guardamos datos personales más allá del nombre. La etapa se cambia desde la
   progresión de cada uno, mirando cómo vienen sus cartas.</p>
 
+{% include "educador/_provisoria.html" %}
+
 <details class="tarjeta" {{ 'open' if not jovenes }}>
   <summary>➕ Dar de alta</summary>
   <form method="post" action="/jovenes" data-sin-recarga="Cuenta creada.">
@@ -21,9 +23,10 @@
                autocapitalize="none" autocomplete="off">
       </div>
     </div>
-    <p class="meta">No hace falta inventarle una contraseña: arranca siendo su mismo
-      nombre de usuario y la cambia sola la primera vez que entra. Vos no llegás a
-      saber cuál eligió, y si se la olvida se la blanqueás desde su tarjeta.</p>
+    <p class="meta">No hace falta inventarle una contraseña: la aplicación sortea una
+      provisoria y te la muestra acá una sola vez, para que se la digas. Al entrar
+      la cambia sola. Vos no llegás a saber cuál eligió, y si se la olvida se la
+      blanqueás desde su tarjeta.</p>
     <div class="fila">
       <div>
         <label for="patrulla_id">Patrulla</label>
@@ -47,7 +50,8 @@
   <div class="vacio">
     <img src="/estaticos/img/vacio/patrulla.svg" alt="">
     <strong>Todavía no hay jóvenes cargados</strong>
-    <p>Dales de alta y entregales su usuario y contraseña.</p>
+    <p>Dales de alta: la contraseña la sortea la aplicación y te la muestra para
+      que se la digas en el momento.</p>
   </div>
 {% else %}
   <div class="rejilla">
@@ -67,9 +71,11 @@
       </div>
 
       {% if j.debe_cambiar_clave %}
-        {# Sirve para el alta y para el blanqueo: mientras esté, la contraseña
-           es su usuario y todavía no entró a ponerse una propia. #}
-        <p class="chips"><span class="chip">🔑 entra con «{{ j.usuario }}» y elige su contraseña</span></p>
+        {# Sirve para el alta y para el blanqueo: mientras esté, la cuenta sigue
+           con la provisoria sorteada y su dueño todavía no entró a poner la suya.
+           Cuál es esa provisoria no se puede saber desde acá: se mostró una vez
+           y no se guarda en ningún lado. Si se perdió, se blanquea y sale otra. #}
+        <p class="chips"><span class="chip">🔑 todavía no entró a poner su contraseña</span></p>
       {% endif %}
 
       <form method="post" action="/jovenes/{{ j.id }}" data-autoguardar>
@@ -89,15 +95,23 @@
       </form>
 
       {# Formulario aparte y no un botón más del de arriba: aquel se guarda solo
-         al cambiar el select, y blanquear una contraseña se pide a propósito. #}
-      {% if not j.debe_cambiar_clave %}
+         al cambiar el select, y blanquear una contraseña se pide a propósito.
+
+         Está siempre, también cuando la cuenta nunca se usó. Antes se escondía
+         justo en ese caso, y tenía sentido mientras la provisoria era el nombre
+         de usuario: no hacía falta blanquear nada porque la contraseña se sabía.
+         Ahora la provisoria se sortea y se muestra una sola vez, así que si se
+         perdió antes de que la persona entrara, esto es el único camino de
+         vuelta —y era exactamente donde no estaba. #}
+      {% set nunca_entro = j.debe_cambiar_clave %}
       <form method="post" action="/jovenes/{{ j.id }}/blanquear"
-            onsubmit="return confirm('¿Blanquear la contraseña de {{ j.nombre }}? Va a volver a ser «{{ j.usuario }}».')"
-            data-confirmar="¿Blanquear su contraseña? Va a volver a ser «{{ j.usuario }}»."
-            data-sin-recarga="Contraseña blanqueada." class="acciones">
-        <button type="submit" class="secundario">🔑 Se olvidó la contraseña</button>
+            onsubmit="return confirm('{{ '¿Generar otra contraseña provisoria para ' ~ j.nombre ~ '? La anterior deja de servir.' if nunca_entro else '¿Blanquear la contraseña de ' ~ j.nombre ~ '? Se sortea una provisoria y te la mostramos.' }}')"
+            data-confirmar="{{ '¿Generar otra provisoria? La anterior deja de servir.' if nunca_entro else '¿Blanquear su contraseña? Se sortea una provisoria y te la mostramos.' }}"
+            data-sin-recarga="Contraseña nueva generada." class="acciones">
+        <button type="submit" class="secundario">
+          {{ '🔑 Mostrarme otra provisoria' if nunca_entro else '🔑 Se olvidó la contraseña' }}
+        </button>
       </form>
-      {% endif %}
     </article>
     {% endfor %}
   </div>

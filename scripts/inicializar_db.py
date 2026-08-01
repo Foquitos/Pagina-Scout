@@ -74,6 +74,16 @@ COLUMNAS_NUEVAS = {
         # Apagada para lo que ya está entregado: compartir lo que un chico
         # escribió cuando nadie se lo preguntó no se hace retroactivamente.
         "compartida": "BOOLEAN DEFAULT 0",
+        # Sin fecha para lo ya compartido. `novedades()` cae en `enviada_en`
+        # cuando esto está vacío, así que el feed sale ordenado igual.
+        "compartida_en": "DATETIME",
+        # Nadie bajó nada todavía: NULL es exactamente eso y es el default.
+        "oculta_en": "DATETIME",
+        "oculta_por_id": "INTEGER REFERENCES usuarios(id)",
+    },
+    "libro_oro": {
+        "oculta_en": "DATETIME",
+        "oculta_por_id": "INTEGER REFERENCES usuarios(id)",
     },
     "ideas": {
         "respuesta": "TEXT DEFAULT ''",

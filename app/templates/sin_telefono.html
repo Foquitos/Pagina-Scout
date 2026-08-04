@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block titulo %}Cargar lo que hizo {{ primer_nombre(joven.nombre) }}{% endblock %}
+
+{% block contenido %}
+<p class="miga"><a href="{{ '/panel' if usuario.es_educador else '/hoy' }}">← Volver</a></p>
+
+<div class="encabezado-tarjeta" style="margin-bottom:1rem">
+  <span class="avatar" style="--color: {{ color_de(joven.nombre) }}" aria-hidden="true">{{ iniciales(joven.nombre) }}</span>
+  <div>
+    <h1>📵 Lo que hizo {{ primer_nombre(joven.nombre) }}</h1>
+    <p class="meta">
+      <span>Sin teléfono desde el {{ pausa.desde.strftime('%d/%m') }}</span>
+      {% if pausa.vuelve_el %}<span>lo tiene de vuelta el {{ pausa.vuelve_el.strftime('%d/%m') }}</span>{% endif %}
+      {% if joven.patrulla %}<span>Patrulla {{ joven.patrulla.nombre }}</span>{% endif %}
+    </p>
+  </div>
+</div>
+
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">✍️</span>
+  <div>
+    <strong>Escribí lo que te contó, con sus palabras.</strong>
+    <p>El reto es de {{ primer_nombre(joven.nombre) }}: los puntos van a su patrulla
+      y le cuenta para su carta, igual que si lo hubiera cargado él. Lo único que
+      cambia es que abajo de cada entrega va a decir que la escribiste vos, y lo
+      van a ver él, su patrulla y el equipo. Si no hizo algo, no lo cargues:
+      inventarle un reto a alguien es sacarle la única parte que era suya.</p>
+  </div>
+</div>
+
+{% if not pendientes %}
+  <div class="vacio">
+    <img src="/estaticos/img/vacio/carpa.svg" alt="">
+    <strong>No hay retos de estos días para cargar</strong>
+    <p>Desde que empezó la pausa no se asignó ningún reto que le tocara.</p>
+  </div>
+{% else %}
+  <p class="sub-titulo">
+    {% if faltan %}
+      Le {{ 'faltan' if faltan != 1 else 'falta' }} <strong>{{ faltan }}</strong>
+      de {{ pendientes|length }} reto{{ 's' if pendientes|length != 1 }}.
+    {% else %}
+      Están todos cargados. 🎉
+    {% endif %}
+    Se muestran los últimos {{ dias_para_atras }} días como mucho: nadie
+    reconstruye un mes de memoria, y una lista de treinta formularios no la llena
+    nadie.
+  </p>
+
+  {% for asignacion, entrega in pendientes %}
+    {% set area = asignacion.reto.area %}
+    {% set hecho = entrega and entrega.estado == 'aprobada' %}
+    <article class="tarjeta {{ 'acento' if not hecho }}"
+             {% if area and not hecho %}style="border-left-color: {{ area.color }}"{% endif %}>
+      <div class="encabezado-tarjeta">
+        <span class="burbuja" aria-hidden="true"
+              {% if area %}style="--tono: {{ area.color }}22"{% endif %}>{{ area.icono if area else '🎯' }}</span>
+        <div>
+          <h3>{{ asignacion.reto.titulo }}</h3>
+          <p class="meta">
+            <span>{{ asignacion.fecha.strftime('%d/%m/%Y') }}</span>
+            <span>⭐ {{ asignacion.reto.puntaje }} puntos para la patrulla</span>
+          </p>
+        </div>
+        {% if entrega %}
+          <span class="etiqueta {{ entrega.estado }}">
+            {% if entrega.estado == 'aprobada' %}🎉 Cargado
+            {% elif entrega.estado == 'requiere_revision' %}⏳ Esperando al educador
+            {% elif entrega.estado == 'rechazada' %}↩️ Sin validar
+            {% else %}📨 Cargado{% endif %}
+          </span>
+        {% endif %}
+      </div>
+
+      <p>{{ asignacion.reto.consigna }}</p>
+
+      {% if entrega and entrega.texto %}
+        <div class="comentario">{{ entrega.texto }}
+          <footer class="meta">
+            {% if entrega.dictada_por %}
+              Lo cargó {{ entrega.dictada_por.nombre }}
+            {% else %}
+              Lo cargó {{ primer_nombre(joven.nombre) }}
+            {% endif %}
+          </footer>
+        </div>
+      {% endif %}
+
+      {% if hecho %}
+        <p class="meta">Ya está validado y sumó a su patrulla. No hace falta tocar nada.</p>
+      {% else %}
+        <form method="post" action="/sin-telefono/{{ joven.id }}/reto/{{ asignacion.id }}"
+              enctype="multipart/form-data" data-sin-recarga="Cargado.">
+          <label for="texto-{{ asignacion.id }}">Qué contó que hizo</label>
+          <textarea id="texto-{{ asignacion.id }}" name="texto" required
+            placeholder="Con sus palabras: qué hizo, cómo le salió y para qué sirve."
+          >{{ entrega.texto if entrega else '' }}</textarea>
+
+          <label for="foto-{{ asignacion.id }}">📷 Foto
+            {% if not asignacion.reto.pide_foto %}(opcional){% endif %}</label>
+          <input type="file" id="foto-{{ asignacion.id }}" name="foto" accept="image/*">
+
+          <div class="acciones">
+            <button type="submit">Cargar esta entrega</button>
+          </div>
+        </form>
+      {% endif %}
+    </article>
+  {% endfor %}
+
+  <p class="meta centrado" style="margin-top:1.4rem">
+    Al muro no va nada de acá. Compartir lo decide quien lo hizo, y lo va a poder
+    prender él mismo desde cada reto en cuanto tenga el teléfono de vuelta.
+  </p>
+{% endif %}
+{% endblock %}

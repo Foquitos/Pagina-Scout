@@ -27,7 +27,7 @@ from app.models import (
     PeriodoCargo,
     Usuario,
 )
-from app.servicios import medios, progresion, retos
+from app.servicios import medios, pausas, progresion, retos
 from app.servicios import patrulla as vida
 
 router = APIRouter()
@@ -92,6 +92,7 @@ def ver_patrulla(
     """Quiénes son, quién tiene qué cargo, qué decidieron y a qué se comprometieron."""
     patrulla = _patrulla_visible(sesion, patrulla_id, usuario)
     integrantes = _integrantes(sesion, patrulla_id)
+    hoy = retos.hoy()
 
     return render(
         request,
@@ -99,13 +100,18 @@ def ver_patrulla(
         usuario=usuario,
         patrulla=patrulla,
         integrantes=[(j, progresion.cartas_elegidas(sesion, j)) for j in integrantes],
+        # Quién está sin teléfono. Acá se dice que lo está y nunca por qué: el
+        # motivo lo escribió un educador y se queda del lado del equipo (ver
+        # `models.PausaSinTelefono`). Lo que la patrulla necesita saber es que a
+        # esa persona hay que preguntarle qué hizo y cargárselo.
+        en_pausa=pausas.vigentes_de(sesion, [j.id for j in integrantes], hoy),
         cargos=vida.catalogo(sesion, patrulla.unidad_id),
         porta=vida.cargos_por_joven(sesion, patrulla_id),
         abiertos=vida.periodos_abiertos(sesion, patrulla_id),
         consejos=vida.consejos_de(sesion, patrulla_id),
         acuerdos=vida.acuerdos_de(sesion, patrulla_id),
         resumen=vida.resumen(sesion, patrulla_id, integrantes),
-        hoy=retos.hoy(),
+        hoy=hoy,
     )
 
 

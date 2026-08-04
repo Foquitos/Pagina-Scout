@@ -482,11 +482,21 @@ class Entrega(Base):
     validada_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     puntaje_otorgado: Mapped[int] = mapped_column(Integer, default=0)
 
+    # Quién la escribió, cuando no la escribió su dueño. Un chico sin teléfono
+    # le cuenta a un educador o a alguien de su patrulla lo que hizo y esa
+    # persona lo carga acá (ver `PausaSinTelefono`). El reto sigue siendo suyo
+    # —`joven_id` no se mueve, los puntos van a su patrulla y le cuenta para su
+    # progresión—; esto es la firma de quien tipeó, y se muestra siempre: a él,
+    # a su patrulla y al equipo. Una entrega escrita por otro que no dijera
+    # quién fue sería exactamente lo que no queremos.
+    dictada_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+
     asignacion: Mapped[Asignacion] = relationship(back_populates="entregas")
     joven: Mapped[Usuario] = relationship(foreign_keys=[joven_id])
     patrulla: Mapped[Patrulla | None] = relationship(foreign_keys=[patrulla_id])
     validada_por: Mapped[Usuario | None] = relationship(foreign_keys=[validada_por_id])
     oculta_por: Mapped[Usuario | None] = relationship(foreign_keys=[oculta_por_id])
+    dictada_por: Mapped[Usuario | None] = relationship(foreign_keys=[dictada_por_id])
     # Un aviso señala una publicación: si la publicación se va —sacar el reto de
     # la agenda se lleva sus entregas—, el aviso se va con ella. Sin esto la
     # clave foránea impide el borrado y sale un 500 en una pantalla del educador.
@@ -499,9 +509,83 @@ class Entrega(Base):
         return self.oculta_en is not None
 
     @property
+    def dictada(self) -> bool:
+        return self.dictada_por_id is not None
+
+    @property
     def en_el_muro(self) -> bool:
         """Las tres condiciones juntas. La consulta del muro dice lo mismo en SQL."""
         return self.compartida and self.estado == ESTADO_APROBADA and not self.oculta
+
+
+class PausaSinTelefono(Base):
+    """El tramo en que alguien no puede entregar por su cuenta.
+
+    Se le rompió el celular, se lo sacaron en casa, lo comparte con una hermana
+    que lo necesita para la escuela. Ninguna de esas cosas la decidió él y sin
+    embargo las pagaba su patrulla: el tablero divide los puntos por la cantidad
+    de integrantes, así que alguien que no puede entregar arrastra hacia abajo el
+    promedio de los otros cuatro. El capítulo 4 pide justo lo contrario —«el
+    propósito principal del sistema de patrullas es asignar verdadera
+    responsabilidad al mayor número posible de jóvenes»—, y un equipo no le pasa
+    la factura al que se quedó sin herramientas.
+
+    Mientras la pausa está vigente pasan dos cosas, y hacen falta las dos:
+
+    - **No divide.** Los puntos que esa persona hizo se quedan en el total de su
+      patrulla —los hizo—, pero su cabeza sale del divisor del promedio. El
+      tablero lo dice en voz alta («entre 4, 1 en pausa»): no hay número que se
+      arregle por detrás.
+    - **Se puede entregar por él.** Un educador o alguien de su misma patrulla
+      carga lo que le contó. Queda a su nombre y firmado por quien lo escribió,
+      en `Entrega.dictada_por_id`.
+
+    `vuelve_el` es **el día que lo tiene de vuelta**, no el último día sin él: la
+    pausa vale hasta el día anterior. Se llama así y no `hasta` justamente para
+    que no haya que preguntarse si el borde entra o no entra, que es el error que
+    después nadie encuentra. Vacío significa «sigue, y no se sabe hasta cuándo».
+
+    Se puede dejar puesto desde el principio —«lo tiene de vuelta el 20»— y
+    entonces la pausa se vence sola. Es lo que conviene siempre que se sepa: un
+    chico que recuperó el teléfono hace un mes y nadie se acordó de cerrar nada
+    no puede quedar fuera del divisor para siempre. Cerrarla a mano es ponerle
+    `vuelve_el` = hoy, y desde hoy mismo vuelve a contar.
+
+    **La abre y la cierra un educador.** No es desconfianza: es que sacar a
+    alguien del divisor mueve el tablero de toda la Unidad, y en esta aplicación
+    lo que mueve algo de otros lo firma alguien con nombre.
+
+    **El motivo lo lee solo el equipo.** A la patrulla y al tablero les alcanza
+    con «está sin teléfono»; «lo castigaron en casa» es de esa familia y no de
+    treinta personas. Es la misma regla del cumpleaños: se muestra la mitad que
+    hace falta y no el dato entero.
+    """
+
+    __tablename__ = "pausas_sin_telefono"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    joven_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    # Para el equipo, y para acordarse en dos semanas de por qué esto estaba
+    # abierto. Puede venir vacío: es peor que no se registre la pausa a que se
+    # registre sin explicación.
+    motivo: Mapped[str] = mapped_column(Text, default="")
+    desde: Mapped[date] = mapped_column(Date, index=True)
+    # El día que lo tiene de vuelta: ese día ya cuenta. Vacío es «sigue».
+    vuelve_el: Mapped[date | None] = mapped_column(Date, nullable=True)
+    abierta_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    cerrada_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    creada_en: Mapped[datetime] = mapped_column(DateTime, default=_ahora)
+
+    joven: Mapped[Usuario] = relationship(foreign_keys=[joven_id])
+    abierta_por: Mapped[Usuario | None] = relationship(foreign_keys=[abierta_por_id])
+    cerrada_por: Mapped[Usuario | None] = relationship(foreign_keys=[cerrada_por_id])
+
+    def vigente_en(self, dia: date) -> bool:
+        return self.desde <= dia and (self.vuelve_el is None or dia < self.vuelve_el)
+
+    @property
+    def sin_fecha_de_vuelta(self) -> bool:
+        return self.vuelve_el is None
 
 
 class EntradaBitacora(Base):

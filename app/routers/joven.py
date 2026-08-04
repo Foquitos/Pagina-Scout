@@ -41,6 +41,7 @@ from app.servicios import (
     medios,
     moderacion,
     muro,
+    pausas,
     progresion,
     puntajes,
     retos,
@@ -68,7 +69,7 @@ def hoy(
 ):
     if usuario.unidad_id is None:
         return render(request, "joven/hoy.html", usuario=usuario, asignaciones=[],
-                      fecha=retos.hoy(), cumples=[])
+                      fecha=retos.hoy(), cumples=[], sin_telefono=[], mi_pausa=None)
 
     fecha = retos.hoy()
     retos.asegurar_reto_del_dia(sesion, usuario.unidad_id, fecha)
@@ -98,6 +99,14 @@ def hoy(
         # Quién cumple años en los próximos días. Sin la edad: acá se muestra
         # para saludar, y para eso alcanza con el día. Ver `servicios/cumpleanos.py`.
         cumples=cumpleanos.proximos(sesion, usuario.unidad_id, fecha, dias=14, tope=5),
+        # Quién de la patrulla está sin teléfono. Acá y no en una pantalla
+        # aparte: si esto no aparece donde todos entran todos los días, cargarle
+        # los retos a alguien es algo que no se le ocurre a nadie.
+        sin_telefono=pausas.a_quienes_puede_cargar(sesion, usuario, fecha),
+        # Y si el que está en pausa es él. Puede llegar acá igual —una compu
+        # prestada, el teléfono de la casa— y tiene derecho a saber qué está
+        # pasando con su nombre.
+        mi_pausa=pausas.vigente(sesion, usuario.id, fecha),
     )
 
 
@@ -123,25 +132,30 @@ def ver_reto(
     )
 
 
-@router.post("/reto/{asignacion_id}")
-def entregar_reto(
-    asignacion_id: int,
-    request: Request,
-    texto: str = Form(""),
-    compartir: bool = Form(False),
-    foto: UploadFile | None = File(None),
-    usuario: Usuario = Depends(solo_joven),
-    sesion: Session = Depends(obtener_sesion),
-):
-    asignacion = _asignacion_visible(sesion, asignacion_id, usuario)
+def _registrar_entrega(
+    sesion: Session,
+    asignacion: Asignacion,
+    joven: Usuario,
+    texto: str,
+    foto: UploadFile | None,
+    compartir: bool,
+    dictada_por: Usuario | None = None,
+) -> Entrega | None:
+    """Guarda la evidencia y la pasa por el validador. `None` si ya estaba validada.
 
+    Es el mismo camino para las dos formas de entregar —el joven desde su
+    teléfono, o alguien cargando lo que le dictó porque no tiene— y por eso está
+    en una sola función: si mañana cambia cómo se valida o cómo se puntúa, cambia
+    para las dos. La única diferencia es la firma de `dictada_por`, que después
+    se muestra en todas partes.
+    """
     ya_entregada = sesion.scalar(
         select(Entrega).where(
-            Entrega.asignacion_id == asignacion.id, Entrega.joven_id == usuario.id
+            Entrega.asignacion_id == asignacion.id, Entrega.joven_id == joven.id
         )
     )
     if ya_entregada is not None and ya_entregada.estado == ESTADO_APROBADA:
-        return redirigir(f"/reto/{asignacion.id}")
+        return None
 
     nombre_foto = None
     if foto is not None and foto.filename:
@@ -149,8 +163,8 @@ def entregar_reto(
 
     entrega = ya_entregada or Entrega(
         asignacion_id=asignacion.id,
-        joven_id=usuario.id,
-        patrulla_id=usuario.patrulla_id,
+        joven_id=joven.id,
+        patrulla_id=joven.patrulla_id,
     )
     entrega.texto = texto.strip()
     if nombre_foto:
@@ -160,7 +174,11 @@ def entregar_reto(
         medios.borrar_foto(entrega.archivo_foto)
         entrega.archivo_foto = nombre_foto
     entrega.enviada_en = datetime.now(timezone.utc)
-    entrega.patrulla_id = usuario.patrulla_id
+    entrega.patrulla_id = joven.patrulla_id
+    # Se pisa en las dos direcciones, y la segunda importa: si el chico recupera
+    # el teléfono y reescribe lo que le habían cargado, la firma se va. Volvió a
+    # ser lo que escribió él, y decir que la cargó otro sería mentir.
+    entrega.dictada_por_id = dictada_por.id if dictada_por else None
 
     reto = asignacion.reto
     desafio = reto.desafio
@@ -193,8 +211,104 @@ def entregar_reto(
     entrega.compartida_en = datetime.now(timezone.utc) if entrega.compartida else None
 
     sesion.add(entrega)
+    return entrega
+
+
+@router.post("/reto/{asignacion_id}")
+def entregar_reto(
+    asignacion_id: int,
+    request: Request,
+    texto: str = Form(""),
+    compartir: bool = Form(False),
+    foto: UploadFile | None = File(None),
+    usuario: Usuario = Depends(solo_joven),
+    sesion: Session = Depends(obtener_sesion),
+):
+    asignacion = _asignacion_visible(sesion, asignacion_id, usuario)
+    _registrar_entrega(sesion, asignacion, usuario, texto, foto, compartir)
     sesion.commit()
     return redirigir(f"/reto/{asignacion.id}")
+
+
+# --- Cargar lo que hizo alguien que está sin teléfono -------------------------
+#
+# Que la pausa lo saque del divisor del tablero le arregla el número a su
+# patrulla, pero a él no le devuelve nada: sigue sin poder registrar lo que hace
+# y su progresión se frena igual. Esto es la otra mitad. Le cuenta a alguien lo
+# que hizo y esa persona lo escribe; la entrega es suya, le suma a su patrulla y
+# le cuenta para su carta, con la firma de quien la tipeó a la vista.
+#
+# Pueden hacerlo un educador o alguien de su misma patrulla. Los compañeros no
+# están por comodidad: los retos son diarios, el educador no está todos los días
+# y el Guía sí. Es para lo que existe el sistema de patrullas (cap. 4).
+#
+# Lo que no se hace por otro es **publicar en el muro**: compartir lo decide
+# quien lo hizo (ver `servicios/muro.py`), así que esto nace sin compartir y el
+# interruptor lo aprieta su dueño cuando recupera el teléfono.
+
+
+def _a_quien_le_cargo(sesion: Session, joven_id: int, quien: Usuario, dia):
+    """El joven en pausa y su pausa, si esta persona le puede cargar entregas.
+
+    Un 404 y no un 403 cuando no corresponde: mismo criterio que el resto de la
+    aplicación —el Libro de Oro de otra patrulla tampoco «existe»—, así que de
+    acá no se deduce quién está sin teléfono en una patrulla que no es la tuya.
+    """
+    joven = sesion.get(Usuario, joven_id)
+    if joven is None or not joven.activo or joven.es_educador:
+        raise HTTPException(404, "Esa persona no está en tu Unidad.")
+    pausa = pausas.vigente(sesion, joven.id, dia)
+    if not pausas.puede_dictar(quien, joven, pausa):
+        raise HTTPException(404, "Esa persona no está en tu Unidad.")
+    return joven, pausa
+
+
+@router.get("/sin-telefono/{joven_id}")
+def cargar_lo_que_hizo(
+    joven_id: int,
+    request: Request,
+    usuario: Usuario = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Los retos de los días que estuvo sin teléfono, para cargarlos uno por uno."""
+    fecha = retos.hoy()
+    joven, pausa = _a_quien_le_cargo(sesion, joven_id, usuario, fecha)
+    pendientes = pausas.retos_a_cargar(sesion, joven, pausa, fecha)
+    return render(
+        request,
+        "sin_telefono.html",
+        usuario=usuario,
+        joven=joven,
+        pausa=pausa,
+        fecha=fecha,
+        pendientes=pendientes,
+        faltan=pausas.cuantos_faltan(pendientes),
+        dias_para_atras=pausas.DIAS_PARA_ATRAS,
+    )
+
+
+@router.post("/sin-telefono/{joven_id}/reto/{asignacion_id}")
+def dictar_entrega(
+    joven_id: int,
+    asignacion_id: int,
+    texto: str = Form(""),
+    foto: UploadFile | None = File(None),
+    usuario: Usuario = Depends(usuario_actual),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Carga la entrega de otro. Queda a su nombre, firmada por quien la escribió."""
+    fecha = retos.hoy()
+    joven, _ = _a_quien_le_cargo(sesion, joven_id, usuario, fecha)
+    # El alcance del reto se mide contra **él**, no contra quien está cargando:
+    # el reto puede ser de su patrulla, y quien carga puede ser un educador que
+    # no está en ninguna.
+    asignacion = _asignacion_visible(sesion, asignacion_id, joven)
+
+    _registrar_entrega(
+        sesion, asignacion, joven, texto, foto, compartir=False, dictada_por=usuario
+    )
+    sesion.commit()
+    return redirigir(f"/sin-telefono/{joven.id}")
 
 
 @router.get("/mis-retos")

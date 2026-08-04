@@ -42,6 +42,9 @@
         </span>
       </div>
 
+      {% if e.dictada_por %}
+        <p class="chips"><span class="chip">✍️ lo escribió {{ e.dictada_por.nombre }}, porque estabas sin teléfono</span></p>
+      {% endif %}
       {% if e.texto %}<p>{{ e.texto }}</p>{% endif %}
       {% if e.devolucion %}
         <div class="comentario">{{ e.devolucion }}<footer class="meta">Devolución de tu educador/a</footer></div>

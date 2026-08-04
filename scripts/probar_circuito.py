@@ -53,6 +53,7 @@ from app.models import (  # noqa: E402
     Idea,
     ParticipacionActividad,
     Patrulla,
+    PausaSinTelefono,
     PeriodoCargo,
     ROL_JOVEN,
     Reto,
@@ -1776,6 +1777,117 @@ def main() -> int:
 
     check("el tablero explica por qué es por integrante",
           "por integrante" in joven.get("/tablero").text)
+
+    # --- 9b. Quien está sin teléfono no divide -------------------------------
+    #
+    # A alguien se le rompe el celular un martes y su patrulla pasa dos semanas
+    # dividiendo por cinco lo que pudieron hacer cuatro: quedan atrás por algo
+    # que no decidió ninguno. Tienen que pasar las dos cosas —que esa cabeza
+    # salga del divisor, y que igual pueda registrar lo que hace dictándoselo a
+    # alguien—, porque solo la primera le arregla el número a la patrulla y lo
+    # deja a él mirando de afuera.
+
+    check("un joven no pone a nadie sin teléfono",
+          joven.post(f"/jovenes/{bruno_id}/pausa").status_code == 403)
+
+    edu.post(f"/jovenes/{bruno_id}/pausa",
+             data={"motivo": "Se le rompió el teléfono", "vuelve_el": ""})
+    with SesionLocal() as s:
+        pausa = s.scalar(
+            select(PausaSinTelefono).where(PausaSinTelefono.joven_id == bruno_id)
+        )
+        check("el educador registra que está sin teléfono", pausa is not None)
+        pausa_id = pausa.id
+        check("y queda firmado quién lo anotó", pausa.abierta_por_id is not None)
+
+        filas = servicio_puntajes.tablero_de_unidad(
+            s, halcones_p.unidad_id, date.today()
+        )
+        por_nombre = {f.patrulla.nombre: f for f in filas}
+        halcones_f, ceibos_f = por_nombre["Halcones"], por_nombre["Ceibos"]
+        check("sigue siendo integrante de su patrulla",
+              halcones_f.integrantes == 2, halcones_f.integrantes)
+        check("pero no divide",
+              halcones_f.dividen == 1 and halcones_f.en_pausa == 1,
+              f"{halcones_f.dividen} dividen, {halcones_f.en_pausa} en pausa")
+        check("y los puntos que ya había hecho se quedan en el total",
+              halcones_f.puntos == 20, halcones_f.puntos)
+        check("así que su patrulla deja de quedar atrás por eso",
+              halcones_f.promedio > ceibos_f.promedio,
+              f"{halcones_f.promedio} contra {ceibos_f.promedio}")
+
+    check("el tablero dice por qué divide por menos",
+          "sin teléfono" in joven.get("/tablero").text)
+    # El motivo lo escribió un educador y se queda del lado del equipo: a la
+    # patrulla le alcanza con saber que está sin teléfono.
+    check("el motivo no se le muestra a la Unidad",
+          "Se le rompió el teléfono" not in joven.get("/tablero").text
+          and "Se le rompió el teléfono" not in joven.get(f"/patrulla/{halcones_p.id}").text)
+    check("y sí al equipo", "Se le rompió el teléfono" in edu.get("/jovenes").text)
+
+    # Le cargan lo que hizo. Un reto de hoy que él no tiene cómo entregar.
+    edu.post("/asignar", data={"reto_id": str(reto_id), "fecha": date.today().isoformat(),
+                               "alcance": "unidad"})
+    with SesionLocal() as s:
+        para_dictar = s.scalar(select(func.max(Asignacion.id)))
+
+    check("su patrulla se entera al entrar", "Cargar lo que hizo" in joven.get("/hoy").text)
+    check("y puede abrir la pantalla para cargarle",
+          joven.get(f"/sin-telefono/{bruno_id}").status_code == 200)
+    check("otra patrulla no", elisa.get(f"/sin-telefono/{bruno_id}").status_code == 404)
+    check("un educador siempre puede", edu.get(f"/sin-telefono/{bruno_id}").status_code == 200)
+    check("nadie carga entregas de quien sí tiene el teléfono",
+          edu.get(f"/sin-telefono/{eli_id}").status_code == 404)
+    check("ni se dicta a sí mismo", joven.get(f"/sin-telefono/{ana_id}").status_code == 404)
+
+    dictado = ("Nos contó que ayudó a cortar la leña del fogón y que aprendió a "
+               "apilarla para que se mantenga seca.")
+    joven.post(f"/sin-telefono/{bruno_id}/reto/{para_dictar}", data={"texto": dictado})
+    with SesionLocal() as s:
+        cargada = s.scalar(
+            select(Entrega).where(Entrega.asignacion_id == para_dictar,
+                                  Entrega.joven_id == bruno_id)
+        )
+        check("la entrega queda a nombre de quien hizo el reto", cargada is not None)
+        check("con la firma de quien la escribió", cargada.dictada_por_id == ana_id)
+        check("los puntos van a su patrulla",
+              cargada.patrulla_id == halcones_p.id and cargada.puntaje_otorgado > 0,
+              cargada.puntaje_otorgado)
+        # Compartir lo decide quien lo hizo y nadie más: el interruptor lo
+        # aprieta él cuando recupere el teléfono.
+        check("al muro no va: eso lo decide su dueño", not cargada.compartida)
+
+    # La firma se muestra en los tres lados donde esa entrega se lee. Son tres
+    # plantillas distintas y una rota no se nota hasta que alguien entra.
+    check("él ve quién se la escribió",
+          "lo cargó Ana" in companiera.get(f"/reto/{para_dictar}").text)
+    check("y también en su lista de retos",
+          "lo escribió Ana" in companiera.get("/mis-retos").text)
+    check("el equipo la ve marcada entre las entregas",
+          "la escribió Ana" in edu.get("/validaciones").text)
+
+    # Cerrarla se nota en el momento, no al día siguiente: `vuelve_el` es el día
+    # que lo tiene de vuelta y ese día ya cuenta.
+    edu.post(f"/jovenes/{bruno_id}/pausa/{pausa_id}/cerrar")
+    with SesionLocal() as s:
+        cerrada = s.get(PausaSinTelefono, pausa_id)
+        check("cerrar la pausa no la borra: le pone el día de vuelta",
+              cerrada is not None and cerrada.vuelve_el == date.today())
+        check("y queda firmado quién la cerró", cerrada.cerrada_por_id is not None)
+        check("no sigue vigente el mismo día que se cierra",
+              not cerrada.vigente_en(date.today()))
+        halcones_f = next(
+            f for f in servicio_puntajes.tablero_de_unidad(
+                s, halcones_p.unidad_id, date.today())
+            if f.patrulla.nombre == "Halcones"
+        )
+        check("vuelve a contar en el divisor en el momento",
+              halcones_f.dividen == 2 and halcones_f.en_pausa == 0,
+              f"{halcones_f.dividen} dividen, {halcones_f.en_pausa} en pausa")
+    check("y ya nadie escribe en su nombre",
+          joven.get(f"/sin-telefono/{bruno_id}").status_code == 404)
+    check("la entrega que le habían cargado se queda",
+          companiera.get(f"/reto/{para_dictar}").status_code == 200)
 
     # --- 10. Varios cargos a la vez ------------------------------------------
     #

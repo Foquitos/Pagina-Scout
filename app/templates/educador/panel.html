@@ -55,6 +55,30 @@
   </div>
 {% endif %}
 
+{# Sin teléfono. No es urgente como un aviso, pero es lo único de esta lista que
+   mientras tanto le está costando puntos a una patrulla y días de progresión a
+   una persona. #}
+{% if sin_telefono %}
+  <div class="aviso">
+    <span class="icono" aria-hidden="true">📵</span>
+    <div>
+      <strong>{{ sin_telefono|length }}
+        {{ 'están' if sin_telefono|length != 1 else 'está' }} sin teléfono.</strong>
+      <p>Esos días no cuentan en el divisor del promedio de su patrulla, así que
+        nadie queda atrás por eso. Lo que sí hace falta es sentarse con
+        {{ 'ellos' if sin_telefono|length != 1 else 'él o ella' }} y cargar lo que
+        hicieron: también lo puede hacer su patrulla.</p>
+      <p class="chips">
+        {% for joven, pausa in sin_telefono %}
+          <a class="chip" href="/sin-telefono/{{ joven.id }}">
+            {{ primer_nombre(joven.nombre) }} · desde el {{ pausa.desde.strftime('%d/%m') }}
+          </a>
+        {% endfor %}
+      </p>
+    </div>
+  </div>
+{% endif %}
+
 {% if cartas_a_conversar %}
   <div class="aviso">
     <span class="icono" aria-hidden="true">💬</span>

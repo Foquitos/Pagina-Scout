@@ -18,6 +18,50 @@
   {% endif %}
 </div>
 
+{# --- Si el que está sin teléfono sos vos ---
+   Puede llegar acá igual: una compu prestada, el teléfono de la casa. Tiene
+   derecho a saber qué está pasando con su nombre en el tablero. #}
+{% if mi_pausa %}
+  <div class="aviso info">
+    <span class="icono" aria-hidden="true">📵</span>
+    <div>
+      <strong>El equipo sabe que estás sin teléfono.</strong>
+      <p>Mientras dure, tu patrulla no divide sus puntos por vos, así que no
+        quedan atrás por algo que no elegiste. Contale a alguien de tu patrulla o
+        a tu educador/a lo que vayas haciendo y te lo cargan: los puntos van a tu
+        patrulla y te cuenta para tus cartas igual.</p>
+    </div>
+  </div>
+{% endif %}
+
+{# --- Alguien de la patrulla está sin teléfono ---
+   Va acá y no en una pantalla aparte a propósito: si esto no aparece donde todos
+   entran todos los días, cargarle los retos a alguien no se le ocurre a nadie. #}
+{% if sin_telefono %}
+  <h2>📵 {{ 'Están sin teléfono' if sin_telefono|length != 1 else 'Está sin teléfono' }}</h2>
+  <p class="sub-titulo">Si te contaron lo que hicieron, cargáselo: la entrega
+    queda a su nombre y suma a la patrulla. Sin eso, la patrulla pierde por algo
+    que no decidió ninguno.</p>
+  <div class="rejilla angosta">
+    {% for joven, pausa in sin_telefono %}
+      <a class="tarjeta enlazada" href="/sin-telefono/{{ joven.id }}"
+         style="text-decoration:none; color:inherit">
+        <div class="encabezado-tarjeta">
+          <span class="avatar" style="--color: {{ color_de(joven.nombre) }}" aria-hidden="true">{{ iniciales(joven.nombre) }}</span>
+          <div>
+            <h3 style="margin:0">{{ joven.nombre }}</h3>
+            <p class="meta">
+              <span>desde el {{ pausa.desde.strftime('%d/%m') }}</span>
+              {% if pausa.vuelve_el %}<span>vuelve el {{ pausa.vuelve_el.strftime('%d/%m') }}</span>{% endif %}
+            </p>
+          </div>
+        </div>
+        <p class="meta">Cargar lo que hizo →</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <h2>🎯 {{ 'Tus retos de hoy' if asignaciones|length > 1 else 'Tu reto de hoy' }}</h2>
 
 {% if not usuario.unidad_id %}

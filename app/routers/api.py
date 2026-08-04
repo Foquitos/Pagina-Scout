@@ -113,6 +113,13 @@ def tablero(
             "puntos": f.puntos,
             "acciones": f.acciones,
             "integrantes": f.integrantes,
+            # Cuántos de esos integrantes están sin teléfono y cuántos quedan
+            # dividiendo. Las dos, porque el promedio no se puede reconstruir de
+            # `puntos / integrantes` y quien consuma esto tiene que poder ver por
+            # qué. Ver `servicios/pausas.py`.
+            "en_pausa": f.en_pausa,
+            "dividen": f.dividen,
+            "promedio": round(f.promedio, 2),
             "racha": f.racha,
         }
         for f in filas

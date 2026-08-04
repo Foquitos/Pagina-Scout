@@ -75,8 +75,24 @@
   </div>
 {% endif %}
 
+{# Lo escribió otro porque vos no tenías el teléfono. Se dice acá, en tu propia
+   pantalla y antes que nada: es tu entrega y tenés que poder ver qué se escribió
+   en tu nombre. Si no es lo que hiciste, corregilo abajo. #}
+{% if entrega and entrega.dictada_por %}
+  <div class="aviso info">
+    <span class="icono" aria-hidden="true">✍️</span>
+    <div>
+      <strong>Esto lo cargó {{ entrega.dictada_por.nombre }}.</strong>
+      <p>Lo escribió con lo que le contaste, mientras estabas sin teléfono. La
+        entrega es tuya y los puntos son de tu patrulla.
+        {% if entrega.estado != 'aprobada' %}Si algo no quedó como lo hiciste, corregilo acá abajo.{% endif %}</p>
+    </div>
+  </div>
+{% endif %}
+
 {% if entrega and entrega.archivo_foto %}
-  <img class="foto" src="/fotos/{{ entrega.archivo_foto }}" alt="La foto que subiste">
+  <img class="foto" src="/fotos/{{ entrega.archivo_foto }}"
+       alt="{{ 'La foto que subieron' if entrega.dictada_por else 'La foto que subiste' }}">
 {% endif %}
 
 {% if not entrega or entrega.estado != 'aprobada' %}

@@ -61,7 +61,8 @@ app/
   dependencias.py    usuario de sesión y guardas por rol
   routers/
     auth.py          ingreso, salida y la contraseña propia
-    joven.py         hoy, reto, mis retos, el muro, mis cartas, bitácora
+    joven.py         hoy, reto, mis retos, el muro, mis cartas, bitácora,
+                     y cargarle la entrega a quien está sin teléfono
     patrulla.py      la patrulla por dentro: identidad, cargos, Consejo, acuerdos
     participacion.py las ideas para el ciclo
     agenda.py        el calendario del ciclo y el «estuve»
@@ -74,6 +75,7 @@ app/
     retos.py         qué reto ve cada joven hoy
     validacion.py    contrato de validación de evidencias
     puntajes.py      tablero de patrullas y rachas
+    pausas.py        quién está sin teléfono y quién le puede cargar lo que hizo
     progresion.py    cartas elegidas, avance, cierre de cartas y paso de etapa
     patrulla.py      cargos, Consejo de Patrulla y acuerdos
     participacion.py ideas, apoyos y en qué anda cada una
@@ -113,6 +115,11 @@ gana siempre a una de cuatro sin que nadie se haya esforzado más. Así que la
 cifra grande es **puntos por integrante**; el total sigue a la vista, pero no
 decide quién va arriba. Los educadores no cuentan para el promedio: no entregan
 retos.
+
+**Y quien no puede entregar no divide.** El mismo argumento, un paso más: si a
+uno se le rompió el celular, dividir por cinco lo que pudieron hacer cuatro manda
+a esa patrulla al fondo por algo que no decidió ninguno. Ver [Cuando alguien se
+queda sin teléfono](#cuando-alguien-se-queda-sin-teléfono).
 
 **Un validador automático nunca rechaza, y la sección del educador no es una
 cola de aprobación.** Una entrega completa se da por buena sola y suma en el
@@ -168,6 +175,8 @@ cinco intentos fallidos por cuenta y la cuenta descansa quince minutos.
 | Sumar otro educador | `/educadores` | cualquier educador |
 | Cambiar la contraseña propia | `/clave` | cada uno |
 | Blanquear la de un joven | `/jovenes` | cualquier educador |
+| Anotar que alguien está sin teléfono | `/jovenes` | cualquier educador |
+| Cargar la entrega de quien está sin teléfono | `/sin-telefono/{id}` | su patrulla o un educador |
 | Blanquear la de un educador | `/educadores` | otro educador del equipo |
 | Sacar a un educador del equipo | `/educadores` | otro educador del equipo |
 | Archivar un joven que se fue | `/jovenes` | cualquier educador |
@@ -249,6 +258,59 @@ nacido un 28.
 A `/clave` y a `/educadores` se llega desde el **menú de la cuenta**, arriba a la
 derecha: son cosas de la persona, no secciones del programa (ver [La
 pantalla](#la-pantalla)).
+
+## Cuando alguien se queda sin teléfono
+
+Se le rompió el celular, se lo sacaron en casa, lo comparte con una hermana que
+lo necesita para la escuela. Ninguna de esas cosas la decidió él, y hasta ahora
+las pagaba su patrulla: el tablero divide los puntos por la cantidad de
+integrantes, así que una patrulla de cinco pasaba dos semanas dividiendo por
+cinco lo que pudieron hacer cuatro. Quedaban atrás sin que nadie hiciera nada mal.
+
+Un educador lo registra desde `/jovenes` y arranca ahí mismo. Mientras dure pasan
+dos cosas, y **hacen falta las dos**:
+
+- **No divide.** Esa cabeza sale del divisor del promedio. Los puntos que ya
+  había hecho se quedan en el total —los hizo, y borrarlos sería la injusticia de
+  al lado— y el tablero lo dice en voz alta: «20 entre 4, 1 sin teléfono». Un
+  número que baja sin explicación es un número en el que nadie confía.
+- **Se le puede cargar lo que hizo.** Que salga del divisor le arregla el número
+  a la patrulla, pero a él no le devuelve nada: sigue sin poder registrar lo que
+  hace y su progresión se frena igual. Así que le cuenta a alguien lo que hizo y
+  esa persona lo escribe en `/sin-telefono/{joven_id}`.
+
+**La entrega dictada es suya.** Suma a su patrulla y le cuenta para su carta,
+igual que si la hubiera cargado él. Lo único que se agrega es la firma de quien
+la tipeó (`Entrega.dictada_por_id`), y se muestra en los tres lados donde esa
+entrega se lee: en la suya, en la de su patrulla y en `/validaciones`. Quien
+escribió es de la patrulla que cobra los puntos, así que eso se mira.
+
+**Pueden cargarle un educador o alguien de su misma patrulla.** Los compañeros no
+están por comodidad: los retos son diarios, el educador no está todos los días y
+el Guía sí. Es literalmente para lo que existe el sistema de patrullas (cap. 4).
+Por eso el aviso aparece en `/hoy`, que es donde todos entran: si esto viviera en
+una pantalla aparte, cargarle los retos a alguien no se le ocurriría a nadie.
+
+**Al muro no va nada de ahí.** Compartir lo decide quien lo hizo y nadie más, así
+que la entrega dictada nace sin compartir y el interruptor lo aprieta su dueño
+desde `/reto/{id}` en cuanto tenga el teléfono de vuelta.
+
+**El motivo lo lee solo el equipo.** A la patrulla y al tablero les alcanza con
+«está sin teléfono»; «lo castigaron en casa» es de esa familia y no de treinta
+personas. Misma regla que la edad en los cumpleaños: se muestra la mitad que hace
+falta y no el dato entero.
+
+**`vuelve_el` es el día que lo tiene de vuelta, no el último día sin él.** Se
+llama así para que nadie tenga que preguntarse si el borde entra —ese día ya
+cuenta—, y conviene ponerlo siempre que se sepa: la pausa se vence sola y nadie
+queda fuera del divisor porque el sábado no se acordaron de cerrarla. Sin fecha
+también vale, y entonces se cierra a mano; cerrarla se nota en el tablero en el
+momento, no al día siguiente. Cerrar no borra la pausa: que esa semana existió es
+parte de por qué el tablero decía lo que decía.
+
+Lo único que la pausa **no** hace es entregar sola. Si nadie le pregunta qué hizo,
+no se carga nada, y así tiene que ser: la aplicación puede sacar la injusticia del
+medio, no puede reemplazar que la patrulla se ocupe de uno de los suyos.
 
 **Blanquear es volver al día uno**, no elegirle una contraseña a otro: la
 devuelve a ser el nombre de usuario y la persona pone la suya al entrar. Es todo
@@ -849,13 +911,14 @@ pip install -r requirements-dev.txt
 python scripts/probar_circuito.py
 ```
 
-Son **320 verificaciones** sobre una base de datos temporal: no toca `scout.db`.
+Son **470 verificaciones** sobre una base de datos temporal: no toca `scout.db`.
 Recorre lo que importa de punta a punta —un joven entra, ve el reto del día,
 entrega, el validador decide, el educador confirma, los puntos aparecen en la
 patrulla— y también lo que no se ve: que un educador no vote en la Asamblea, que
 una patrulla no lea la de al lado, que la carta la cierre su dueño, que sacar un
-reto no borre la Bitácora de nadie y que ninguna pantalla se rompa para quien
-todavía no tiene patrulla.
+reto no borre la Bitácora de nadie, que a quien está sin teléfono le pueda cargar
+la entrega su patrulla pero no la de al lado, y que ninguna pantalla se rompa
+para quien todavía no tiene patrulla.
 
 El último bloque entra a **todas** las páginas con los dos roles: una plantilla
 rota no se nota hasta que alguien abre esa pantalla.

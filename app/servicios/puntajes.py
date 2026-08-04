@@ -20,6 +20,13 @@ cuatro sin que nadie se haya esforzado más.
 Así que la cifra grande es **puntos por integrante**. El total sigue estando a la
 vista, porque es lo que la patrulla siente que hizo; lo que no hace es decidir
 quién va arriba.
+
+**Y quien no puede entregar no divide.** El mismo argumento, un paso más: si una
+patrulla de cinco tiene a uno con el teléfono roto, dividir por cinco lo que
+pudieron hacer cuatro la manda al fondo del tablero por algo que no decidió
+ninguno de ellos. Mientras esa pausa esté registrada (`servicios/pausas.py`), esa
+cabeza sale del divisor. Los puntos que hizo se quedan en el total —los hizo—, y
+el tablero muestra las dos cifras para que se entienda de dónde sale el promedio.
 """
 
 from __future__ import annotations
@@ -38,6 +45,7 @@ from app.models import (
     Patrulla,
     Usuario,
 )
+from app.servicios import pausas
 
 
 @dataclass
@@ -47,17 +55,27 @@ class FilaTablero:
     acciones: int
     integrantes: int
     racha: int
+    # Cuántos de esos integrantes están hoy sin teléfono. Se guarda aparte del
+    # divisor para poder decirlo en pantalla: un número que baja sin explicación
+    # es un número en el que nadie confía.
+    en_pausa: int = 0
+
+    @property
+    def dividen(self) -> int:
+        """Los que sí podían entregar: sobre estos se saca el promedio."""
+        return max(self.integrantes - self.en_pausa, 0)
 
     @property
     def promedio(self) -> float:
         """Puntos por integrante: la cifra que ordena el tablero.
 
         Una patrulla sin integrantes activos da 0 y no una división por cero;
-        tampoco tendría a quién premiarle nada.
+        tampoco tendría a quién premiarle nada. Lo mismo si están todos en pausa:
+        no hay a quién dividirle, y el total sigue estando a la vista.
         """
-        if not self.integrantes:
+        if not self.dividen:
             return 0.0
-        return self.puntos / self.integrantes
+        return self.puntos / self.dividen
 
     @property
     def promedio_texto(self) -> str:
@@ -129,6 +147,8 @@ def tablero_de_unidad(sesion: Session, unidad_id: int, hasta: date) -> list[Fila
             .group_by(Usuario.patrulla_id)
         ).all()
     )
+    # Los que hoy no tienen cómo entregar. Salen del divisor mientras dure.
+    en_pausa = pausas.conteo_por_patrulla(sesion, unidad_id, hasta)
 
     filas = [
         FilaTablero(
@@ -137,6 +157,7 @@ def tablero_de_unidad(sesion: Session, unidad_id: int, hasta: date) -> list[Fila
             acciones=int(acciones.get(p.id, 0)),
             integrantes=int(integrantes.get(p.id, 0)),
             racha=racha_de_patrulla(sesion, p.id, hasta),
+            en_pausa=int(en_pausa.get(p.id, 0)),
         )
         for p in patrullas
     ]

@@ -80,6 +80,14 @@
       {% if e.compartida %}<span class="chip">📣 en el muro</span>{% endif %}
     </div>
 
+    {# Una entrega que escribió otro se dice, siempre y en todas partes. No es
+       sospecha: es que quien la cargó es de la patrulla que cobra los puntos, y
+       eso se mira. Ver `servicios/pausas.py`. #}
+    {% if e.dictada_por %}
+      <p class="chips"><span class="chip">✍️ la escribió {{ e.dictada_por.nombre }};
+        {{ primer_nombre(e.joven.nombre) }} estaba sin teléfono</span></p>
+    {% endif %}
+
     {% if e.asignacion.reto.desafio %}
       <p class="meta">📇 Carta {{ e.asignacion.reto.desafio.competencia.numero }} —
         {{ e.asignacion.reto.desafio.competencia.titulo }}</p>

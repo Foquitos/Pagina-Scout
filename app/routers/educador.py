@@ -38,6 +38,7 @@ from app.models import (
     EntradaLibroOro,
     Entrega,
     Patrulla,
+    PausaSinTelefono,
     PeriodoCargo,
     Reto,
     Usuario,
@@ -49,6 +50,7 @@ from app.servicios import (
     especialidades,
     moderacion,
     participacion,
+    pausas,
     progresion,
     puntajes,
     retos,
@@ -122,6 +124,10 @@ def panel(
         # Alguien pidió que el equipo mire una foto publicada. Es lo único de
         # este panel que puede ser urgente, así que se muestra arriba de todo.
         avisadas=moderacion.cuantas_sin_mirar(sesion, unidad_id),
+        # Quiénes están sin teléfono. Va en el panel y no escondido en una ficha
+        # porque es lo que explica que el tablero divida por menos, y porque
+        # alguien tiene que sentarse a cargar lo que hicieron.
+        sin_telefono=pausas.a_quienes_puede_cargar(sesion, usuario, fecha),
         # Los que vienen en el mes. Acá se muestran con la edad, que del lado de
         # los jóvenes no se muestra: ver `servicios/cumpleanos.py`.
         cumples=cumpleanos.proximos(sesion, unidad_id, fecha),
@@ -730,6 +736,11 @@ def listar_jovenes(
         # progresión escrita se archiva. Se dice antes de que aprieten.
         deja_rastro={j.id: cuentas.dejo_rastro(sesion, j.id) for j in jovenes},
         conteos=progresion.conteo_por_joven(sesion, jovenes),
+        # Quién está sin teléfono hoy, para poder cerrarle la pausa desde su
+        # tarjeta y para que se vea de un vistazo por qué el tablero divide por
+        # menos. El motivo se lee solo acá: ver `models.PausaSinTelefono`.
+        en_pausa=pausas.vigentes_de(sesion, [j.id for j in jovenes], retos.hoy()),
+        motivos_sugeridos=pausas.MOTIVOS_SUGERIDOS,
         patrullas=list(
             sesion.scalars(
                 select(Patrulla)
@@ -880,6 +891,83 @@ def reincorporar_joven(
     cuentas.reincorporar(joven)
     sesion.commit()
     return redirigir("/jovenes")
+
+
+# --- Sin teléfono ------------------------------------------------------------
+#
+# Un chico rompe el celular un martes y su patrulla pasa dos semanas dividiendo
+# por cinco lo que pudieron hacer cuatro. La pausa corta eso: mientras dure, esa
+# cabeza sale del divisor del promedio y lo que él haga se lo puede cargar un
+# educador o alguien de su patrulla (ver `servicios/pausas.py` y `/sin-telefono`).
+#
+# La abre y la cierra el equipo, no el propio joven ni su patrulla: mueve el
+# tablero de toda la Unidad, y acá lo que afecta a otros lo firma alguien.
+
+
+@router.post("/jovenes/{joven_id}/pausa")
+def abrir_pausa(
+    joven_id: int,
+    motivo: str = Form(""),
+    vuelve_el: str = Form(""),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """«Está sin teléfono». Arranca hoy y, si se sabe, con el día que lo recupera.
+
+    Poner ese día es lo que conviene siempre que se sepa: la pausa se vence sola
+    y nadie queda fuera del divisor porque el sábado no se acordaron de cerrarla.
+    Sin fecha también vale —un teléfono roto no tiene fecha de arreglo— y
+    entonces hay que venir a cerrarla a mano.
+    """
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
+    if not joven.activo:
+        raise HTTPException(400, "Esa persona ya no está en la Unidad.")
+
+    hoy = retos.hoy()
+    if pausas.vigente(sesion, joven.id, hoy) is not None:
+        raise HTTPException(400, f"{joven.nombre} ya figura sin teléfono.")
+
+    pausas.abrir(
+        sesion, joven, usuario, motivo=motivo, desde=hoy, vuelve_el=_dia_de_vuelta(vuelve_el)
+    )
+    sesion.commit()
+    # Redirige siempre, también cuando el pedido lo hizo `app.js`: los dos
+    # formularios son `data-sin-recarga`, que espera la página entera para
+    # repintarla. Devolver un `{"ok": true}` acá dejaría la tarjeta mostrando
+    # que sigue con teléfono hasta que alguien recargue.
+    return redirigir("/jovenes")
+
+
+@router.post("/jovenes/{joven_id}/pausa/{pausa_id}/cerrar")
+def cerrar_pausa(
+    joven_id: int,
+    pausa_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """«Ya tiene el teléfono». Vuelve a contar en el promedio desde hoy mismo."""
+    joven = _joven_de_la_unidad(sesion, joven_id, usuario)
+    pausa = sesion.get(PausaSinTelefono, pausa_id)
+    if pausa is None or pausa.joven_id != joven.id:
+        raise HTTPException(404, "Esa pausa no existe.")
+
+    pausas.cerrar(pausa, usuario, retos.hoy())
+    sesion.commit()
+    return redirigir("/jovenes")
+
+
+def _dia_de_vuelta(texto: str) -> date | None:
+    """El día que recupera el teléfono, o nada si no se sabe.
+
+    Tiene que ser mañana o después. Una fecha de hoy o anterior se descarta en
+    vez de guardarse: dejaría una pausa que nace vencida, y el educador se iría
+    de la pantalla creyendo que la registró.
+    """
+    try:
+        fecha = date.fromisoformat((texto or "").strip())
+    except (AttributeError, ValueError):
+        return None
+    return fecha if fecha > retos.hoy() else None
 
 
 # --- Equipo de educadores ----------------------------------------------------

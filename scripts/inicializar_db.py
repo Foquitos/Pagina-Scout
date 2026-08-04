@@ -83,6 +83,10 @@ COLUMNAS_NUEVAS = {
         # Nadie bajó nada todavía: NULL es exactamente eso y es el default.
         "oculta_en": "DATETIME",
         "oculta_por_id": "INTEGER REFERENCES usuarios(id)",
+        # Vacío para todo lo que ya está entregado, que es lo correcto: hasta
+        # ahora la única forma de entregar era desde el propio teléfono, así que
+        # todas las entregas viejas las escribió su dueño.
+        "dictada_por_id": "INTEGER REFERENCES usuarios(id)",
     },
     "libro_oro": {
         "oculta_en": "DATETIME",

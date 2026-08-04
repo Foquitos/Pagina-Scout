@@ -6,7 +6,7 @@ import hashlib
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
 from app.config import PUNTAJE_POR_DEFECTO, ZONA_HORARIA
@@ -33,8 +33,16 @@ def hoy() -> date:
     return datetime.now(ZONA_HORARIA).date()
 
 
-def asignaciones_del_dia(sesion: Session, joven: Usuario, fecha: date) -> list[Asignacion]:
-    """Retos vigentes para un joven: los de su Unidad, su Patrulla y los suyos."""
+def asignaciones_entre(
+    sesion: Session, joven: Usuario, desde: date, hasta: date
+) -> list[Asignacion]:
+    """Los retos que le tocaban a un joven entre dos fechas, ambas incluidas.
+
+    Qué le toca a alguien —los de su Unidad, los de su Patrulla y los suyos— se
+    decide en un solo lugar y no en cada consulta: acá. El día de hoy es el caso
+    de un día, y cargar lo que hizo alguien que estuvo sin teléfono es el caso de
+    una semana.
+    """
     if joven.unidad_id is None:
         return []
 
@@ -48,18 +56,23 @@ def asignaciones_del_dia(sesion: Session, joven: Usuario, fecha: date) -> list[A
             & (Asignacion.patrulla_id == joven.patrulla_id)
         )
 
-    from sqlalchemy import or_
-
     consulta = (
         select(Asignacion)
         .where(
             Asignacion.unidad_id == joven.unidad_id,
-            Asignacion.fecha == fecha,
+            Asignacion.fecha >= desde,
+            Asignacion.fecha <= hasta,
             or_(*condiciones),
         )
-        .order_by(Asignacion.id)
+        .order_by(Asignacion.fecha.desc(), Asignacion.id)
     )
     return list(sesion.scalars(consulta))
+
+
+def asignaciones_del_dia(sesion: Session, joven: Usuario, fecha: date) -> list[Asignacion]:
+    """Retos vigentes para un joven: los de su Unidad, su Patrulla y los suyos."""
+    asignaciones = asignaciones_entre(sesion, joven, fecha, fecha)
+    return sorted(asignaciones, key=lambda a: a.id)
 
 
 def entregas_por_asignacion(

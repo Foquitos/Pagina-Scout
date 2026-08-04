@@ -10,6 +10,12 @@
 
 {% include "educador/_provisoria.html" %}
 
+{# Sugerencias, no un menú cerrado: se puede escribir cualquier otra cosa. Una
+   sola lista para todas las tarjetas. #}
+<datalist id="motivos-sin-telefono">
+  {% for m in motivos_sugeridos %}<option value="{{ m }}">{% endfor %}
+</datalist>
+
 <details class="tarjeta" {{ 'open' if not jovenes }}>
   <summary>➕ Dar de alta</summary>
   <form method="post" action="/jovenes" data-sin-recarga="Cuenta creada.">
@@ -87,6 +93,57 @@
            Cuál es esa provisoria no se puede saber desde acá: se mostró una vez
            y no se guarda en ningún lado. Si se perdió, se blanquea y sale otra. #}
         <p class="chips"><span class="chip">🔑 todavía no entró a poner su contraseña</span></p>
+      {% endif %}
+
+      {# --- Sin teléfono ---
+         Se le rompió el celular, se lo sacaron en casa. Mientras esto esté
+         abierto, su patrulla no divide sus puntos por él —el tablero lo dice y
+         no lo esconde— y su patrulla o vos le pueden cargar lo que hizo.
+
+         El motivo se escribe acá y no sale de acá: a la patrulla y al tablero
+         les alcanza con «está sin teléfono». «Lo castigaron en casa» es de esa
+         familia y no de treinta personas. #}
+      {% set pausa = en_pausa.get(j.id) %}
+      {% if pausa %}
+        <div class="aviso info">
+          <span class="icono" aria-hidden="true">📵</span>
+          <div>
+            <strong>Sin teléfono desde el {{ pausa.desde.strftime('%d/%m') }}.</strong>
+            {% if pausa.vuelve_el %}
+              <p>Lo tiene de vuelta el {{ pausa.vuelve_el.strftime('%d/%m/%Y') }}, y ese
+                día vuelve a contar solo: no hay que apretar nada.</p>
+            {% else %}
+              <p>Sin fecha de vuelta: hay que cerrarla a mano cuando lo tenga.</p>
+            {% endif %}
+            {% if pausa.motivo %}<p class="meta">{{ pausa.motivo }} — lo ves solo el equipo.</p>{% endif %}
+          </div>
+        </div>
+        <div class="acciones">
+          <a class="boton secundario" href="/sin-telefono/{{ j.id }}">✍️ Cargar lo que hizo</a>
+        </div>
+        <form method="post" action="/jovenes/{{ j.id }}/pausa/{{ pausa.id }}/cerrar"
+              data-sin-recarga="Vuelve a contar en el promedio." class="acciones">
+          <button type="submit" class="secundario">📱 Ya tiene el teléfono</button>
+        </form>
+      {% else %}
+        <details>
+          <summary class="meta">📵 Está sin teléfono</summary>
+          <p class="meta">Mientras dure, no cuenta en el divisor del promedio de su
+            patrulla —los puntos que hizo se quedan en el total— y su patrulla o vos
+            le pueden cargar lo que haga. Arranca hoy.</p>
+          <form method="post" action="/jovenes/{{ j.id }}/pausa"
+                data-sin-recarga="Anotado: no divide mientras dure.">
+            <label for="motivo-{{ j.id }}">Por qué <span class="meta">(lo lee solo el equipo)</span></label>
+            <input type="text" id="motivo-{{ j.id }}" name="motivo" list="motivos-sin-telefono"
+                   placeholder="Se le rompió el teléfono">
+            <label for="vuelve-{{ j.id }}">Cuándo lo tiene de vuelta <span class="meta">(si se sabe)</span></label>
+            <input type="date" id="vuelve-{{ j.id }}" name="vuelve_el">
+            <p class="meta">Ese día ya cuenta de nuevo, y se destraba solo. Ponerlo es
+              lo que conviene: si no, alguien tiene que acordarse de venir a cerrar
+              esto, y nadie se acuerda. Igual se puede cerrar antes.</p>
+            <div class="acciones"><button type="submit" class="secundario">Anotarlo</button></div>
+          </form>
+        </details>
       {% endif %}
 
       {# El cumpleaños viaja en el mismo formulario que la patrulla y se guarda

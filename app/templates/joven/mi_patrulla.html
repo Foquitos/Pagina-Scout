@@ -73,6 +73,24 @@
         </p>
       {% endif %}
 
+      {# Que está sin teléfono, nunca por qué: el motivo es del equipo. Lo que la
+         patrulla tiene que saber es que a esta persona hay que preguntarle qué
+         hizo, porque sola no lo puede cargar. #}
+      {% set pausa = en_pausa.get(joven.id) %}
+      {% if pausa and joven.id != usuario.id %}
+        <div class="aviso info">
+          <span class="icono" aria-hidden="true">📵</span>
+          <div>
+            <strong>Está sin teléfono.</strong>
+            <p>Estos días no cuenta en el divisor del promedio, así que la patrulla
+              no queda atrás por esto. Preguntale qué hizo y cargáselo vos.</p>
+            <p><a class="boton secundario" href="/sin-telefono/{{ joven.id }}">✍️ Cargar lo que hizo</a></p>
+          </div>
+        </div>
+      {% elif pausa %}
+        <p class="chips"><span class="chip">📵 estás sin teléfono</span></p>
+      {% endif %}
+
       {% if avances %}
         <p class="chips">
           {% for a in avances %}

@@ -29,9 +29,10 @@
         <div class="nombre">{{ f.patrulla.nombre }}</div>
         <div class="puntos">{{ f.promedio_texto }}</div>
         <small>por integrante · {{ f.puntos }} en total
-          entre {{ f.integrantes }}</small>
+          entre {{ f.dividen }}</small>
         <div class="chips" style="justify-content:center">
           {% if f.racha %}<span class="chip">🔥 {{ f.racha }} día{{ 's' if f.racha != 1 }}</span>{% endif %}
+          {% if f.en_pausa %}<span class="chip">📵 {{ f.en_pausa }} sin teléfono</span>{% endif %}
           {% if usuario.patrulla_id == f.patrulla.id %}<span class="chip activo">tu patrulla</span>{% endif %}
         </div>
       </div>
@@ -55,7 +56,10 @@
           <div style="width: {{ (f.promedio / maximo * 100)|round }}%; background: {{ f.patrulla.color }}"></div>
         </div>
         <p class="meta" style="margin:0">
-          <span>{{ f.puntos }} punto{{ 's' if f.puntos != 1 }} entre {{ f.integrantes }}</span>
+          <span>{{ f.puntos }} punto{{ 's' if f.puntos != 1 }} entre {{ f.dividen }}</span>
+          {% if f.en_pausa %}
+            <span>📵 {{ f.en_pausa }} sin teléfono, no divide{{ 'n' if f.en_pausa != 1 }}</span>
+          {% endif %}
           <span>{{ f.acciones }} acci{{ 'ones validadas' if f.acciones != 1 else 'ón validada' }}</span>
           <span>🔥 racha de {{ f.racha }} día{{ 's' if f.racha != 1 }}</span>
         </p>
@@ -69,5 +73,14 @@
     es el promedio por integrante: nadie gana por ser más. Los puntos quedan en la
     patrulla donde se ganaron. Acompañarse no es competir.
   </p>
+
+  {% if filas | selectattr('en_pausa') | list %}
+    <p class="meta centrado">
+      📵 <strong>Quien está sin teléfono no divide.</strong> Si a alguien se le
+      rompió el celular o no lo puede usar, su patrulla no tiene por qué quedar
+      atrás por eso: esos días no cuenta en el promedio, y lo que ya había hecho
+      se queda en el total. Lo que haga igual se lo puede cargar su patrulla.
+    </p>
+  {% endif %}
 {% endif %}
 {% endblock %}

@@ -80,6 +80,76 @@
         {% if r.pide_texto %}<span class="chip">📝 pide relato</span>{% endif %}
         {% if r.pide_foto %}<span class="chip">📷 pide foto</span>{% endif %}
       </p>
+
+      {# --- Corregirlo ---
+         Un reto se escribe una vez y se agenda muchas, así que la consigna que
+         resultó confusa el primer día se arregla acá. Antes el único camino era
+         archivarlo y escribir otro casi igual, y la lista terminaba llena de
+         mellizos que además partían en dos la historia de lo mismo. #}
+      {% set veces, entregas = usos.get(r.id, (0, 0)) %}
+      <details>
+        <summary class="meta">✏️ Corregir este reto</summary>
+        {% if veces %}
+          <p class="meta">
+            Ya lo agendaste {{ veces }} {{ 'vez' if veces == 1 else 'veces' }}
+            {%- if entregas %}, y hay {{ entregas }} {{ 'entrega' if entregas == 1 else 'entregas' }} colgando de él{% endif %}.
+            Lo que escribas acá es lo que van a leer todos, también quien ya entregó:
+            es el mismo reto. Los puntos que ya se dieron no se tocan.
+          </p>
+        {% else %}
+          <p class="meta">Todavía no lo agendaste, así que esto no le cambia nada a nadie.</p>
+        {% endif %}
+        <form method="post" action="/retos/{{ r.id }}" data-sin-recarga="Reto corregido.">
+          <label for="titulo-{{ r.id }}">Título</label>
+          <input type="text" id="titulo-{{ r.id }}" name="titulo" required value="{{ r.titulo }}">
+
+          <label for="consigna-{{ r.id }}">Consigna</label>
+          <textarea id="consigna-{{ r.id }}" name="consigna" required>{{ r.consigna }}</textarea>
+
+          <div class="fila">
+            <div>
+              <label for="desafio-{{ r.id }}">Desafío de una carta (opcional)</label>
+              <select id="desafio-{{ r.id }}" name="desafio_id">
+                <option value="">— reto propio, sin carta —</option>
+                {% for c in competencias %}
+                  <optgroup label="{{ c.numero }}. {{ c.titulo[:70] }}">
+                    {% for d in c.desafios %}
+                      <option value="{{ d.id }}" {{ 'selected' if d.id == r.desafio_id }}>[{{ d.tipo_nombre or 'sin clasificar' }}] {{ d.texto[:100] }}</option>
+                    {% endfor %}
+                  </optgroup>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="area-{{ r.id }}">Área (si no elegís carta)</label>
+              <select id="area-{{ r.id }}" name="area_id">
+                <option value="">— sin área —</option>
+                {% for a in areas %}
+                  <option value="{{ a.id }}" {{ 'selected' if a.id == r.area_id }}>{{ a.icono }} {{ a.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label for="puntaje-{{ r.id }}">Puntos para la patrulla</label>
+              <input type="number" id="puntaje-{{ r.id }}" name="puntaje" value="{{ r.puntaje }}" min="0" max="100">
+            </div>
+          </div>
+
+          <div class="fila" style="margin-top:.8rem">
+            <label class="casilla"><input type="checkbox" name="pide_texto" value="true"
+              {{ 'checked' if r.pide_texto }}> 📝 Pedir relato escrito</label>
+            <label class="casilla"><input type="checkbox" name="pide_foto" value="true"
+              {{ 'checked' if r.pide_foto }}> 📷 Pedir foto</label>
+          </div>
+          {% if entregas %}
+            <p class="meta">Cambiar lo que se pide corre para las entregas que vengan.
+              Las {{ entregas }} que ya están quedan como estaban.</p>
+          {% endif %}
+
+          <div class="acciones"><button type="submit" class="secundario">Guardar cambios</button></div>
+        </form>
+      </details>
+
       <form method="post" action="/retos/{{ r.id }}/archivar" class="acciones"
             data-sin-recarga="Reto archivado.">
         <button type="submit" class="secundario">Archivar</button>

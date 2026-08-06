@@ -340,10 +340,60 @@ def listar_retos(
         "educador/retos.html",
         usuario=usuario,
         retos=propios,
+        usos=_uso_de_los_retos(sesion, propios),
         areas=list(sesion.scalars(select(Area).order_by(Area.id))),
         competencias=list(sesion.scalars(select(Competencia).order_by(Competencia.numero))),
         puntaje_defecto=PUNTAJE_POR_DEFECTO,
     )
+
+
+def _uso_de_los_retos(sesion: Session, retos_propios: list[Reto]) -> dict[int, tuple[int, int]]:
+    """Cuántas veces se agendó cada reto y cuántas entregas juntó: `{id: (veces, entregas)}`.
+
+    Es lo que la pantalla necesita para avisar antes de dejar corregir. Un reto
+    que nadie usó todavía se cambia sin pensarlo; uno que treinta chicos ya
+    leyeron y entregaron no, y el que edita tiene que saber de cuál se trata.
+    """
+    if not retos_propios:
+        return {}
+    return {
+        reto_id: (veces, entregas)
+        for reto_id, veces, entregas in sesion.execute(
+            select(
+                Asignacion.reto_id,
+                func.count(func.distinct(Asignacion.id)),
+                func.count(Entrega.id),
+            )
+            .join(Entrega, Entrega.asignacion_id == Asignacion.id, isouter=True)
+            .where(Asignacion.reto_id.in_([r.id for r in retos_propios]))
+            .group_by(Asignacion.reto_id)
+        )
+    }
+
+
+def _carta_y_area(
+    sesion: Session, desafio_id: str, area_id: str
+) -> tuple[Desafio | None, Area | None]:
+    """De qué desafío de carta sale el reto y en qué área cae.
+
+    El área la manda la carta cuando hay carta: son el mismo dato dicho dos
+    veces, y si se dejaran sueltos un reto podría terminar clasificado en un
+    área que no es la de su desafío. El selector de área es para los retos
+    propios, que no cuelgan de ninguna.
+    """
+    desafio = sesion.get(Desafio, int(desafio_id)) if desafio_id.strip() else None
+    if desafio is not None:
+        return desafio, desafio.competencia.area
+    if area_id.strip():
+        return None, sesion.get(Area, int(area_id))
+    return None, None
+
+
+def _reto_de_la_unidad(sesion: Session, reto_id: int, educador: Usuario) -> Reto:
+    reto = sesion.get(Reto, reto_id)
+    if reto is None or reto.unidad_id != _unidad_de(educador):
+        raise HTTPException(404, "Ese reto no existe.")
+    return reto
 
 
 @router.post("/retos")
@@ -359,17 +409,14 @@ def crear_reto(
     sesion: Session = Depends(obtener_sesion),
 ):
     unidad_id = _unidad_de(usuario)
+    if not titulo.strip() or not consigna.strip():
+        raise HTTPException(400, "El reto necesita un título y una consigna.")
 
-    desafio = sesion.get(Desafio, int(desafio_id)) if desafio_id.strip() else None
-    area = None
-    if desafio is not None:
-        area = desafio.competencia.area
-    elif area_id.strip():
-        area = sesion.get(Area, int(area_id))
+    desafio, area = _carta_y_area(sesion, desafio_id, area_id)
 
     sesion.add(
         Reto(
-            titulo=titulo.strip(),
+            titulo=titulo.strip()[:200],
             consigna=consigna.strip(),
             tipo=TIPO_CARTA if desafio is not None else TIPO_PERSONALIZADO,
             desafio_id=desafio.id if desafio else None,
@@ -385,15 +432,62 @@ def crear_reto(
     return redirigir("/retos")
 
 
+@router.post("/retos/{reto_id}")
+def actualizar_reto(
+    reto_id: int,
+    titulo: str = Form(...),
+    consigna: str = Form(...),
+    desafio_id: str = Form(""),
+    area_id: str = Form(""),
+    puntaje: int = Form(PUNTAJE_POR_DEFECTO),
+    pide_texto: bool = Form(False),
+    pide_foto: bool = Form(False),
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Corrige un reto ya escrito, esté agendado o no.
+
+    Un reto se escribe una vez y se agenda muchas. La consigna que el primer
+    día resultó confusa, el título con un error, los puntos que quedaron altos:
+    todo eso se arregla acá y no archivando el reto para escribir otro casi
+    igual, que era lo único que había y dejaba la lista llena de mellizos.
+
+    Lo que ya pasó no se toca. Los puntos se copian a la entrega en el momento
+    de validarla —`puntaje_otorgado`—, así que cambiar el puntaje vale para lo
+    que se valide de ahora en adelante y no reescribe ningún tablero. Lo que sí
+    cambia para todos, incluso para quien ya entregó, es el texto: es el mismo
+    reto, y por eso la pantalla avisa cuántos lo tienen entre manos.
+
+    También cambia lo que se le pide a la próxima entrega. Sumar «pide foto» a
+    un reto que ya entregaron sin foto no invalida nada de lo hecho: las
+    entregas viejas quedan como estaban y la regla nueva corre para las que
+    vengan.
+    """
+    reto = _reto_de_la_unidad(sesion, reto_id, usuario)
+    if not titulo.strip() or not consigna.strip():
+        raise HTTPException(400, "El reto necesita un título y una consigna.")
+
+    desafio, area = _carta_y_area(sesion, desafio_id, area_id)
+
+    reto.titulo = titulo.strip()[:200]
+    reto.consigna = consigna.strip()
+    reto.tipo = TIPO_CARTA if desafio is not None else TIPO_PERSONALIZADO
+    reto.desafio_id = desafio.id if desafio else None
+    reto.area_id = area.id if area else None
+    reto.puntaje = max(0, puntaje)
+    reto.pide_texto = pide_texto
+    reto.pide_foto = pide_foto
+    sesion.commit()
+    return redirigir("/retos")
+
+
 @router.post("/retos/{reto_id}/archivar")
 def archivar_reto(
     reto_id: int,
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
-    reto = sesion.get(Reto, reto_id)
-    if reto is None or reto.unidad_id != _unidad_de(usuario):
-        raise HTTPException(404, "Ese reto no existe.")
+    reto = _reto_de_la_unidad(sesion, reto_id, usuario)
     reto.activo = False
     sesion.commit()
     return redirigir("/retos")

@@ -386,6 +386,65 @@ def main() -> int:
     check("el educador crea un reto propio", "Nudo margarita" in r.text)
     reto_id = int(re.search(r"/retos/(\d+)/archivar", r.text).group(1))
 
+    # --- corregir un reto ya escrito ------------------------------------------
+    # Un reto se escribe una vez y se agenda muchas, así que la consigna que
+    # resultó confusa se arregla en su lugar. Antes el único camino era
+    # archivarlo y escribir otro casi igual.
+    pagina = edu.get("/retos").text
+    check("la tarjeta ofrece corregir el reto", f'action="/retos/{reto_id}"' in pagina)
+    check("y avisa que todavía no lo agendó nadie", "Todavía no lo agendaste" in pagina)
+    check("el formulario llega con lo escrito adentro", 'value="Nudo margarita"' in pagina)
+
+    with SesionLocal() as s:
+        de_carta = s.scalar(select(Desafio).order_by(Desafio.id))
+        desafio_id, area_de_la_carta = de_carta.id, de_carta.competencia.area_id
+
+    r = edu.post(
+        f"/retos/{reto_id}",
+        data={
+            "titulo": "Nudo margarita",
+            "consigna": "Hacelo, explicá para qué sirve y contá dónde lo usarías.",
+            "desafio_id": str(desafio_id),
+            "puntaje": "15",
+            "pide_texto": "true",
+        },
+    )
+    check("la consigna corregida se ve en la lista", "dónde lo usarías" in r.text)
+    with SesionLocal() as s:
+        corregido = s.get(Reto, reto_id)
+        check("colgarlo de una carta lo pasa a tipo carta", corregido.tipo == "carta")
+        check("y el área la manda la carta", corregido.area_id == area_de_la_carta)
+
+    check(
+        "un título en blanco no pisa nada",
+        edu.post(f"/retos/{reto_id}", data={"titulo": "   ", "consigna": "algo"}).status_code == 400,
+    )
+    check(
+        "un reto de otra Unidad no existe",
+        edu.post("/retos/999999", data={"titulo": "a", "consigna": "b"}).status_code == 404,
+    )
+    check(
+        "y un joven no corrige retos",
+        joven.post(f"/retos/{reto_id}", data={"titulo": "a", "consigna": "b"}).status_code == 403,
+    )
+
+    # Soltar la carta lo devuelve a reto propio, que es como sigue el recorrido.
+    edu.post(
+        f"/retos/{reto_id}",
+        data={
+            "titulo": "Nudo margarita",
+            "consigna": "Hacelo y explicá para qué sirve.",
+            "puntaje": "15",
+            "pide_texto": "true",
+        },
+    )
+    with SesionLocal() as s:
+        corregido = s.get(Reto, reto_id)
+        check(
+            "soltar la carta lo devuelve a propio y sin área",
+            corregido.tipo == "personalizado" and corregido.area_id is None,
+        )
+
     r = edu.post(
         "/asignar",
         data={"reto_id": str(reto_id), "fecha": date.today().isoformat(), "alcance": "unidad"},
@@ -412,6 +471,23 @@ def main() -> int:
     )
     halcones = next(f for f in joven.get("/api/tablero").json() if f["patrulla"] == "Halcones")
     check("la validación manual suma sus puntos", halcones["puntos"] == 25, halcones["puntos"])
+
+    # Corregir un reto que ya está en juego. La pantalla tiene que decir de cuál
+    # se trata, y bajarle el puntaje no puede reescribir un tablero: los puntos
+    # se copian a la entrega en el momento de validarla.
+    pagina = edu.get("/retos").text
+    check("la lista dice cuántas veces se agendó cada reto", "Ya lo agendaste 1 vez" in pagina)
+    check("y cuántas entregas cuelgan de él", "1 entrega colgando de él" in pagina)
+
+    edu.post(f"/retos/{reto_id}", data={"titulo": "Nudo margarita", "puntaje": "1",
+                                        "consigna": "Hacelo y explicá para qué sirve.",
+                                        "pide_texto": "true"})
+    halcones = next(f for f in joven.get("/api/tablero").json() if f["patrulla"] == "Halcones")
+    check("bajarle el puntaje no toca los puntos ya dados", halcones["puntos"] == 25,
+          halcones["puntos"])
+    edu.post(f"/retos/{reto_id}", data={"titulo": "Nudo margarita", "puntaje": "15",
+                                        "consigna": "Hacelo y explicá para qué sirve.",
+                                        "pide_texto": "true"})
 
     check("la API filtra por área", len(edu.get("/api/competencias?area=ambiente").json()) == 9)
 

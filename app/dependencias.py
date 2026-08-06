@@ -12,10 +12,14 @@ from app.db import obtener_sesion
 from app.models import ETAPAS_NOMBRE, FASES_ESPECIALIDAD_NOMBRE, Usuario
 from app.servicios.cuentas import LARGO_MINIMO
 from app.servicios.medios import video_guardado
+from app.tiempo import hora
 
 plantillas = Jinja2Templates(directory=str(DIR_PLANTILLAS))
 plantillas.env.globals["ETAPAS_NOMBRE"] = ETAPAS_NOMBRE
 plantillas.env.globals["FASES_NOMBRE"] = FASES_ESPECIALIDAD_NOMBRE
+# Toda marca de tiempo que se muestre pasa por acá: en la base están en UTC y
+# en pantalla van en la hora de la Unidad. Ver `app/tiempo.py`.
+plantillas.env.filters["hora"] = hora
 # La URL del reproductor la arma el servicio, nunca la plantilla con texto crudo.
 plantillas.env.globals["video"] = video_guardado
 # El largo mínimo lo dice la pantalla y lo aplica el servicio: sale del mismo

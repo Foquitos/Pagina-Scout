@@ -45,7 +45,7 @@
         </h3>
         <p class="meta">
           <span>usuario: {{ e.usuario }}</span>
-          <span>desde el {{ e.creado_en.strftime('%d/%m/%Y') }}</span>
+          <span>desde el {{ e.creado_en | hora('%d/%m/%Y') }}</span>
           {% if e.nacimiento %}
             <span>🎂 {{ e.nacimiento.strftime('%d/%m') }} · {{ e.edad_al(hoy) }} años</span>
           {% endif %}

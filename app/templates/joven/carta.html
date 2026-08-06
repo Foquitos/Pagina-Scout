@@ -46,7 +46,7 @@
       </p>
       {% if marca and marca.comentario %}
         <blockquote class="comentario">{{ marca.comentario }}
-          <footer class="meta">Vos · {{ marca.actualizado_en.strftime('%d/%m/%Y') }}</footer>
+          <footer class="meta">Vos · {{ marca.actualizado_en | hora('%d/%m/%Y') }}</footer>
         </blockquote>
       {% endif %}
     </article>
@@ -92,7 +92,7 @@
           placeholder="Qué hiciste, con quién, qué aprendiste o qué te costó.">{{ marca.comentario if marca }}</textarea>
         <div class="acciones">
           <button type="submit" class="secundario boton-guardar">Guardar</button>
-          <span class="estado-guardado" data-estado="">{% if marca %}guardado el {{ marca.actualizado_en.strftime('%d/%m/%Y') }}{% endif %}</span>
+          <span class="estado-guardado" data-estado="">{% if marca %}guardado el {{ marca.actualizado_en | hora('%d/%m/%Y') }}{% endif %}</span>
         </div>
       </form>
     </article>
@@ -108,7 +108,7 @@
       <span class="icono" aria-hidden="true">🏅</span>
       <div>
         <strong>Esta carta está cerrada.</strong>
-        <p>La cerraste el {{ elegida.lograda_en.strftime('%d/%m/%Y') }}{% if not elegida.cerrada_por_el_joven and elegida.lograda_por %},
+        <p>La cerraste el {{ elegida.lograda_en | hora('%d/%m/%Y') }}{% if not elegida.cerrada_por_el_joven and elegida.lograda_por %},
           junto con {{ primer_nombre(elegida.lograda_por.nombre) }}{% endif %}.
           {% if elegida.acordada %}
             El equipo de educadores ya la conversó con vos.
@@ -122,7 +122,7 @@
 
     {% if elegida.autoevaluacion %}
       <blockquote class="comentario autoevaluacion">{{ elegida.autoevaluacion }}
-        <footer class="meta">Tu autoevaluación · {{ elegida.lograda_en.strftime('%d/%m/%Y') }}</footer>
+        <footer class="meta">Tu autoevaluación · {{ elegida.lograda_en | hora('%d/%m/%Y') }}</footer>
       </blockquote>
     {% endif %}
     {% if elegida.nota_cierre %}

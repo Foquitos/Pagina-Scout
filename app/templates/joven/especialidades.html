@@ -59,7 +59,7 @@
       <div>
         <h3>{{ e.nombre }}</h3>
         <p class="meta">
-          <span>Pedida el {{ e.pedida_en.strftime('%d/%m/%Y') }}</span>
+          <span>Pedida el {{ e.pedida_en | hora('%d/%m/%Y') }}</span>
           {% if e.experto %}<span>con {{ e.experto }}</span>{% endif %}
         </p>
       </div>
@@ -145,7 +145,7 @@
       <article class="tarjeta" id="especialidad-{{ e.id }}">
         <h3>{{ e.icono }} {{ e.nombre }}</h3>
         <p class="meta">
-          <span>{{ e.lograda_en.strftime('%d/%m/%Y') }}</span>
+          <span>{{ e.lograda_en | hora('%d/%m/%Y') }}</span>
           {% if e.experto %}<span>con {{ e.experto }}</span>{% endif %}
         </p>
         {% if e.desafio %}<p>{{ e.desafio }}</p>{% endif %}

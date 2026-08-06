@@ -35,7 +35,7 @@
              nunca cuánto sumó. El puntaje es de la patrulla y vive en el tablero. #}
           <p class="meta">
             {% if e.patrulla %}<span>{{ e.patrulla.nombre }}</span>{% endif %}
-            <span>{{ e.enviada_en.strftime('%d/%m') }}</span>
+            <span>{{ e.enviada_en | hora('%d/%m') }}</span>
             {% if area %}<span>{{ area.icono }} {{ area.nombre }}</span>{% endif %}
           </p>
         </div>

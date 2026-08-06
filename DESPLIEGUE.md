@@ -55,7 +55,7 @@ falta es solamente dónde ponerlo.
 | `CLAVE_SECRETA` | una cadena larga y aleatoria, **como secreto** | sin ella todas las sesiones se caen en cada reinicio, y el valor por defecto es público. |
 | `COOKIES_SEGURAS` | `1` | Container Apps sirve por HTTPS; la cookie de sesión tiene que ir marcada `Secure`. |
 | `SQLITE_JOURNAL` | `DELETE` | sobre Azure Files el modo WAL no funciona: necesita memoria compartida entre procesos, que en un recurso de red no existe. |
-| `ZONA_HORARIA` | `America/Argentina/Buenos_Aires` | con qué reloj se decide qué día es hoy para los retos. |
+| `ZONA_HORARIA` | `America/Argentina/Buenos_Aires` | con qué reloj se decide qué día es hoy para los retos y con cuál se muestran las horas. El servidor corre en UTC y en la base todo se guarda en UTC: la traducción es de pantalla. |
 | `VALIDADOR` | `simulado` o `manual` | quién revisa las evidencias. |
 
 Para generar la clave:

@@ -18,7 +18,9 @@ RAIZ = Path(__file__).resolve().parent.parent
 # solo la comodidad de desarrollo.
 load_dotenv(RAIZ / ".env")
 
-# Zona horaria con la que se decide "qué día es hoy" para los retos diarios.
+# Zona horaria de la Unidad: con ella se decide "qué día es hoy" para los retos
+# diarios y se muestra la hora de todo lo que quedó guardado, que en la base va
+# siempre en UTC. Cómo se usa, en `app/tiempo.py`.
 ZONA_HORARIA = ZoneInfo(os.environ.get("ZONA_HORARIA", "America/Argentina/Buenos_Aires"))
 
 BASE_DATOS_URL = os.environ.get("BASE_DATOS_URL", f"sqlite:///{RAIZ / 'scout.db'}")

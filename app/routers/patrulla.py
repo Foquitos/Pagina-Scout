@@ -10,12 +10,13 @@ escribir en ellas— pero no hay nada acá que solo él pueda hacer.
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import tiempo
 from app.db import obtener_sesion
 from app.dependencias import redirigir, render, usuario_actual
 from app.models import (
@@ -330,7 +331,7 @@ def resolver_acuerdo(
     _patrulla_visible(sesion, acuerdo.patrulla_id, usuario)
 
     acuerdo.cumplido = cumplido
-    acuerdo.cumplido_en = datetime.now(timezone.utc) if cumplido else None
+    acuerdo.cumplido_en = tiempo.ahora() if cumplido else None
     sesion.commit()
 
     if volver == "hoy":

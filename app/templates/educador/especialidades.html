@@ -41,7 +41,7 @@
       <div>
         <h3>{{ e.joven.nombre }} pidió {{ e.icono }} {{ e.nombre }}</h3>
         <p class="meta">
-          <span>el {{ e.pedida_en.strftime('%d/%m/%Y') }}</span>
+          <span>el {{ e.pedida_en | hora('%d/%m/%Y') }}</span>
           <span>Etapa {{ e.joven.etapa_nombre }}</span>
           {% if e.joven.patrulla %}<span>{{ e.joven.patrulla.nombre }}</span>{% endif %}
         </p>
@@ -72,7 +72,7 @@
         <p class="meta">
           <span>{{ e.fase_nombre }}</span>
           {% if e.experto %}<span>con {{ e.experto }}</span>{% endif %}
-          <span>desde el {{ e.preparada_en.strftime('%d/%m/%Y') }}</span>
+          <span>desde el {{ e.preparada_en | hora('%d/%m/%Y') }}</span>
         </p>
       </div>
     </div>

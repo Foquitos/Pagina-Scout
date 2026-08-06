@@ -42,7 +42,7 @@
             {% if a.elegida.nota_cierre %}
               <blockquote class="comentario">{{ a.elegida.nota_cierre }}
                 <footer class="meta">{{ a.elegida.lograda_por.nombre if a.elegida.lograda_por else 'El equipo de educadores' }}
-                  {% if a.elegida.lograda_en %} · {{ a.elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}</footer>
+                  {% if a.elegida.lograda_en %} · {{ a.elegida.lograda_en | hora('%d/%m/%Y') }}{% endif %}</footer>
               </blockquote>
             {% endif %}
           {% else %}
@@ -66,7 +66,7 @@
                       {% if marca and marca.comentario %}
                         <blockquote class="comentario">{{ marca.comentario }}
                           <footer class="meta">{{ 'Vos' if propia else nombre_corto }}
-                            · {{ marca.actualizado_en.strftime('%d/%m/%Y') }}</footer>
+                            · {{ marca.actualizado_en | hora('%d/%m/%Y') }}</footer>
                         </blockquote>
                       {% endif %}
                     </div>

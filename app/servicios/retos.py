@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
-from app.config import PUNTAJE_POR_DEFECTO, ZONA_HORARIA
+from app import tiempo
+from app.config import PUNTAJE_POR_DEFECTO
 from app.models import (
     ALCANCE_JOVEN,
     ALCANCE_PATRULLA,
@@ -29,8 +30,12 @@ from app.servicios import medios
 
 
 def hoy() -> date:
-    """El día de hoy en la zona horaria de la Unidad, no la del servidor."""
-    return datetime.now(ZONA_HORARIA).date()
+    """El día de hoy en la zona horaria de la Unidad, no la del servidor.
+
+    Vive en `app/tiempo.py`, junto con el resto del manejo de husos. Acá queda
+    el nombre por el que lo llama media aplicación.
+    """
+    return tiempo.hoy()
 
 
 def asignaciones_entre(

@@ -142,7 +142,7 @@
           <div>
             <strong>{{ c.anterior_nombre }} → {{ c.nueva_nombre }}</strong>
             <p class="meta">
-              <span>{{ c.creado_en.strftime('%d/%m/%Y') }}</span>
+              <span>{{ c.creado_en | hora('%d/%m/%Y') }}</span>
               {% if c.educador %}<span>{{ c.educador.nombre }}</span>{% endif %}
               <span>{{ c.cartas_logradas }} de {{ c.cartas_elegidas }} cartas logradas</span>
             </p>
@@ -197,7 +197,7 @@
             {% endif %}
           </p>
           <p class="meta">
-            {% if elegida.lograda_en %}Cerrada el {{ elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}
+            {% if elegida.lograda_en %}Cerrada el {{ elegida.lograda_en | hora('%d/%m/%Y') }}{% endif %}
             {% if elegida.cerrada_por_el_joven %} por {{ primer_nombre(joven.nombre) }}
             {% elif elegida.lograda_por %} por {{ elegida.lograda_por.nombre }}{% endif %}
           </p>
@@ -379,7 +379,7 @@
           <p class="meta">
             {% if e.preparada %}<span>{{ e.fase_nombre }}</span>{% endif %}
             {% if e.experto %}<span>con {{ e.experto }}</span>{% endif %}
-            <span>pedida el {{ e.pedida_en.strftime('%d/%m/%Y') }}</span>
+            <span>pedida el {{ e.pedida_en | hora('%d/%m/%Y') }}</span>
           </p>
         </div>
       </div>

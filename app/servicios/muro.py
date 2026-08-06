@@ -24,11 +24,10 @@ Cuatro reglas, y las cuatro importan:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import tiempo
 from app.models import ESTADO_APROBADA, Asignacion, Entrega, Usuario
 
 
@@ -72,5 +71,5 @@ def alternar(entrega: Entrega, joven: Usuario) -> bool:
     entrega.compartida = not entrega.compartida
     # La fecha se pisa cada vez que se prende: sacar algo del muro y volver a
     # ponerlo lo publica de nuevo, y el equipo tiene que volver a verlo arriba.
-    entrega.compartida_en = datetime.now(timezone.utc) if entrega.compartida else None
+    entrega.compartida_en = tiempo.ahora() if entrega.compartida else None
     return entrega.compartida

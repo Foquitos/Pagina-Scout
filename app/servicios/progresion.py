@@ -28,11 +28,11 @@ entre personas: `/mi-patrulla` lista a la patrulla por nombre, no por avance.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 
 from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.orm import Session
 
+from app import tiempo
 from app.models import (
     DESAFIO_REQUERIDO,
     ETAPAS,
@@ -128,10 +128,6 @@ class NecesitaConfirmacion(Exception):
     def __init__(self, motivo: str):
         super().__init__(motivo)
         self.motivo = motivo
-
-
-def _ahora() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 @dataclass
@@ -614,7 +610,7 @@ def cerrar_carta_el_joven(
         raise NecesitaConfirmacion(_faltan_requeridos(avance))
 
     elegida.lograda = True
-    elegida.lograda_en = _ahora()
+    elegida.lograda_en = tiempo.ahora()
     elegida.lograda_por_id = joven.id
     elegida.con_pendientes = not avance.completa
     elegida.autoevaluacion = autoevaluacion.strip()
@@ -627,7 +623,7 @@ def cerrar_carta_el_joven(
 def acordar_carta(elegida: CompetenciaElegida, educador: Usuario, nota: str = "") -> None:
     """El equipo coincide con la autoevaluación. Deja firmada la conversación."""
     elegida.acordada = True
-    elegida.acordada_en = _ahora()
+    elegida.acordada_en = tiempo.ahora()
     elegida.acordada_por_id = educador.id
     if nota.strip():
         elegida.nota_cierre = nota.strip()
@@ -656,7 +652,7 @@ def cerrar_carta(
         raise NecesitaConfirmacion(_faltan_requeridos(avance))
 
     elegida.lograda = True
-    elegida.lograda_en = _ahora()
+    elegida.lograda_en = tiempo.ahora()
     elegida.lograda_por_id = educador.id
     elegida.con_pendientes = not avance.completa
     elegida.nota_cierre = nota.strip()

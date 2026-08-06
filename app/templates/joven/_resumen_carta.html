@@ -20,7 +20,7 @@
         {% if elegida.nota_cierre %}
           <blockquote class="comentario">{{ elegida.nota_cierre }}
             <footer class="meta">{{ elegida.lograda_por.nombre if elegida.lograda_por else 'El equipo de educadores' }}
-              {% if elegida.lograda_en %} · {{ elegida.lograda_en.strftime('%d/%m/%Y') }}{% endif %}</footer>
+              {% if elegida.lograda_en %} · {{ elegida.lograda_en | hora('%d/%m/%Y') }}{% endif %}</footer>
           </blockquote>
         {% endif %}
       {% elif avance.completa %}

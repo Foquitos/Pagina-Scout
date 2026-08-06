@@ -6,7 +6,7 @@ código se lea igual que la guía: Unidad, Patrulla, competencia, desafío, etap
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 
 from sqlalchemy import (
     Boolean,
@@ -21,6 +21,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
+
+# Lo que queda guardado en cada columna de fecha y hora: el instante en UTC. La
+# traducción a la hora de la Unidad es de la pantalla; ver `app/tiempo.py`.
+from app.tiempo import ahora as _ahora
 
 # --- Vocabularios ------------------------------------------------------------
 
@@ -131,10 +135,6 @@ FASES_ESPECIALIDAD_NOMBRE = {
     FASE_TALLER: "Taller (hacer)",
     FASE_DESAFIO: "Desafío (servir)",
 }
-
-
-def _ahora() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 # --- Organización ------------------------------------------------------------

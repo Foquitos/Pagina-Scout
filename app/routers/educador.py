@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import tiempo
 from app.config import PUNTAJE_POR_DEFECTO
 from app.db import hay_referencias_a, obtener_sesion
 from app.dependencias import (
@@ -312,7 +313,7 @@ def resolver_validacion(
     entrega.devolucion = devolucion.strip() or entrega.devolucion
     entrega.validador = "educador"
     entrega.validada_por_id = usuario.id
-    entrega.validada_en = datetime.now(timezone.utc)
+    entrega.validada_en = tiempo.ahora()
     sesion.commit()
     return redirigir("/validaciones")
 

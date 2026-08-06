@@ -62,7 +62,7 @@
         <p class="meta">
           {% if n.autor %}<span>{{ n.autor.nombre }}</span>{% endif %}
           <span>{{ n.donde }}</span>
-          <span>{{ n.cuando.strftime('%d/%m/%Y %H:%M') }}</span>
+          <span>{{ n.cuando | hora('%d/%m/%Y %H:%M') }}</span>
         </p>
       </div>
       {% if n.oculta %}
@@ -77,7 +77,7 @@
           <strong>{{ n.avisos_abiertos|length }}
             aviso{{ 's' if n.avisos_abiertos|length != 1 }} sin mirar</strong>
           {% for a in n.avisos_abiertos %}
-            <p>{{ a.avisa.nombre }}, el {{ a.creado_en.strftime('%d/%m %H:%M') }}{% if a.motivo %}:
+            <p>{{ a.avisa.nombre }}, el {{ a.creado_en | hora('%d/%m %H:%M') }}{% if a.motivo %}:
               «{{ a.motivo }}»{% else %}. Sin escribir un motivo.{% endif %}</p>
           {% endfor %}
         </div>

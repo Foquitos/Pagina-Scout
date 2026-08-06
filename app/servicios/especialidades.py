@@ -39,11 +39,10 @@ sea un curso.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import tiempo
 from app.models import (
     DESAFIO_ESPECIALIDAD,
     FASE_DESAFIO,
@@ -55,11 +54,6 @@ from app.models import (
     Especialidad,
     Usuario,
 )
-
-
-def _ahora() -> datetime:
-    return datetime.now(timezone.utc)
-
 
 # --- Lo que pide el joven -----------------------------------------------------
 
@@ -169,7 +163,7 @@ def preparar(
     especialidad.pide_taller = pide_taller.strip()
     especialidad.pide_desafio = pide_desafio.strip()
     if especialidad.preparada_en is None:
-        especialidad.preparada_en = _ahora()
+        especialidad.preparada_en = tiempo.ahora()
     especialidad.preparada_por_id = educador.id
 
 
@@ -182,7 +176,7 @@ def lograr(especialidad: Especialidad, quien: Usuario, nota: str = "") -> None:
     atestigua alguien, no un contador de campos completos.
     """
     especialidad.lograda = True
-    especialidad.lograda_en = _ahora()
+    especialidad.lograda_en = tiempo.ahora()
     especialidad.lograda_por_id = quien.id
     especialidad.nota_cierre = nota.strip()
 

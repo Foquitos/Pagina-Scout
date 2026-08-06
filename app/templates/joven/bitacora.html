@@ -37,7 +37,7 @@
 {% if entradas %}
   {% for e in entradas %}
   <article class="tarjeta">
-    <span class="cinta-fecha"><span aria-hidden="true">📅</span> {{ e.creada_en.strftime('%d/%m/%Y') }}</span>
+    <span class="cinta-fecha"><span aria-hidden="true">📅</span> {{ e.creada_en | hora('%d/%m/%Y') }}</span>
     {% if e.titulo %}<h3 style="margin-top:.5rem">{{ e.titulo }}</h3>{% endif %}
     <p class="texto-libro">{{ e.texto }}</p>
   </article>

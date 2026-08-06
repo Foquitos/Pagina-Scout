@@ -67,7 +67,7 @@
         <p class="meta">
           <span>{{ e.joven.nombre }}</span>
           {% if e.patrulla %}<span>Patrulla {{ e.patrulla.nombre }}</span>{% endif %}
-          <span>{{ e.enviada_en.strftime('%d/%m/%Y %H:%M') }}</span>
+          <span>{{ e.enviada_en | hora('%d/%m/%Y %H:%M') }}</span>
           {% if e.validador %}<span>revisó: {{ e.validador }}</span>{% endif %}
         </p>
       </div>

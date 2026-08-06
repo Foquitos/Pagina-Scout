@@ -31,11 +31,12 @@ tener sesión, y entonces el link de una foto suelta valía más que el permiso.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import tiempo
 from app.models import (
     ESTADO_APROBADA,
     Asignacion,
@@ -49,10 +50,6 @@ from app.models import (
 
 class NoSePuede(Exception):
     """Con un motivo escrito para mostrárselo a quien lo intentó."""
-
-
-def _ahora() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 # --- Quién puede ver una foto -------------------------------------------------
@@ -200,7 +197,7 @@ def atender(avisos: list[Aviso], educador: Usuario, resolucion: str) -> None:
     for aviso in avisos:
         if aviso.atendido:
             continue
-        aviso.atendido_en = _ahora()
+        aviso.atendido_en = tiempo.ahora()
         aviso.atendido_por_id = educador.id
         aviso.resolucion = resolucion.strip()[:2000]
 
@@ -215,7 +212,7 @@ def bajar_entrega(entrega: Entrega, educador: Usuario) -> None:
     otra cosa —y `compartida` tampoco se toca, porque ese interruptor es del
     joven y pisárselo sería contarle una historia falsa sobre su propia entrega.
     """
-    entrega.oculta_en = _ahora()
+    entrega.oculta_en = tiempo.ahora()
     entrega.oculta_por_id = educador.id
 
 
@@ -225,7 +222,7 @@ def devolver_entrega(entrega: Entrega) -> None:
 
 
 def bajar_pagina(pagina: EntradaLibroOro, educador: Usuario) -> None:
-    pagina.oculta_en = _ahora()
+    pagina.oculta_en = tiempo.ahora()
     pagina.oculta_por_id = educador.id
 
 

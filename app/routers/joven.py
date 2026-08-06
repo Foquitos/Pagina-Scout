@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import tiempo
 from app.db import obtener_sesion
 from app.dependencias import (
     fragmento,
@@ -173,7 +174,7 @@ def _registrar_entrega(
         # una foto de un chico que ya nadie sabía que existía.
         medios.borrar_foto(entrega.archivo_foto)
         entrega.archivo_foto = nombre_foto
-    entrega.enviada_en = datetime.now(timezone.utc)
+    entrega.enviada_en = tiempo.ahora()
     entrega.patrulla_id = joven.patrulla_id
     # Se pisa en las dos direcciones, y la segunda importa: si el chico recupera
     # el teléfono y reescribe lo que le habían cargado, la firma se va. Volvió a
@@ -200,7 +201,7 @@ def _registrar_entrega(
     entrega.estado = resultado.estado
     entrega.devolucion = resultado.devolucion
     entrega.validador = resultado.validador
-    entrega.validada_en = datetime.now(timezone.utc) if resultado.estado == ESTADO_APROBADA else None
+    entrega.validada_en = tiempo.ahora() if resultado.estado == ESTADO_APROBADA else None
     entrega.puntaje_otorgado = reto.puntaje if resultado.estado == ESTADO_APROBADA else 0
 
     # Al muro solo va lo validado. Si pidió compartirlo y todavía se está
@@ -208,7 +209,7 @@ def _registrar_entrega(
     # entrega: no se publica algo que la Unidad no dio por hecho.
     entrega.compartida = compartir and muro.puede_compartir(entrega)
     # Cuándo se publicó, para que el equipo lo vea arriba en /novedades.
-    entrega.compartida_en = datetime.now(timezone.utc) if entrega.compartida else None
+    entrega.compartida_en = tiempo.ahora() if entrega.compartida else None
 
     sesion.add(entrega)
     return entrega

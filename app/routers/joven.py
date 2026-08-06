@@ -200,6 +200,11 @@ def _registrar_entrega(
 
     entrega.estado = resultado.estado
     entrega.devolucion = resultado.devolucion
+    # La devolución que había era sobre la entrega vieja. Si la escribió alguien
+    # del equipo, su firma se va con ella: dejarla puesta haría pasar por suyo el
+    # texto que acaba de escribir el validador automático.
+    entrega.devolucion_por_id = None
+    entrega.devolucion_en = None
     entrega.validador = resultado.validador
     entrega.validada_en = tiempo.ahora() if resultado.estado == ESTADO_APROBADA else None
     entrega.puntaje_otorgado = reto.puntaje if resultado.estado == ESTADO_APROBADA else 0

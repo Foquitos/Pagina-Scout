@@ -472,6 +472,61 @@ def main() -> int:
     halcones = next(f for f in joven.get("/api/tablero").json() if f["patrulla"] == "Halcones")
     check("la validación manual suma sus puntos", halcones["puntos"] == 25, halcones["puntos"])
 
+    # --- decirle algo a quien hizo bien el reto -------------------------------
+    #
+    # Casi todo se aprueba solo, así que sobre una entrega ya validada las
+    # únicas puertas que había eran las dos malas noticias. Felicitar escribe y
+    # no toca nada más: ni el estado, ni los puntos, ni quién la validó.
+    with SesionLocal() as s:
+        sola_id = s.scalar(select(Entrega.id).where(Entrega.asignacion_id == asignacion))
+
+    check(
+        "lo que contesta la aplicación no se firma como si fuera una persona",
+        "Respuesta automática" in joven.get("/mis-retos").text,
+    )
+
+    pagina = edu.get("/validaciones").text
+    check("una entrega ya validada se puede felicitar", 'value="felicitar"' in pagina)
+    check("la devolución que ya está escrita dice quién la escribió", "La escribió" in pagina)
+    check("y el atajo de teclado también está anunciado", "<kbd>F</kbd>" in pagina)
+
+    felicitacion = "Me encantó cómo contaste para qué sirve el nudo. Seguí por ahí."
+    edu.post(
+        f"/validaciones/{sola_id}",
+        data={"decision": "felicitar", "devolucion": felicitacion},
+    )
+    with SesionLocal() as s:
+        felicitada = s.get(Entrega, sola_id)
+        check("la felicitación queda guardada", felicitada.devolucion == felicitacion)
+        check(
+            "y deja la entrega como estaba",
+            felicitada.estado == "aprobada" and felicitada.puntaje_otorgado == 10,
+            f"{felicitada.estado} / {felicitada.puntaje_otorgado} pts",
+        )
+        check("firmada por quien la escribió", felicitada.devolucion_por_id is not None)
+        # Lo que se aprobó solo se aprobó solo: un comentario no reescribe eso.
+        check("sin hacerse pasar por la validación", felicitada.validador == "simulado",
+              felicitada.validador)
+
+    halcones = next(f for f in joven.get("/api/tablero").json() if f["patrulla"] == "Halcones")
+    check("felicitar no mueve el tablero", halcones["puntos"] == 25, halcones["puntos"])
+
+    mis_retos = joven.get("/mis-retos").text
+    check("el joven lee la felicitación", felicitacion in mis_retos)
+    check("y ve de quién es", "Te lo escribió" in mis_retos)
+    su_reto = joven.get(f"/reto/{asignacion}").text
+    check("también en la página del reto, adentro del «¡Validado!»",
+          felicitacion in su_reto and "Te lo escribió" in su_reto)
+    check(
+        "felicitar sin escribir nada no llega a ninguna parte",
+        edu.post(
+            f"/validaciones/{sola_id}", data={"decision": "felicitar", "devolucion": "   "}
+        ).status_code == 400,
+    )
+    check("un joven no felicita entregas",
+          joven.post(f"/validaciones/{sola_id}",
+                     data={"decision": "felicitar", "devolucion": "va"}).status_code == 403)
+
     # Corregir un reto que ya está en juego. La pantalla tiene que decir de cuál
     # se trata, y bajarle el puntaje no puede reescribir un tablero: los puntos
     # se copian a la entrega en el momento de validarla.

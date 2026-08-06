@@ -134,6 +134,21 @@ logros y no que se afecte su autoestima"; un "no" automático a un chico de 12
 sobre una buena acción que efectivamente hizo es exactamente lo que hay que
 evitar.
 
+**Mirar también es decir que estuvo bien.** Como casi todo se aprueba solo, las
+únicas puertas que había para escribirle a alguien eran las dos malas noticias:
+darle de baja el reto o pedirle que amplíe. Sobre una entrega ya validada hay un
+botón más, **felicitar**, que manda el comentario y no toca nada: ni el estado,
+ni los puntos, ni el muro, ni quién la validó —una entrega que se aprobó sola se
+aprobó sola, y un comentario no reescribe eso—. La heteroevaluación es un diálogo
+y el reconocimiento de lo que salió bien es la mitad que faltaba.
+
+**Cada devolución se firma con quien la escribió.** `Entrega.devolucion_por_id`
+guarda a la persona y la pantalla del joven pone su nombre. Vacío quiere decir
+que la escribió el validador automático, y ahí dice «respuesta automática»: lo
+que contesta un programa no se puede presentar como algo que le dijo alguien. Si
+el joven corrige su entrega, la firma se va con la devolución que respondía a la
+versión anterior.
+
 **Si el educador no asigna nada, la app propone un desafío de las cartas.** Es
 una red para que la página nunca aparezca vacía, no un reemplazo: la elección es
 determinista por (unidad, fecha), así que toda la Unidad ve el mismo reto y

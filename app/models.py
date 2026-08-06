@@ -477,6 +477,14 @@ class Entrega(Base):
 
     estado: Mapped[str] = mapped_column(String(20), default=ESTADO_PENDIENTE)
     devolucion: Mapped[str] = mapped_column(Text, default="")
+    # Quién escribió la devolución que se está mostrando, y cuándo. No alcanza
+    # con `validada_por`: una entrega que se aprobó sola puede recibir después
+    # el comentario de un educador —«esto estuvo muy bien»— sin que eso cambie
+    # quién la validó ni cuándo. Vacío significa que la escribió el validador
+    # automático, y la pantalla del joven lo dice así en vez de firmarla como
+    # si viniera de una persona.
+    devolucion_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
+    devolucion_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     validada_por_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id"), nullable=True)
     validador: Mapped[str | None] = mapped_column(String(30), nullable=True)
     validada_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -495,6 +503,7 @@ class Entrega(Base):
     joven: Mapped[Usuario] = relationship(foreign_keys=[joven_id])
     patrulla: Mapped[Patrulla | None] = relationship(foreign_keys=[patrulla_id])
     validada_por: Mapped[Usuario | None] = relationship(foreign_keys=[validada_por_id])
+    devolucion_por: Mapped[Usuario | None] = relationship(foreign_keys=[devolucion_por_id])
     oculta_por: Mapped[Usuario | None] = relationship(foreign_keys=[oculta_por_id])
     dictada_por: Mapped[Usuario | None] = relationship(foreign_keys=[dictada_por_id])
     # Un aviso señala una publicación: si la publicación se va —sacar el reto de
@@ -503,6 +512,27 @@ class Entrega(Base):
     avisos: Mapped[list["Aviso"]] = relationship(
         back_populates="entrega", cascade="all, delete-orphan"
     )
+
+    @property
+    def devolucion_firmada_por(self) -> Usuario | None:
+        """Quién escribió la devolución que se ve, o None si la escribió sola.
+
+        `devolucion_por` es lo que se anota desde que se puede comentar una
+        entrega sin decidir nada sobre ella. Para lo escrito antes hay que caer
+        en `validada_por`: hasta entonces una devolución solo podía llegar
+        pegada a una decisión de un educador, así que quien decidió es quien
+        escribió. Sin esa segunda vuelta, todo lo que ya estaba escrito
+        aparecería como automático, que es peor que no firmarlo.
+
+        Esa vuelta pide mirar `validador`: si la última palabra la tuvo un
+        validador automático —porque el joven corrigió su entrega después—, la
+        devolución que se está viendo es la de la máquina, y ahí firmar con el
+        nombre del educador que decidió antes sería ponerle en la boca algo que
+        no dijo.
+        """
+        if self.devolucion_por is not None:
+            return self.devolucion_por
+        return self.validada_por if self.validador == "educador" else None
 
     @property
     def oculta(self) -> bool:

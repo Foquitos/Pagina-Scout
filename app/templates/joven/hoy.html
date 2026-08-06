@@ -105,7 +105,10 @@
             {% else %}📨 Enviado{% endif %}
           </span>
         </p>
-        {% if entrega.devolucion %}<p class="meta">{{ entrega.devolucion }}</p>{% endif %}
+        {% if entrega.devolucion %}
+          {% set firma = entrega.devolucion_firmada_por %}
+          <p class="meta">{{ entrega.devolucion }}{% if firma %} — {{ primer_nombre(firma.nombre) }}{% endif %}</p>
+        {% endif %}
         <div class="acciones"><a class="boton secundario" href="/reto/{{ a.id }}">Ver mi entrega</a></div>
       {% else %}
         <div class="acciones"><a class="boton grande" href="/reto/{{ a.id }}">¡Hacerlo! →</a></div>

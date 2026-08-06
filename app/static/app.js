@@ -785,13 +785,17 @@
     } else if (tecla === "k" || evento.key === "ArrowUp") {
       evento.preventDefault();
       moverEnfoque(-1);
-    } else if (tecla === "a" || tecla === "d" || tecla === "r") {
-      var decisiones = { a: "aprobar", d: "devolver", r: "rechazar" };
+    } else if (tecla === "a" || tecla === "f" || tecla === "d" || tecla === "r") {
+      var decisiones = { a: "aprobar", f: "felicitar", d: "devolver", r: "rechazar" };
       var tarjeta = uno("[data-entrega].enfocada") || uno("[data-entrega]");
       var boton = tarjeta && uno('button[value="' + decisiones[tecla] + '"]', tarjeta);
       if (boton) {
         evento.preventDefault();
-        boton.click();
+        // Felicitar sin escribir nada no manda nada: el atajo deja el cursor
+        // donde hay que escribir en vez de rebotar contra el servidor.
+        var texto = uno("textarea[name=devolucion]", tarjeta);
+        if (tecla === "f" && texto && !texto.value.trim()) texto.focus();
+        else boton.click();
       }
     }
   }

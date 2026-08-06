@@ -46,8 +46,12 @@
         <p class="chips"><span class="chip">✍️ lo escribió {{ e.dictada_por.nombre }}, porque estabas sin teléfono</span></p>
       {% endif %}
       {% if e.texto %}<p>{{ e.texto }}</p>{% endif %}
+      {# Se firma con el nombre de quien la escribió. Lo que contesta sola la
+         aplicación no se puede presentar como si te lo hubiera dicho alguien. #}
       {% if e.devolucion %}
-        <div class="comentario">{{ e.devolucion }}<footer class="meta">Devolución de tu educador/a</footer></div>
+        {% set firma = e.devolucion_firmada_por %}
+        <div class="comentario">{{ e.devolucion }}<footer class="meta">
+          {% if firma %}Te lo escribió {{ primer_nombre(firma.nombre) }}{% else %}Respuesta automática{% endif %}</footer></div>
       {% endif %}
       <div class="acciones"><a class="boton secundario" href="/reto/{{ e.asignacion_id }}">Ver el reto</a></div>
     </article>

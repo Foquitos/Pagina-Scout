@@ -87,6 +87,12 @@ COLUMNAS_NUEVAS = {
         # ahora la única forma de entregar era desde el propio teléfono, así que
         # todas las entregas viejas las escribió su dueño.
         "dictada_por_id": "INTEGER REFERENCES usuarios(id)",
+        # Vacío para las devoluciones que ya estaban escritas. No se puede saber
+        # cuáles las escribió un educador y cuáles el validador automático, y
+        # firmar con un nombre equivocado es peor que no firmar: sin esto la
+        # pantalla del joven dice «tu educador/a» y con esto dice quién fue.
+        "devolucion_por_id": "INTEGER REFERENCES usuarios(id)",
+        "devolucion_en": "DATETIME",
     },
     "libro_oro": {
         "oculta_en": "DATETIME",

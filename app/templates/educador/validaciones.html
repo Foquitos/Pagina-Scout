@@ -10,11 +10,13 @@
 <div class="aviso info">
   <span class="icono" aria-hidden="true">📖</span>
   <div>
-    <strong>Lo que sí te toca es mirar y, si algo no pasó, darlo de baja.</strong>
+    <strong>Lo que sí te toca es mirar: decirle algo cuando estuvo bien y, si
+      algo no pasó, darlo de baja.</strong>
     <p>«No lo hiciste» es una conversación de una persona, nunca de un programa:
       por eso ningún validador automático rechaza nada, solo aprueba o te lo
       deriva. Acá acompañás; ante la duda, prima lo que dice el joven sobre su
-      propio proceso.</p>
+      propio proceso. Y lo que se aprobó solo también merece una respuesta:
+      <strong>felicitar</strong> le manda tu comentario sin tocar el reto.</p>
   </div>
 </div>
 
@@ -46,6 +48,7 @@
   <p class="meta atajos" data-atajos="validaciones" hidden>
     <span><kbd>J</kbd> <kbd>K</kbd> moverse</span>
     <span><kbd>A</kbd> validar</span>
+    <span><kbd>F</kbd> felicitar</span>
     <span><kbd>D</kbd> pedir que amplíe</span>
     <span><kbd>R</kbd> no validar</span>
   </p>
@@ -98,7 +101,11 @@
       <a href="/fotos/{{ e.archivo_foto }}"><img class="foto" src="/fotos/{{ e.archivo_foto }}" alt="Evidencia"></a>
     {% endif %}
     {% if e.devolucion %}
-      <div class="comentario">{{ e.devolucion }}<footer class="meta">Devolución actual</footer></div>
+      <div class="comentario">{{ e.devolucion }}<footer class="meta">
+        {% set firma = e.devolucion_firmada_por %}
+        {% if firma %}La escribió {{ primer_nombre(firma.nombre) }}
+          {% if e.devolucion_en %}el {{ e.devolucion_en | hora('%d/%m/%Y') }}{% endif %}
+        {% else %}Devolución automática{% endif %}</footer></div>
     {% endif %}
 
     <form method="post" action="/validaciones/{{ e.id }}" data-sin-recarga="Devolución enviada.">
@@ -108,14 +115,21 @@
       <div class="acciones">
         {% if e.estado != 'aprobada' %}
           <button type="submit" name="decision" value="aprobar">Darla por buena ({{ e.asignacion.reto.puntaje }} pts)</button>
+        {% else %}
+          {# Lo que ya se validó solo no tenía forma de recibir un comentario:
+             las dos puertas que quedaban eran malas noticias. Esta escribe y no
+             toca nada más. #}
+          <button type="submit" name="decision" value="felicitar">👏 Felicitarlo</button>
         {% endif %}
         <button type="submit" name="decision" value="devolver" class="secundario">Pedir que amplíe</button>
         <button type="submit" name="decision" value="rechazar" class="peligro">
           {{ 'Darla de baja' if e.estado == 'aprobada' else 'No validar' }}
         </button>
       </div>
-      {% if e.estado == 'aprobada' and e.compartida %}
-        <p class="meta">Darla de baja la saca también del muro.</p>
+      {% if e.estado == 'aprobada' %}
+        <p class="meta">Felicitarlo le manda lo que escribas y deja todo como está:
+          sigue validada y con sus puntos.{% if e.compartida %} Darla de baja, en
+          cambio, la saca también del muro.{% endif %}</p>
       {% endif %}
     </form>
   </article>

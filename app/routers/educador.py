@@ -289,11 +289,20 @@ def resolver_validacion(
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
-    """Dar por buena una entrega incompleta, o dar de baja una que no pasó."""
+    """Dar por buena una entrega incompleta, dar de baja una que no pasó, o
+    simplemente decirle algo a quien la hizo.
+
+    `felicitar` está para lo último y no toca nada más: ni el estado, ni los
+    puntos, ni el muro. Casi todas las entregas se aprueban solas, así que sin
+    esta puerta la única forma de escribirle a un chico era bajarle el reto o
+    pedirle que amplíe —las dos malas noticias—. Reconocer lo que estuvo bien es
+    la mitad de la heteroevaluación (cap. 9) y tiene que costar un botón.
+    """
     entrega = sesion.get(Entrega, entrega_id)
     if entrega is None or entrega.asignacion.unidad_id != _unidad_de(usuario):
         raise HTTPException(404, "Esa entrega no existe.")
 
+    texto = devolucion.strip()
     if decision == "aprobar":
         entrega.estado = ESTADO_APROBADA
         entrega.puntaje_otorgado = entrega.asignacion.reto.puntaje
@@ -307,13 +316,26 @@ def resolver_validacion(
         entrega.estado = ESTADO_REVISION
         entrega.puntaje_otorgado = 0
         entrega.compartida = False
+    elif decision == "felicitar":
+        # Un comentario vacío no es un comentario, y acá no hay nada más que
+        # guardar: sin texto esto no haría absolutamente nada.
+        if not texto:
+            raise HTTPException(400, "Escribile algo: un comentario en blanco no le llega.")
     else:
         raise HTTPException(400, "Decisión desconocida.")
 
-    entrega.devolucion = devolucion.strip() or entrega.devolucion
-    entrega.validador = "educador"
-    entrega.validada_por_id = usuario.id
-    entrega.validada_en = tiempo.ahora()
+    if texto:
+        entrega.devolucion = texto
+        entrega.devolucion_por_id = usuario.id
+        entrega.devolucion_en = tiempo.ahora()
+
+    # Felicitar no es validar: la entrega ya la había validado alguien —muchas
+    # veces el validador automático— y ese registro no se pisa por dejar un
+    # comentario. Quién escribió qué queda igual de firmado en `devolucion_por`.
+    if decision != "felicitar":
+        entrega.validador = "educador"
+        entrega.validada_por_id = usuario.id
+        entrega.validada_en = tiempo.ahora()
     sesion.commit()
     return redirigir("/validaciones")
 

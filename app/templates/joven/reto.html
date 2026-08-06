@@ -35,7 +35,11 @@
   <div class="aviso ok">
     <span class="icono" aria-hidden="true">🎉</span>
     <div><strong>¡Validado!</strong> Sumaste {{ entrega.puntaje_otorgado }} puntos para tu patrulla.
-      {% if entrega.devolucion %}<p>{{ entrega.devolucion }}</p>{% endif %}</div>
+      {% if entrega.devolucion %}
+        {% set firma = entrega.devolucion_firmada_por %}
+        <div class="comentario">{{ entrega.devolucion }}<footer class="meta">
+          {% if firma %}👏 Te lo escribió {{ primer_nombre(firma.nombre) }}{% else %}Respuesta automática{% endif %}</footer></div>
+      {% endif %}</div>
   </div>
 
   {# Compartir lo decide quien lo hizo, en cualquier momento y para los dos
@@ -70,7 +74,11 @@
       {% if entrega.estado == 'requiere_revision' %}<strong>Lo está mirando tu educador/a.</strong>
       {% elif entrega.estado == 'rechazada' %}<strong>Todavía sin validar.</strong>
       {% else %}<strong>Entrega enviada.</strong>{% endif %}
-      {% if entrega.devolucion %}<p>{{ entrega.devolucion }}</p>{% endif %}
+      {% if entrega.devolucion %}
+        {% set firma = entrega.devolucion_firmada_por %}
+        <div class="comentario">{{ entrega.devolucion }}<footer class="meta">
+          {% if firma %}Te lo escribió {{ primer_nombre(firma.nombre) }}{% else %}Respuesta automática{% endif %}</footer></div>
+      {% endif %}
     </div>
   </div>
 {% endif %}

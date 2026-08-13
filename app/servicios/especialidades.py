@@ -123,12 +123,17 @@ def escribir(especialidad: Especialidad, fase: str, texto: str) -> None:
 
 
 def sugerencias(sesion: Session, tope: int = 40) -> list[tuple[str, str]]:
-    """Ideas sacadas de las propias cartas: (texto del desafío, carta).
+    """Referencia para el equipo: (texto del desafío, carta).
 
     Los desafíos marcados como especialidad dentro de las Cartas de Exploración
-    ya son una lista de temas posibles escrita por la Asociación. Se muestran
-    como ideas para quien no sabe por dónde empezar, **nunca como las únicas
-    opciones**: el campo sigue siendo libre.
+    sirven para ubicar un pedido dentro de una competencia cuando hay que
+    prepararlo.
+
+    **No se le muestran al joven.** Estaban como ideas en su pantalla y hacían
+    justo lo contrario de lo que se buscaba: casi todos dicen «desarrollo una
+    especialidad vinculada al tema» o «una especialidad que me interesa», sin
+    nombrar ningún tema, y alguno ni siquiera es una especialidad sino un rol de
+    patrulla. Elegir uno era dejar de decir qué se quería aprender.
     """
     filas = sesion.execute(
         select(Desafio.texto, Competencia.titulo)

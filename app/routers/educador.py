@@ -350,19 +350,22 @@ def listar_retos(
     sesion: Session = Depends(obtener_sesion),
 ):
     unidad_id = _unidad_de(usuario)
-    propios = list(
+    # Los archivados vienen en el mismo viaje: son los mismos retos con el
+    # `activo` en falso, y la pantalla los muestra abajo para poder traer de
+    # vuelta el que se archivó de más.
+    todos = list(
         sesion.scalars(
-            select(Reto)
-            .where(Reto.unidad_id == unidad_id, Reto.activo.is_(True))
-            .order_by(Reto.creado_en.desc())
+            select(Reto).where(Reto.unidad_id == unidad_id).order_by(Reto.creado_en.desc())
         )
     )
+    propios = [r for r in todos if r.activo]
     return render(
         request,
         "educador/retos.html",
         usuario=usuario,
         retos=propios,
-        usos=_uso_de_los_retos(sesion, propios),
+        archivados=[r for r in todos if not r.activo],
+        usos=_uso_de_los_retos(sesion, todos),
         areas=list(sesion.scalars(select(Area).order_by(Area.id))),
         competencias=list(sesion.scalars(select(Competencia).order_by(Competencia.numero))),
         puntaje_defecto=PUNTAJE_POR_DEFECTO,
@@ -509,8 +512,32 @@ def archivar_reto(
     usuario: Usuario = Depends(solo_educador),
     sesion: Session = Depends(obtener_sesion),
 ):
+    """Lo saca de la lista para agendar. No borra nada: se puede desarchivar."""
     reto = _reto_de_la_unidad(sesion, reto_id, usuario)
     reto.activo = False
+    sesion.commit()
+    return redirigir("/retos")
+
+
+@router.post("/retos/{reto_id}/desarchivar")
+def desarchivar_reto(
+    reto_id: int,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    """Devuelve a la lista un reto archivado.
+
+    Archivar es un botón que no pregunta nada, y en un teléfono el de al lado
+    queda a un dedo de distancia. El reto archivado nunca se fue: sigue entero,
+    con sus agendas y sus entregas colgando de él, solo que dejó de aparecer
+    para agendar. Traerlo de vuelta es poner el `activo` como estaba y nada
+    más; lo agendado mientras tanto siguió su curso y no hay que rehacerlo.
+    """
+    reto = _reto_de_la_unidad(sesion, reto_id, usuario)
+    if reto.activo:
+        raise HTTPException(400, "Ese reto ya está en la lista.")
+
+    reto.activo = True
     sesion.commit()
     return redirigir("/retos")
 

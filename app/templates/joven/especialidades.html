@@ -19,20 +19,24 @@
     <div class="fila">
       <div>
         <label for="nombre">¿Qué querés aprender?</label>
+        {# Sin lista desplegable y sin autocompletado, a propósito. Las ideas que
+           salían acá son textos de las cartas («una especialidad vinculada al
+           tema»), y al tocar una quedaban como nombre: el chico dejaba de decir
+           qué quería y el equipo recibía un pedido imposible de preparar. El
+           nombre lo escribe quien la va a hacer. #}
         <input type="text" id="nombre" name="nombre" required maxlength="120"
-               list="ideas-especialidad"
-               placeholder="Cocina, apicultura, primeros auxilios, lo que sea…">
-        <datalist id="ideas-especialidad">
-          {% for texto, carta in sugerencias %}<option value="{{ texto[:100] }}"></option>{% endfor %}
-        </datalist>
+               autocomplete="off"
+               placeholder="Cocina, apicultura, primeros auxilios…">
       </div>
       <div>
         <label for="icono">Un ícono (opcional)</label>
         <input type="text" id="icono" name="icono" maxlength="10" placeholder="🐝">
       </div>
     </div>
-    <p class="meta">Poné la que quieras. No hay una lista de la que elegir: si te
-      interesa algo que a nadie se le ocurrió, ese es justamente el punto.</p>
+    <p class="meta">Poné la que quieras, con tus palabras y lo más concreta que
+      puedas: «apicultura», no «algo de la naturaleza». No hay una lista de la que
+      elegir: si te interesa algo que a nadie se le ocurrió, ese es justamente el
+      punto. Cuanto más claro esté, mejor te la pueden armar.</p>
 
     <label for="motivo">¿Por qué esa? (opcional)</label>
     <textarea id="motivo" name="motivo" rows="2"
@@ -159,20 +163,10 @@
   </div>
 {% endif %}
 
-{% if sugerencias %}
-  <details>
-    <summary>¿No sabés cuál pedir?</summary>
-    <p class="sub-titulo">Estas salen de las propias Cartas de Exploración, así
-      que están pensadas para tu edad. Son ideas: podés pedir cualquier otra.</p>
-    <ul class="lista-desafios">
-      {% for texto, carta in sugerencias[:15] %}
-        <li><span class="tilde" aria-hidden="true">·</span>
-          <div>{{ texto }}<span class="meta" style="display:block">{{ carta }}</span></div>
-        </li>
-      {% endfor %}
-    </ul>
-  </details>
-{% endif %}
+{# Acá había una lista de ideas sacada de las cartas. Se fue por lo mismo que el
+   desplegable del formulario: son frases como «desarrollo una especialidad
+   vinculada al tema», que no nombran ningún tema. Quien no sabe qué pedir lo
+   conversa con su educador/a, no elige de una lista. #}
 
 <div class="aviso info">
   <span class="icono" aria-hidden="true">💡</span>

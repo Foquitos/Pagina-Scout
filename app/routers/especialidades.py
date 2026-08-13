@@ -79,12 +79,13 @@ def ver(
             fases_nombre=FASES_ESPECIALIDAD_NOMBRE,
         )
 
+    # Al joven no se le ofrecen sugerencias: el tema lo elige y lo nombra él. Las
+    # de las cartas quedan del lado del equipo, como referencia para preparar.
     return render(
         request,
         "joven/especialidades.html",
         usuario=usuario,
         especialidades=especialidades.de(sesion, usuario),
-        sugerencias=especialidades.sugerencias(sesion),
         fases=FASES_ESPECIALIDAD,
         fases_nombre=FASES_ESPECIALIDAD_NOMBRE,
     )

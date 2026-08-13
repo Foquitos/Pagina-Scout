@@ -445,6 +445,29 @@ def main() -> int:
             corregido.tipo == "personalizado" and corregido.area_id is None,
         )
 
+    # --- archivar y desarchivar -----------------------------------------------
+    # Archivar es un botón que no pregunta nada y está a un dedo del de al lado.
+    # El reto archivado no se fue: deja de estar para agendar y vuelve entero.
+    r = edu.post(f"/retos/{reto_id}/archivar")
+    check("archivar lo baja a «Archivados»", "Archivados" in r.text)
+    check("y deja de estar para agendar", "Nudo margarita" not in edu.get("/asignar").text)
+    check(
+        "un joven no desarchiva retos",
+        joven.post(f"/retos/{reto_id}/desarchivar").status_code == 403,
+    )
+    check(
+        "y un reto de otra Unidad tampoco existe para desarchivar",
+        edu.post("/retos/999999/desarchivar").status_code == 404,
+    )
+
+    r = edu.post(f"/retos/{reto_id}/desarchivar")
+    check("desarchivarlo lo devuelve a la lista", f'action="/retos/{reto_id}/archivar"' in r.text)
+    check("vuelve a estar para agendar", "Nudo margarita" in edu.get("/asignar").text)
+    check(
+        "desarchivar uno que ya está en la lista no hace nada",
+        edu.post(f"/retos/{reto_id}/desarchivar").status_code == 400,
+    )
+
     r = edu.post(
         "/asignar",
         data={"reto_id": str(reto_id), "fecha": date.today().isoformat(), "alcance": "unidad"},

@@ -56,8 +56,13 @@
 {% if not retos %}
   <div class="vacio">
     <img src="/estaticos/img/vacio/brujula.svg" alt="">
-    <strong>Todavía no creaste ninguno</strong>
-    <p>Mientras tanto, la aplicación propone cada día un desafío de las cartas.</p>
+    {% if archivados %}
+      <strong>No queda ninguno sin archivar</strong>
+      <p>Los tenés todos acá abajo y volvés a poner en juego el que quieras.</p>
+    {% else %}
+      <strong>Todavía no creaste ninguno</strong>
+      <p>Mientras tanto, la aplicación propone cada día un desafío de las cartas.</p>
+    {% endif %}
   </div>
 {% else %}
   <div class="rejilla">
@@ -151,8 +156,47 @@
       </details>
 
       <form method="post" action="/retos/{{ r.id }}/archivar" class="acciones"
-            data-sin-recarga="Reto archivado.">
+            data-sin-recarga="Reto archivado. Queda abajo, en «Archivados».">
         <button type="submit" class="secundario">Archivar</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{# --- Archivados ---
+   Archivar no borra: el reto queda entero, con lo que se agendó y se entregó
+   colgando de él, y solo deja de aparecer para agendar. Como el botón está a
+   un dedo del de al lado, los archivados se muestran acá abajo y vuelven de
+   donde estaban, con su historia y sus puntos, sin tener que reescribirlos. #}
+{% if archivados %}
+  <h2>Archivados</h2>
+  <p class="sub">No aparecen para agendar ni al crear una asignación. Lo que ya
+    se agendó y se entregó con ellos sigue en pie, y se pueden desarchivar.</p>
+  <div class="rejilla">
+    {% for r in archivados %}
+    {% set veces, entregas = usos.get(r.id, (0, 0)) %}
+    <article class="tarjeta apagada">
+      <div class="encabezado-tarjeta">
+        <span class="burbuja chica" aria-hidden="true"
+              {% if r.area %}style="--tono: {{ r.area.color }}22"{% endif %}>{{ r.area.icono if r.area else '🎯' }}</span>
+        <div>
+          <h3>{{ r.titulo }} <span class="etiqueta">archivado</span></h3>
+          <p class="meta">
+            {% if r.area %}<span>{{ r.area.nombre }}</span>{% endif %}
+            <span>{{ r.puntaje }} pts</span>
+            {% if veces %}
+              <span>agendado {{ veces }} {{ 'vez' if veces == 1 else 'veces' }}</span>
+            {% endif %}
+            {% if entregas %}
+              <span>{{ entregas }} {{ 'entrega' if entregas == 1 else 'entregas' }}</span>
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      <form method="post" action="/retos/{{ r.id }}/desarchivar" class="acciones"
+            data-sin-recarga="Reto de vuelta en la lista.">
+        <button type="submit" class="secundario">↩️ Desarchivar</button>
       </form>
     </article>
     {% endfor %}

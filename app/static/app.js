@@ -37,6 +37,12 @@
         que se actualiza solo, atajos de teclado para validar y el menú
         de la cuenta que se cierra al tocar afuera.
 
+     8. Cómo se escribió — en los formularios con `data-medir` se cuenta
+        cuánto se tecleó y cuánto entró de un pegue, y de la foto se
+        manda aparte la cabecera del original, que la copia achicada
+        pierde. Lo lee un educador; la pantalla lo avisa antes de que
+        nadie escriba. El porqué está en `app/servicios/rastros.py`.
+
    El HTML lo sigue armando el servidor: acá no hay plantillas. Cuando
    algo tiene que repintarse, la ruta devuelve el pedazo ya renderizado
    por Jinja y esto lo pega en su lugar. Así lo que se ve al entrar y
@@ -84,6 +90,13 @@
     todos("input[type=file]", form).forEach(function (entrada) {
       if (entrada.name && entrada._achicada) {
         datos.set(entrada.name, entrada._achicada.blob, entrada._achicada.nombre);
+        // Y con ella, los primeros kilobytes del original. La achicada sale de
+        // un lienzo, así que no conserva un solo metadato: sin esto el servidor
+        // no puede saber si la foto salió de una cámara o de un generador de
+        // imágenes. Solo la cabecera, que es donde eso vive.
+        if (entrada._cabecera) {
+          datos.set(entrada.name + "_cabecera", entrada._cabecera, "cabecera.bin");
+        }
       }
     });
     return datos;
@@ -497,6 +510,10 @@
   // todos modos, hecho antes de gastar los datos de quien sube la foto.
   var FOTO_LADO = 1600;
   var FOTO_CALIDAD = 0.82;
+  // Cuánto del original se manda aparte para que el servidor pueda leer los
+  // metadatos que la copia achicada pierde. Los bloques de metadatos de un JPEG
+  // van pegados al principio: con 128 kB sobra, y es una fracción de la foto.
+  var CABECERA_FOTO = 128 * 1024;
 
   function cajaDeFoto(entrada) {
     if (entrada._caja) return entrada._caja;
@@ -514,11 +531,16 @@
     var caja = cajaDeFoto(entrada);
     if (entrada._previa) URL.revokeObjectURL(entrada._previa);
     entrada._achicada = null;
+    entrada._cabecera = null;
     entrada._previa = null;
     if (!archivo || archivo.size === 0) {
       caja.hidden = true;
       return;
     }
+    // La cabecera del original, antes de que el lienzo se lleve los metadatos.
+    // `slice` no lee nada: recorta la referencia, y el navegador lee esos bytes
+    // recién cuando el formulario se envía.
+    entrada._cabecera = archivo.slice(0, CABECERA_FOTO);
 
     caja.hidden = false;
     var leyenda = uno("p", caja);
@@ -800,6 +822,102 @@
     }
   }
 
+  /* --- 10. Cómo se escribió --------------------------------------------- */
+
+  // Cuenta cuántos caracteres se teclearon y cuántos entraron de un pegue en los
+  // formularios marcados con `data-medir`. No adivina nada sobre el texto: no
+  // hay forma honesta de saber si algo lo escribió una IA, y los detectores que
+  // dicen saberlo se equivocan lo suficiente como para acusar en falso a un
+  // chico por algo que sí hizo. Esto guarda un hecho —cómo entró el texto al
+  // cuadro— y quien lo lee es un educador. La pantalla lo avisa antes de que
+  // nadie escriba una palabra; el porqué de todo esto, en `servicios/rastros.py`.
+
+  function campoOculto(form, nombre) {
+    var campo = uno('input[type=hidden][name="' + nombre + '"]', form);
+    if (!campo) {
+      campo = document.createElement("input");
+      campo.type = "hidden";
+      campo.name = nombre;
+      form.appendChild(campo);
+    }
+    campo.value = "0";
+    return campo;
+  }
+
+  function medirEscritura() {
+    todos("form[data-medir]").forEach(function (form) {
+      var cuadros = todos("textarea", form);
+      if (form._midiendo || !cuadros.length) return;
+      form._midiendo = true;
+
+      var pegado = 0;
+      var tecleado = 0;
+      var desde = 0;
+      var campos = {
+        pegado: campoOculto(form, "pegado"),
+        tecleado: campoOculto(form, "tecleado"),
+        segundos: campoOculto(form, "segundos")
+      };
+
+      function anotar() {
+        campos.pegado.value = pegado;
+        campos.tecleado.value = tecleado;
+        campos.segundos.value = desde ? Math.round((Date.now() - desde) / 1000) : 0;
+      }
+
+      cuadros.forEach(function (cuadro) {
+        // Lo que ya estaba en el cuadro no es de nadie: al corregir una entrega
+        // el texto viene puesto por el servidor, y contarlo como tecleado sería
+        // inventar que alguien lo escribió recién.
+        var largo = (cuadro.value || "").length;
+        var pegando = false;
+        var loPegado = 0;
+
+        function empezar() {
+          if (!desde) desde = Date.now();
+        }
+
+        // `paste` y `drop` llegan siempre antes que el `input` que provocan, así
+        // que alcanza con dejar la marca puesta y leerla ahí.
+        function marcarPegue(datos) {
+          empezar();
+          pegando = true;
+          loPegado = datos ? (datos.getData("text") || "").length : 0;
+        }
+
+        cuadro.addEventListener("focus", empezar);
+        cuadro.addEventListener("paste", function (evento) {
+          marcarPegue(evento.clipboardData);
+        });
+        cuadro.addEventListener("drop", function (evento) {
+          marcarPegue(evento.dataTransfer);
+        });
+        cuadro.addEventListener("input", function () {
+          var ahora = (cuadro.value || "").length;
+          // Lo que creció. Borrar no descuenta: lo tecleado se escribió aunque
+          // después se haya borrado, y restar dejaría en cero a quien escribe y
+          // corrige, que es exactamente el que más trabajó.
+          var cambio = Math.max(0, ahora - largo);
+          largo = ahora;
+          empezar();
+          if (pegando) {
+            // Lo que traía el portapapeles, o lo que creció si el navegador no
+            // dejó leerlo. Se mide el pegue y no el crecimiento porque pegar
+            // arriba de algo seleccionado puede achicar el texto.
+            pegado += loPegado || cambio;
+            pegando = false;
+            loPegado = 0;
+          } else {
+            tecleado += cambio;
+          }
+          anotar();
+        });
+      });
+
+      anotar();
+    });
+  }
+
   /* --- Enganches -------------------------------------------------------- */
 
   // `evento.submitter` es nuevo para algunos celulares viejos: se anota
@@ -909,9 +1027,16 @@
     });
   }
 
+  // Lo que hay que volver a enganchar cada vez que aparecen formularios nuevos,
+  // que es en cada repintado.
+  function alAparecerFormularios() {
+    memorizarFirmas();
+    medirEscritura();
+  }
+
   // Todo lo que hay que rehacer cuando la página se repinta sola.
   function acomodar() {
-    memorizarFirmas();
+    alAparecerFormularios();
     armarFiltros();
     // El `confirm()` del navegador es el plan B para quien no tiene
     // JavaScript. Con JavaScript se pregunta adentro de la tarjeta.
@@ -947,7 +1072,7 @@
     arrancar();
   }
   // Después de repintar la página aparecen formularios nuevos.
-  new MutationObserver(memorizarFirmas).observe(document.documentElement, {
+  new MutationObserver(alAparecerFormularios).observe(document.documentElement, {
     childList: true,
     subtree: true
   });

@@ -54,6 +54,7 @@ from app.servicios import (
     pausas,
     progresion,
     puntajes,
+    rastros,
     retos,
 )
 from app.servicios import patrulla as vida_de_patrulla
@@ -125,6 +126,10 @@ def panel(
         # Alguien pidió que el equipo mire una foto publicada. Es lo único de
         # este panel que puede ser urgente, así que se muestra arriba de todo.
         avisadas=moderacion.cuantas_sin_mirar(sesion, unidad_id),
+        # Aparatos desde los que se movieron tres cuentas o más. Cero es lo
+        # normal y entonces no se muestra nada: un cartel permanente que dice
+        # «no pasa nada» enseña a no leer los carteles.
+        aparatos_compartidos=rastros.cuantos_llaman_la_atencion(sesion, unidad_id),
         # Quiénes están sin teléfono. Va en el panel y no escondido en una ficha
         # porque es lo que explica que el tablero divida por menos, y porque
         # alguien tiene que sentarse a cargar lo que hicieron.
@@ -271,13 +276,48 @@ def validaciones(
         .join(Asignacion, Asignacion.id == Entrega.asignacion_id)
         .where(Asignacion.unidad_id == unidad_id, Entrega.estado == ESTADO_REVISION)
     )
+    entregas = list(sesion.scalars(consulta.limit(120)))
     return render(
         request,
         "educador/validaciones.html",
         usuario=usuario,
-        entregas=list(sesion.scalars(consulta.limit(120))),
+        entregas=entregas,
         estado=estado,
         esperando=esperando or 0,
+        # De qué aparato salió cada una y cómo se escribió. Va al lado de la
+        # entrega y no en una pantalla aparte a propósito: lo que se vio hay que
+        # leerlo con lo que el chico escribió delante, no como una lista de
+        # sospechosos separada de lo que hicieron. Ver `servicios/rastros.py`.
+        senales=rastros.por_entrega(sesion, unidad_id, entregas),
+    )
+
+
+# --- De qué aparato salió cada cosa -------------------------------------------
+#
+# Existe por un caso concreto: un Guía usando la cuenta de cada uno de sus
+# patrulleros para completarles los retos. Con la sesión sola eso era
+# indistinguible de cinco chicos entregando desde su casa.
+#
+# Lo que esta pantalla **no** hace: decidir. Que dos cuentas salgan del mismo
+# teléfono puede ser eso, o dos hermanas que comparten el único celular de la
+# casa, o un chico que entregó desde la computadora del club. Se ven idénticos
+# desde acá y no hay forma de que no. Separarlos es de quien los conoce.
+
+
+@router.get("/aparatos")
+def aparatos_compartidos(
+    request: Request,
+    usuario: Usuario = Depends(solo_educador),
+    sesion: Session = Depends(obtener_sesion),
+):
+    unidad_id = _unidad_de(usuario)
+    return render(
+        request,
+        "educador/aparatos.html",
+        usuario=usuario,
+        compartidos=rastros.compartidos(sesion, unidad_id),
+        desde_cuantas=rastros.CUENTAS_QUE_LLAMAN_LA_ATENCION,
+        dias=rastros.DIAS_DE_APARATO,
     )
 
 

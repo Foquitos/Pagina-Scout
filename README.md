@@ -58,6 +58,7 @@ app/
   db.py              motor SQLite + sesión por request
   models.py          el modelo de datos, con el vocabulario del método
   seguridad.py       hash de contraseñas (scrypt, sin dependencias)
+  aparatos.py        el número de aparato del navegador, en su propia cookie
   dependencias.py    usuario de sesión y guardas por rol
   routers/
     auth.py          ingreso, salida y la contraseña propia
@@ -82,7 +83,8 @@ app/
     agenda.py        actividades del calendario y participación
     especialidades.py  pedir, preparar y las tres fases
     muro.py          lo que cada uno quiso mostrar de lo que hizo
-    medios.py        compresión de fotos y enlaces de video
+    medios.py        compresión de fotos, metadatos y enlaces de video
+    rastros.py       de qué aparato salió cada cosa y cómo entró lo escrito
   static/
     estilos.css      la hoja de estilos, sin framework ni build
     app.js           guardado automático y acciones sin recargar (ver abajo)
@@ -822,7 +824,12 @@ orden de 20 a 35 MB. El original no se conserva, y es a propósito. Se ajusta co
 `FOTO_LADO_MAXIMO` y `FOTO_CALIDAD`.
 
 Se descarta también el EXIF, que en una foto de celular trae las coordenadas de
-dónde se sacó. No queremos guardar dónde vive un chico.
+dónde se sacó. No queremos guardar dónde vive un chico. Antes de borrarlo se
+leen tres cosas y ni una más —de qué cámara salió, cuándo se sacó y con qué
+software se tocó—, que es lo que permite distinguir una foto de una imagen
+generada. Está más abajo, en [Cuando lo hace la IA, o la cuenta la usa
+otro](#cuando-lo-hace-la-ia-o-la-cuenta-la-usa-otro); la ubicación sigue sin
+guardarse nunca.
 
 **Ningún video se guarda.** Un minuto de video de celular pesa más que el Libro
 de Oro entero de un año. Se guarda el enlace a YouTube o Vimeo y se muestra su
@@ -868,6 +875,82 @@ escribió el educador quedan en `/retos`, que para eso los escribió. Ojo con
 esto: si sacás el propuesto y ese día se queda sin ningún reto, la aplicación
 vuelve a proponer **el mismo** —la elección es determinista por (unidad,
 fecha)—. Para que no vuelva, asigná uno propio.
+
+## Cuando lo hace la IA, o la cuenta la usa otro
+
+Dos cosas que pasaron de verdad y que la aplicación no veía: relatos y fotos
+inventados con una IA, y un Guía entrando con la cuenta de cada uno de sus
+patrulleros para completarles los retos. La segunda obligó a blanquearle la
+contraseña a toda la patrulla, que arregla el pasado y no el futuro.
+
+Lo primero es lo que **no** se hace, porque marca todo lo demás:
+
+- **No se detecta texto generado por IA.** No se puede. Los detectores que dicen
+  hacerlo se equivocan seguido, y equivocarse acá significa acusar en falso a un
+  chico de doce por algo que sí hizo.
+- **Nada se rechaza solo.** Es el mismo contrato que ya tenía
+  `servicios/validacion.py`: lo más que hace una señal es que la entrega no se
+  valide sola y caiga en la lista del educador. Rechazar es de una persona.
+- **No se registra en silencio.** El formulario de entrega dice qué se mide,
+  antes de que nadie escriba una palabra. Además de ser lo correcto, es lo que
+  funciona: a quien estaba por copiar y pegar lo frena enterarse ahora, no que lo
+  descubran el sábado.
+
+Lo que sí se guarda son hechos, en `app/servicios/rastros.py`:
+
+| se guarda | de dónde sale | qué contesta |
+|---|---|---|
+| el aparato | una cookie propia, aparte de la de sesión (`app/aparatos.py`) | ¿estas dos entregas salieron del mismo teléfono? |
+| pegado / tecleado / segundos | lo cuenta el navegador en el cuadro de texto | ¿esto se escribió o se pegó? |
+| cámara, fecha y software de la foto | el EXIF, leído antes de borrarlo | ¿esta foto salió de una cámara? |
+| el sello C2PA y las recetas de difusión | los bloques de metadatos del archivo | ¿la fabricó un generador? |
+
+**Lo del aparato es la pieza que resuelve el caso del Guía.** La cookie de sesión
+se vacía al salir, así que cinco cuentas usadas una atrás de la otra desde el
+mismo teléfono no dejaban ninguna marca de haber sido el mismo teléfono. Esta
+sobrevive a `/salir` y las junta. No es una huella del navegador: es un número
+sorteado que no dice nada de nadie, y quien borre sus cookies arranca de cero.
+
+Una señal se marca **fuerte** —y entonces la entrega espera a una persona— solo
+cuando ya no tiene otra lectura razonable: el relato entero pegado de una,
+la foto con sello de imagen generada, o **tres** cuentas distintas desde un mismo
+aparato. Tres y no dos, porque dos son dos hermanas con un solo celular en casa,
+que es bastante más común que un Guía haciendo trampa. Todo lo demás se muestra
+sin marcarlo: una foto sin datos de cámara puede ser inventada o puede haber
+pasado por WhatsApp, que se los borra a todas.
+
+Cargarle la entrega a un compañero que está sin teléfono queda expresamente
+afuera de la cuenta de cuentas por aparato: está firmado con nombre en
+`dictada_por_id` y lo habilita el equipo, así que es **el** uso legítimo de
+escribir desde el aparato de otro.
+
+Dónde se ve: las señales van pegadas a cada entrega en `/validaciones`, y
+`/aparatos` lista los aparatos desde los que se movió más de una cuenta. Las dos
+pantallas empiezan aclarando que esto no prueba nada. Si de la conversación sale
+que efectivamente una cuenta la estuvo usando otro, lo que cierra la puerta es
+blanquear la contraseña desde `/jovenes`; esto solo avisa dónde mirar.
+
+Una pieza que no se puso, a propósito: `capture` en el `<input type=file>`, que
+en iOS abre la cámara y **no ofrece el álbum**. Le cerraría la puerta a todos
+—la foto del sábado a la mañana se sube el sábado a la noche— para complicársela
+a uno.
+
+### El detalle de las fotos
+
+La copia que sube el celular sale de un lienzo (ver [El
+JavaScript](#el-javascript)) y por eso no conserva un solo metadato. El
+formulario manda aparte los primeros 128 kB del original, que es donde viven los
+bloques de metadatos; sin JavaScript sube el original entero y se leen de ahí.
+Las dos formas terminan en el mismo lugar.
+
+El sello se busca recorriendo la estructura del archivo —los segmentos APP de un
+JPEG, los trozos de texto de un PNG— y no con una búsqueda a ciegas: los datos
+comprimidos de una foto de verdad son ruido, y en un megabyte de ruido cuatro
+letras aparecen por casualidad. Un falso «generada» manda a la cola del educador
+la entrega honesta de alguien.
+
+C2PA a secas no significa IA: hay cámaras que lo usan justamente para firmar que
+la foto es de verdad. Por eso cuenta solo cuando la foto no trae datos de cámara.
 
 ## La validación con IA
 

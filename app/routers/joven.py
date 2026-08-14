@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Uplo
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import tiempo
+from app import aparatos, tiempo
 from app.db import obtener_sesion
 from app.dependencias import (
     fragmento,
@@ -22,6 +22,7 @@ from app.models import (
     ALCANCE_JOVEN,
     ALCANCE_PATRULLA,
     ESTADO_APROBADA,
+    ESTADO_REVISION,
     ETAPAS_NOMBRE,
     ROL_JOVEN,
     Area,
@@ -45,6 +46,7 @@ from app.servicios import (
     pausas,
     progresion,
     puntajes,
+    rastros,
     retos,
 )
 from app.servicios import patrulla as vida_de_patrulla
@@ -56,10 +58,58 @@ router = APIRouter()
 
 def _guardar_foto(archivo: UploadFile) -> str:
     """Toda foto pasa por el servicio de medios: se comprime antes de ir a disco."""
+    return _guardar_contenido(archivo.filename, _leer_foto(archivo))
+
+
+def _leer_foto(archivo: UploadFile) -> bytes:
     try:
-        return medios.guardar_foto(archivo.filename, medios.leer_subida(archivo))
+        return medios.leer_subida(archivo)
     except medios.MedioInvalido as error:
         raise HTTPException(400, str(error)) from error
+
+
+def _guardar_contenido(nombre: str | None, contenido: bytes) -> str:
+    try:
+        return medios.guardar_foto(nombre, contenido)
+    except medios.MedioInvalido as error:
+        raise HTTPException(400, str(error)) from error
+
+
+# Cuánto se lee de la cabecera del original. Los bloques de metadatos de un JPEG
+# van pegados al principio del archivo, así que con esto sobra de sobra.
+CABECERA_MAXIMA = 1024 * 1024
+
+
+def _senales_de_la_foto(cabecera: UploadFile | None, contenido: bytes) -> medios.SenalesFoto:
+    """Lo que la foto trae escrito adentro, leído del original.
+
+    Hace falta el original y no lo que se subió: `app/static/app.js` achica la
+    foto en el celular antes de mandarla —para no gastarle los datos a quien la
+    sube— y esa copia sale de un lienzo, o sea sin un solo metadato. Por eso el
+    formulario manda aparte los primeros kilobytes del archivo tal como salió de
+    la cámara, que es donde viven la marca del teléfono y el sello C2PA.
+
+    Sin JavaScript no hay copia achicada ni cabecera: sube el original entero y
+    los metadatos se leen de ahí. Las dos formas terminan en el mismo lugar.
+    """
+    if cabecera is not None and cabecera.filename:
+        try:
+            crudo = medios.leer_subida(cabecera, tope=CABECERA_MAXIMA)
+        except medios.MedioInvalido:
+            crudo = b""
+        if crudo:
+            return medios.senales_de_foto(crudo)
+    return medios.senales_de_foto(contenido)
+
+
+def _como_se_escribio(request: Request, pegado: int, tecleado: int, segundos: int):
+    """Lo que contó el navegador, junto con el aparato del que vino el pedido."""
+    return rastros.ComoSeEscribio(
+        aparato=aparatos.de(request),
+        pegado=pegado,
+        tecleado=tecleado,
+        segundos=segundos,
+    )
 
 
 @router.get("/hoy")
@@ -140,6 +190,8 @@ def _registrar_entrega(
     texto: str,
     foto: UploadFile | None,
     compartir: bool,
+    como: rastros.ComoSeEscribio,
+    cabecera: UploadFile | None = None,
     dictada_por: Usuario | None = None,
 ) -> Entrega | None:
     """Guarda la evidencia y la pasa por el validador. `None` si ya estaba validada.
@@ -159,8 +211,13 @@ def _registrar_entrega(
         return None
 
     nombre_foto = None
+    senales_foto = None
     if foto is not None and foto.filename:
-        nombre_foto = _guardar_foto(foto)
+        contenido = _leer_foto(foto)
+        # Se mira lo que la foto trae adentro **antes** de guardarla: al guardarla
+        # se le borra el EXIF entero, que es lo correcto porque ahí va el GPS.
+        senales_foto = _senales_de_la_foto(cabecera, contenido)
+        nombre_foto = _guardar_contenido(foto.filename, contenido)
 
     entrega = ya_entregada or Entrega(
         asignacion_id=asignacion.id,
@@ -209,6 +266,28 @@ def _registrar_entrega(
     entrega.validada_en = tiempo.ahora() if resultado.estado == ESTADO_APROBADA else None
     entrega.puntaje_otorgado = reto.puntaje if resultado.estado == ESTADO_APROBADA else 0
 
+    # De qué aparato salió y cómo entró el texto. Se anota siempre, se haya visto
+    # algo o no: el rastro de las entregas normales es lo que le da sentido al de
+    # las otras, y una tabla que solo tuviera lo sospechoso sería una lista de
+    # sospechosos. El `flush` es para que la entrega y su rastro existan en la
+    # base antes de contar cuántas cuentas usaron este aparato: sin él, la que se
+    # está recibiendo —que es la que completa el patrón— no se contaría.
+    rastros.anotar(sesion, entrega, como, senales_foto)
+    sesion.add(entrega)
+    sesion.flush()
+
+    # Señales fuertes: no se valida sola y la mira una persona. **No la rechaza**,
+    # que sigue siendo decisión de un educador (ver `servicios/validacion.py`), y
+    # al joven le dice lo mismo que a cualquiera que quedó esperando: qué se vio
+    # es para el equipo, porque contarle cuál fue la señal es enseñarle a
+    # esquivarla. Que esto se registra sí se le dice, y antes de que escriba: lo
+    # avisa el propio formulario de entrega.
+    if entrega.estado == ESTADO_APROBADA and rastros.hay_que_mirarla(sesion, entrega):
+        entrega.estado = ESTADO_REVISION
+        entrega.devolucion = "Tu entrega quedó a la espera de que la mire un educador."
+        entrega.validada_en = None
+        entrega.puntaje_otorgado = 0
+
     # Al muro solo va lo validado. Si pidió compartirlo y todavía se está
     # mirando, la marca queda apagada y se puede prender después desde la
     # entrega: no se publica algo que la Unidad no dio por hecho.
@@ -216,7 +295,6 @@ def _registrar_entrega(
     # Cuándo se publicó, para que el equipo lo vea arriba en /novedades.
     entrega.compartida_en = tiempo.ahora() if entrega.compartida else None
 
-    sesion.add(entrega)
     return entrega
 
 
@@ -227,11 +305,28 @@ def entregar_reto(
     texto: str = Form(""),
     compartir: bool = Form(False),
     foto: UploadFile | None = File(None),
+    # Lo que midió el navegador mientras se escribía, y la cabecera del original
+    # de la foto. Los cuatro vienen con valor por defecto porque sin JavaScript no
+    # llega ninguno, y sin JavaScript se tiene que poder entregar igual: es el
+    # celular prestado de un chico de doce. Ver `servicios/rastros.py`.
+    pegado: int = Form(0),
+    tecleado: int = Form(0),
+    segundos: int = Form(0),
+    foto_cabecera: UploadFile | None = File(None),
     usuario: Usuario = Depends(solo_joven),
     sesion: Session = Depends(obtener_sesion),
 ):
     asignacion = _asignacion_visible(sesion, asignacion_id, usuario)
-    _registrar_entrega(sesion, asignacion, usuario, texto, foto, compartir)
+    _registrar_entrega(
+        sesion,
+        asignacion,
+        usuario,
+        texto,
+        foto,
+        compartir,
+        como=_como_se_escribio(request, pegado, tecleado, segundos),
+        cabecera=foto_cabecera,
+    )
     sesion.commit()
     return redirigir(f"/reto/{asignacion.id}")
 
@@ -297,8 +392,13 @@ def cargar_lo_que_hizo(
 def dictar_entrega(
     joven_id: int,
     asignacion_id: int,
+    request: Request,
     texto: str = Form(""),
     foto: UploadFile | None = File(None),
+    pegado: int = Form(0),
+    tecleado: int = Form(0),
+    segundos: int = Form(0),
+    foto_cabecera: UploadFile | None = File(None),
     usuario: Usuario = Depends(usuario_actual),
     sesion: Session = Depends(obtener_sesion),
 ):
@@ -310,8 +410,20 @@ def dictar_entrega(
     # no está en ninguna.
     asignacion = _asignacion_visible(sesion, asignacion_id, joven)
 
+    # El rastro se anota igual, y el aparato que queda es el de quien escribe.
+    # Que sea el de otro es lo esperado acá y no cuenta como cuenta compartida:
+    # esto está firmado en `dictada_por_id` y lo habilitó el equipo, así que
+    # `servicios/rastros.py` lo deja expresamente afuera de esa cuenta.
     _registrar_entrega(
-        sesion, asignacion, joven, texto, foto, compartir=False, dictada_por=usuario
+        sesion,
+        asignacion,
+        joven,
+        texto,
+        foto,
+        compartir=False,
+        como=_como_se_escribio(request, pegado, tecleado, segundos),
+        cabecera=foto_cabecera,
+        dictada_por=usuario,
     )
     sesion.commit()
     return redirigir(f"/sin-telefono/{joven.id}")

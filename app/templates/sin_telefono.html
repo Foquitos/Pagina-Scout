@@ -89,8 +89,11 @@
       {% if hecho %}
         <p class="meta">Ya está validado y sumó a su patrulla. No hace falta tocar nada.</p>
       {% else %}
+        {# Se mide igual que en la entrega propia. Que salga de otro aparato es lo
+           esperado acá y no cuenta como cuenta compartida: esto queda firmado en
+           `dictada_por_id`. Ver `servicios/rastros.py`. #}
         <form method="post" action="/sin-telefono/{{ joven.id }}/reto/{{ asignacion.id }}"
-              enctype="multipart/form-data" data-sin-recarga="Cargado.">
+              enctype="multipart/form-data" data-sin-recarga="Cargado." data-medir>
           <label for="texto-{{ asignacion.id }}">Qué contó que hizo</label>
           <textarea id="texto-{{ asignacion.id }}" name="texto" required
             placeholder="Con sus palabras: qué hizo, cómo le salió y para qué sirve."

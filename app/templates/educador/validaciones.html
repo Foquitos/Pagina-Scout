@@ -26,9 +26,26 @@
     <div><strong>{{ esperando }} entrega{{ 's' if esperando != 1 }}
       {{ 'esperan' if esperando != 1 else 'espera' }} una respuesta tuya.</strong>
       <p>Son las que quedaron incompletas —falta la foto que pedía el reto, o el
-        relato es de dos palabras—. <a href="/validaciones?estado=requiere_revision">Verlas</a>.</p></div>
+        relato es de dos palabras— y las que traen alguna señal marcada.
+        <a href="/validaciones?estado=requiere_revision">Verlas</a>.</p></div>
   </div>
 {% endif %}
+
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">🔎</span>
+  <div>
+    <strong>Debajo de algunas entregas vas a ver señales: de qué aparato salió,
+      si el relato se tecleó o se pegó, qué traía la foto adentro.</strong>
+    <p><strong>No son pruebas de nada.</strong> Dos cuentas en un mismo teléfono
+      son dos hermanas que comparten el único celular de la casa tanto como un
+      Guía completándole los retos a su patrulla, y desde acá se ven idénticas.
+      Una foto sin datos de cámara puede ser una imagen inventada o una foto de
+      verdad que pasó por WhatsApp, que se los borra a todos. Lo que hacen las
+      marcadas con 🔎 es que la entrega no se valide sola y la mires vos: nada
+      más. Quien decide sos vos, hablando con el chico.
+      <a href="/aparatos">Ver los aparatos compartidos →</a></p>
+  </div>
+</div>
 
 {% set filtros = [
   ('todas', 'Todas'),
@@ -89,6 +106,20 @@
     {% if e.dictada_por %}
       <p class="chips"><span class="chip">✍️ la escribió {{ e.dictada_por.nombre }};
         {{ primer_nombre(e.joven.nombre) }} estaba sin teléfono</span></p>
+    {% endif %}
+
+    {# Lo que se vio de cómo entró esta entrega. Va acá, pegado a lo que el chico
+       escribió, y no en una pantalla aparte: una lista de señales separada de lo
+       que hicieron es una lista de sospechosos. Nada de esto acusa a nadie —que
+       dos cuentas salgan del mismo teléfono son dos hermanas con un solo celular
+       tanto como un Guía completándole los retos a su patrulla— y por eso lo lee
+       una persona. Ver `servicios/rastros.py`. #}
+    {% if senales.get(e.id) %}
+      <p class="chips">
+        {% for s in senales[e.id] %}
+          <span class="chip senal {{ 'fuerte' if s.fuerte }}">{{ '🔎' if s.fuerte else '·' }} {{ s.texto }}</span>
+        {% endfor %}
+      </p>
     {% endif %}
 
     {% if e.asignacion.reto.desafio %}

@@ -55,6 +55,24 @@
   </div>
 {% endif %}
 
+{# Cuentas que se movieron desde un mismo aparato. Aparece solo cuando hay algo:
+   un cartel permanente que dice «no pasa nada» enseña a no leer los carteles.
+   No es urgente y no es una acusación —puede ser una casa donde comparten el
+   celular—, y por eso va después del aviso y con el verbo en «preguntar». #}
+{% if aparatos_compartidos %}
+  <div class="aviso alerta">
+    <span class="icono" aria-hidden="true">📱</span>
+    <div>
+      <strong>{{ aparatos_compartidos }} aparato{{ 's' if aparatos_compartidos != 1 }}
+        desde donde se movieron tres cuentas o más.</strong>
+      <p>Puede ser una casa donde comparten el teléfono o alguien usando cuentas
+        que no son suyas: desde acá se ven igual. Mientras tanto, lo que salga de
+        ahí no se valida solo.</p>
+      <p><a class="boton secundario" href="/aparatos">Ver cuáles</a></p>
+    </div>
+  </div>
+{% endif %}
+
 {# Sin teléfono. No es urgente como un aviso, pero es lo único de esta lista que
    mientras tanto le está costando puntos a una patrulla y días de progresión a
    una persona. #}

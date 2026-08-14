@@ -15,7 +15,7 @@ import os
 import re
 import sys
 import tempfile
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 
@@ -59,8 +59,9 @@ from app.models import (  # noqa: E402
     Reto,
     Usuario,
 )
-from app import seguridad  # noqa: E402
-from app.servicios import cuentas, cumpleanos, medios, retos  # noqa: E402
+from app import aparatos, seguridad  # noqa: E402
+from app.models import PEGADO_MINIMO, Acceso, Rastro  # noqa: E402
+from app.servicios import cuentas, cumpleanos, medios, rastros, retos  # noqa: E402
 from app.servicios.progresion import MIN_CARTAS  # noqa: E402
 from scripts.inicializar_db import asegurar_cargos, cargar_cartas, cargar_demo  # noqa: E402
 
@@ -2236,6 +2237,186 @@ def main() -> int:
         check("un educador también tiene cumpleaños",
               s.get(Usuario, educador_id).nacimiento == date(1990, 6, 20))
     check("y se ve en su ficha", "20/06" in edu.get("/educadores").text)
+
+    # --- 16. De qué aparato salió cada cosa ----------------------------------
+    #
+    # Las dos cosas que vinieron a resolver: un Guía usando las cuentas de su
+    # patrulla, y relatos pegados de una IA. Ninguna de las dos se puede probar
+    # desde un servidor, así que lo que se prueba acá es que se **vean**: que la
+    # entrega no se valide sola y que el equipo tenga algo concreto que mirar.
+    # Ver `app/servicios/rastros.py`.
+
+    check("el navegador recibe su número de aparato", bool(edu.cookies.get(aparatos.NOMBRE)))
+
+    # a) Lo que la foto cuenta de sí misma, leído antes de que se le borre el EXIF.
+    def foto_de_prueba(exif=None, sello=False) -> bytes:
+        buf = BytesIO()
+        Image.new("RGB", (900, 700), (110, 150, 90)).save(
+            buf, "JPEG", **({"exif": exif} if exif is not None else {})
+        )
+        crudo = bytearray(buf.getvalue())
+        if sello:
+            # Un APP11 con el contenedor de procedencia adentro, que es donde va.
+            dentro = b"jumb" + b"c2pa" * 3
+            crudo[2:2] = b"\xff\xeb" + (len(dentro) + 2).to_bytes(2, "big") + dentro
+        return bytes(crudo)
+
+    exif_camara = Image.Exif()
+    exif_camara[271] = "samsung"
+    exif_camara[272] = "SM-A515F"
+    exif_camara.get_ifd(0x8769)[36867] = "2026:07:01 09:15:00"
+
+    de_camara = medios.senales_de_foto(foto_de_prueba(exif=exif_camara))
+    check("una foto de cámara dice de qué teléfono salió",
+          de_camara.camara == "samsung SM-A515F", de_camara.camara)
+    check("y cuándo se sacó", de_camara.tomada_en == datetime(2026, 7, 1, 9, 15, 0),
+          de_camara.tomada_en)
+    check("sin marcarla como generada", not de_camara.generada)
+    check("el GPS no se guarda ni siquiera acá",
+          not hasattr(de_camara, "lugar") and not hasattr(de_camara, "gps"))
+
+    pelada = medios.senales_de_foto(foto_de_prueba())
+    check("una foto sin metadatos no dice de qué cámara salió", pelada.camara == "")
+    # WhatsApp le borra los metadatos a todo lo que pasa por él: una foto de
+    # verdad reenviada llega igual de pelada que una inventada. Confundirlas
+    # sería mandar a revisión a media Unidad todas las semanas.
+    check("pero tampoco se la acusa de generada", not pelada.generada)
+
+    check("el sello de procedencia sin datos de cámara marca imagen generada",
+          medios.senales_de_foto(foto_de_prueba(sello=True)).generada)
+    check("y con datos de cámara no, que hay cámaras que firman lo que sacan",
+          not medios.senales_de_foto(foto_de_prueba(exif=exif_camara, sello=True)).generada)
+
+    exif_generador = Image.Exif()
+    exif_generador[305] = "DALL-E 3"
+    check("el nombre de un generador en el software también cuenta",
+          medios.senales_de_foto(foto_de_prueba(exif=exif_generador)).generada)
+
+    # Solo la cabecera: es lo que manda app.js cuando sube la copia achicada.
+    check("con los primeros kilobytes del original alcanza",
+          medios.senales_de_foto(foto_de_prueba(exif=exif_camara)[:8192]).camara
+          == "samsung SM-A515F")
+    check("y lo que no es una imagen no rompe la entrega",
+          medios.senales_de_foto(b"esto no es una foto").camara == ""
+          and medios.senales_de_foto(b"").camara == "")
+
+    # b) Un relato que entró pegado entero no se valida solo.
+    edu.post("/retos", data={"titulo": "Buena acción del día",
+                             "consigna": "Contá qué hiciste y para qué sirvió.",
+                             "puntaje": "10", "pide_texto": "true"})
+    with SesionLocal() as s:
+        reto_bis = s.scalar(select(Reto.id).where(Reto.titulo == "Buena acción del día"))
+    edu.post("/asignar", data={"reto_id": str(reto_bis), "fecha": date.today().isoformat(),
+                               "alcance": "unidad"})
+    with SesionLocal() as s:
+        asig_bis = s.scalar(select(Asignacion.id).where(Asignacion.reto_id == reto_bis))
+
+    # La pantalla de entrega lo dice antes de que nadie escriba una palabra, así
+    # que se mira ahora, con el reto todavía sin entregar.
+    pagina = joven.get(f"/reto/{asig_bis}").text
+    check("el formulario avisa que esto se registra", "Esto se registra" in pagina)
+    check("y se engancha la medición", "data-medir" in pagina)
+    check("sin forzar la cámara, que dejaría afuera la foto de ayer",
+          "capture=" not in pagina)
+
+    # Más largo que `PEGADO_MINIMO`: pegar dos frases es pegar el nombre de un
+    # lugar, y eso no tiene que ser nada.
+    relato = ("Acompañé a mi vecina a hacer las compras porque le cuesta caminar "
+              "y después ordenamos juntas la despensa. Volvimos con el changuito "
+              "lleno y me quedé a tomar unos mates mientras me contaba de cuando "
+              "ella era chica y en el barrio no había ni asfalto.")
+    check("el relato de prueba supera el piso de lo que se mira",
+          len(relato) > PEGADO_MINIMO, len(relato))
+
+    r = joven.post(f"/reto/{asig_bis}",
+                   data={"texto": relato, "pegado": str(len(relato)),
+                         "tecleado": "0", "segundos": "2"})
+    check("un relato que entró pegado entero no se valida solo",
+          "mirando tu educador" in r.text)
+    with SesionLocal() as s:
+        devuelto = s.scalar(
+            select(Entrega.devolucion).where(
+                Entrega.asignacion_id == asig_bis, Entrega.joven_id == ana_id
+            )
+        )
+    # Lo que se vio es para el equipo: contarle a un chico cuál fue la señal es
+    # enseñarle a esquivarla. Que esto se mide sí se le dice, y antes de escribir.
+    check("y la devolución no le cuenta qué señal saltó",
+          devuelto == "Tu entrega quedó a la espera de que la mire un educador.", devuelto)
+
+    pagina = edu.get("/validaciones").text
+    check("el equipo sí ve por qué quedó esperando", "entró pegado" in pagina)
+    check("la pantalla aclara que no es una prueba de nada", "No son pruebas de nada" in pagina)
+
+    # Reescrito con sus palabras, sigue el camino de siempre.
+    r = joven.post(f"/reto/{asig_bis}",
+                   data={"texto": relato, "pegado": "0",
+                         "tecleado": str(len(relato)), "segundos": "210"})
+    check("reescribiéndolo a mano se valida como cualquier entrega", "Validado" in r.text)
+
+    # Pegar poco es pegar el nombre de un lugar: no es nada y no tiene que serlo.
+    with SesionLocal() as s:
+        rastro_ana = s.scalar(
+            select(Rastro).join(Entrega, Entrega.id == Rastro.entrega_id)
+            .where(Entrega.asignacion_id == asig_bis, Entrega.joven_id == ana_id)
+        )
+        check("lo tecleado queda anotado", rastro_ana.tecleado == len(relato), rastro_ana.tecleado)
+        check("y ya no figura como pegado", not rastro_ana.mayormente_pegado)
+
+    # Sin JavaScript no llega ninguna medida, y hay que poder entregar igual.
+    sin_js = TestClient(app, follow_redirects=True)
+    sin_js.post("/ingresar", data={"usuario": "eli", "clave": "scout1907"})
+    check("sin JavaScript se entrega y se valida como siempre",
+          "Validado" in sin_js.post(f"/reto/{asig_bis}", data={"texto": relato}).text)
+
+    # c) Tres cuentas desde un mismo aparato. Es el caso que vino a resolver esto:
+    #    un Guía entrando con la cuenta de cada uno de sus patrulleros.
+    guia = TestClient(app, follow_redirects=True)
+    for quien in ("bruno", "cami", "dante"):
+        guia.post("/ingresar", data={"usuario": quien, "clave": "scout1907"})
+        guia.post(f"/reto/{asig_bis}",
+                  data={"texto": relato, "tecleado": str(len(relato)), "segundos": "200"})
+        guia.get("/salir")
+    aparato_guia = guia.cookies.get(aparatos.NOMBRE)
+
+    check("el aparato sobrevive a cerrar sesión, que es de lo que se trata",
+          bool(aparato_guia))
+    with SesionLocal() as s:
+        check("cada ingreso queda anotado con su aparato",
+              s.scalar(select(func.count(Acceso.id)).where(Acceso.aparato == aparato_guia)) == 3)
+        check("y las tres entregas salieron del mismo",
+              rastros.cuantos_entregaron_desde(s, aparato_guia) == 3)
+        estados = list(s.scalars(
+            select(Entrega.estado).join(Rastro, Rastro.entrega_id == Entrega.id)
+            .where(Rastro.aparato == aparato_guia).order_by(Entrega.id)
+        ))
+    check("las dos primeras se validan solas: dos cuentas son dos hermanos",
+          estados[:2] == ["aprobada", "aprobada"], estados)
+    check("la tercera ya no, y espera a una persona",
+          estados[2] == "requiere_revision", estados)
+
+    pagina = edu.get("/aparatos").text
+    check("la pantalla del equipo lo muestra", "cuentas desde un mismo aparato" in pagina)
+    check("con los nombres de quiénes son", all(n in pagina for n in ("Bruno", "Camila", "Dante")))
+    check("y advierte que no prueba nada antes de mostrar la lista",
+          pagina.index("Esto no prueba nada") < pagina.index("cuentas desde un mismo aparato"))
+    check("el número entero del aparato no se muestra", aparato_guia not in pagina)
+    check("el panel avisa que hay algo para mirar", "tres cuentas o más" in edu.get("/panel").text)
+    check("un joven no entra a esa pantalla", joven.get("/aparatos").status_code == 403)
+
+    # d) Cargarle la entrega a un compañero sin teléfono **no** es una cuenta
+    #    compartida: está firmado con nombre y lo habilitó el equipo. Ana le
+    #    dictó una entrega a Bruno más arriba, desde su propio aparato.
+    aparato_ana = joven.cookies.get(aparatos.NOMBRE)
+    with SesionLocal() as s:
+        dictadas = s.scalar(
+            select(func.count(Entrega.id)).join(Rastro, Rastro.entrega_id == Entrega.id)
+            .where(Rastro.aparato == aparato_ana, Entrega.dictada_por_id.is_not(None))
+        )
+        check("hay una entrega dictada desde el aparato de Ana", dictadas >= 1, dictadas)
+        check("y no cuenta como una cuenta más en ese aparato",
+              rastros.cuantos_entregaron_desde(s, aparato_ana) == 1,
+              rastros.cuantos_entregaron_desde(s, aparato_ana))
 
     print()
     if fallos:

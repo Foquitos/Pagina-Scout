@@ -6,11 +6,12 @@ from fastapi import APIRouter, Depends, Form, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import aparatos
 from app.db import obtener_sesion
 from app.dependencias import redirigir, render, usuario_de_sesion, usuario_opcional
 from app.models import Usuario
 from app.seguridad import anotar_fallo, espera_de_ingreso, olvidar_fallos, verificar_clave
-from app.servicios import cuentas
+from app.servicios import cuentas, rastros
 
 router = APIRouter()
 
@@ -112,6 +113,18 @@ def ingresar(
 
     olvidar_fallos(login, direccion)
     request.session["usuario_id"] = encontrado.id
+    # Queda anotado desde qué aparato se entró. La sesión sola no alcanza para
+    # esto: se vacía al salir, así que cinco cuentas usadas una atrás de la otra
+    # desde el mismo teléfono no dejaban ninguna marca de haber sido el mismo
+    # teléfono. Ver `app/aparatos.py` y `servicios/rastros.py`.
+    rastros.registrar_acceso(
+        sesion,
+        encontrado,
+        aparato=aparatos.de(request),
+        ip=direccion,
+        navegador=request.headers.get("user-agent", ""),
+    )
+    sesion.commit()
     return redirigir(_su_pagina(encontrado))
 
 

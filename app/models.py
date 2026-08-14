@@ -512,6 +512,10 @@ class Entrega(Base):
     avisos: Mapped[list["Aviso"]] = relationship(
         back_populates="entrega", cascade="all, delete-orphan"
     )
+    # Cómo entró esta entrega. Se va con ella por la misma razón que los avisos.
+    rastro: Mapped["Rastro | None"] = relationship(
+        back_populates="entrega", cascade="all, delete-orphan", uselist=False
+    )
 
     @property
     def devolucion_firmada_por(self) -> Usuario | None:
@@ -1097,3 +1101,132 @@ class Aviso(Base):
     @property
     def atendido(self) -> bool:
         return self.atendido_en is not None
+
+
+# --- De dónde salió cada cosa -------------------------------------------------
+#
+# Las dos tablas de acá abajo existen por un problema concreto: un Guía entrando
+# con la cuenta de cada uno de sus patrulleros para completarles los retos, y
+# relatos que llegan escritos por una IA. Las dos son de la misma familia —lo que
+# se ve no lo hizo quien figura— y las dos son invisibles para todo lo que había
+# hasta ahora, porque de una entrega solo quedaba el texto y la foto.
+#
+# La regla que las gobierna es la misma que ya rige `servicios/validacion.py` y no
+# se mueve: **esto no acusa a nadie ni rechaza nada**. Guarda hechos verificables
+# —de qué aparato salió, si el texto se tecleó o se pegó, si la foto trae datos de
+# cámara— y se los pone adelante a un educador. Decidir qué significan es de una
+# persona que conoce al chico, siempre. Un número no sabe que a Mateo se le rompió
+# el teléfono y entrega desde el de la hermana.
+#
+# Y se dice de frente: la pantalla de entrega avisa que esto se registra, antes de
+# que nadie escriba una palabra. Registrar en silencio para después sorprender a
+# alguien con la prueba sería, además de feo, la peor manera de enseñar algo.
+
+# Caracteres pegados de los que vale la pena hablar. Por debajo de esto es una
+# palabra, un nombre propio o una dirección: cosas que se pegan todos los días.
+PEGADO_MINIMO = 200
+
+
+class Acceso(Base):
+    """Un ingreso: quién entró, cuándo y desde qué aparato.
+
+    Hasta acá una sesión no dejaba rastro de nada. Entrar con cinco cuentas
+    seguidas desde el mismo teléfono y salir de cada una era, para la
+    aplicación, exactamente igual que cinco chicos entrando desde su casa.
+
+    No guarda qué hizo nadie adentro: eso ya está en lo que hizo. Guarda la
+    puerta y nada más.
+    """
+
+    __tablename__ = "accesos"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    aparato: Mapped[str] = mapped_column(String(64), default="", index=True)
+    ip: Mapped[str] = mapped_column(String(64), default="")
+    # Recortado y tal cual viene. Sirve para distinguir «el mismo aparato» de
+    # «la misma casa»: dos hermanos con dos teléfonos comparten la dirección de
+    # internet y no comparten el aparato, y esa diferencia es justo la que hay
+    # que poder ver antes de decirle algo a alguien.
+    navegador: Mapped[str] = mapped_column(String(200), default="")
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=_ahora, index=True)
+
+    usuario: Mapped[Usuario] = relationship()
+
+
+class Rastro(Base):
+    """Cómo entró una entrega: de qué aparato, tecleada o pegada, con qué foto.
+
+    **Lo que mide la escritura no es «esto lo escribió una IA».** Eso no se puede
+    saber y quien diga que sí lo sabe está adivinando; los detectores de texto
+    generado se equivocan seguido y equivocarse acá significa acusar en falso a un
+    chico de doce por algo que efectivamente hizo. Lo que se guarda es un hecho y
+    solo eso: cuántos caracteres entraron de un pegue y cuántos se teclearon uno
+    por uno. «Pegaste 900 caracteres de una» no es una acusación, es algo que pasó,
+    y a partir de ahí se conversa —capaz lo escribió en las notas del celular, que
+    también pasa—.
+
+    **Lo que mide la foto tampoco es una prueba.** Una foto sacada con la cámara
+    trae adentro la marca y el modelo del teléfono; una generada por una IA no, y
+    encima suele traer el sello C2PA que los generadores le ponen a propósito.
+    Pero WhatsApp le borra los metadatos a todo lo que pasa por él, así que una
+    foto reenviada por ahí llega igual de pelada que una inventada. Por eso es
+    señal y nunca prueba.
+
+    Del aparato no se deduce nada solo: que dos entregas salgan del mismo teléfono
+    puede ser un Guía completándole los retos a su patrulla o dos hermanas que
+    comparten el único celular de la casa. Son casos opuestos y desde el servidor
+    se ven idénticos. Lo que la aplicación hace es mostrarlo; separarlos es de
+    quien los conoce.
+    """
+
+    __tablename__ = "rastros_entrega"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entrega_id: Mapped[int] = mapped_column(ForeignKey("entregas.id"), unique=True)
+    aparato: Mapped[str] = mapped_column(String(64), default="", index=True)
+
+    # --- cómo entró el texto ---
+    # Caracteres que llegaron de un pegue, y caracteres tecleados. Los cuenta el
+    # navegador y los manda el formulario: se pueden falsear con la consola
+    # abierta, y no importa. Esto no cierra ninguna puerta —no hay nada del otro
+    # lado que proteger—, y quien sepa abrir las herramientas de desarrollo para
+    # inflar un contador no era el problema que vinimos a resolver.
+    pegado: Mapped[int] = mapped_column(Integer, default=0)
+    tecleado: Mapped[int] = mapped_column(Integer, default=0)
+    # Desde que tocó el cuadro de texto hasta que apretó enviar.
+    segundos: Mapped[int] = mapped_column(Integer, default=0)
+
+    # --- qué contaba la foto de sí misma ---
+    # Se lee antes de guardarla y no queda ni un byte del EXIF en el disco: lo
+    # que se conserva son estas tres cosas y el GPS sigue sin guardarse nunca
+    # (ver `servicios/medios.py`).
+    hubo_foto: Mapped[bool] = mapped_column(Boolean, default=False)
+    # «Samsung SM-A515F». Vacío significa que no traía datos de cámara.
+    foto_camara: Mapped[str] = mapped_column(String(120), default="")
+    foto_tomada_en: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    foto_software: Mapped[str] = mapped_column(String(120), default="")
+    # El sello que los generadores de imágenes le ponen a lo que fabrican.
+    foto_generada: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=_ahora)
+
+    entrega: Mapped[Entrega] = relationship(back_populates="rastro")
+
+    @property
+    def escrito(self) -> int:
+        return self.pegado + self.tecleado
+
+    @property
+    def mayormente_pegado(self) -> bool:
+        """Casi todo lo que hay en el cuadro llegó de un pegue.
+
+        Con piso, porque pegar es normal y a veces es lo correcto: el nombre de
+        un lugar, un link, una palabra que no sabía escribir. Lo que llama la
+        atención es el relato entero de una sola vez.
+        """
+        return self.pegado >= PEGADO_MINIMO and self.pegado >= self.escrito * 0.8
+
+    @property
+    def foto_sin_camara(self) -> bool:
+        return self.hubo_foto and not self.foto_camara

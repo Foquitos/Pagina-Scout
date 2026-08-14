@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block titulo %}Aparatos compartidos{% endblock %}
+
+{% block contenido %}
+<p class="miga"><a href="/validaciones">← Volver a las entregas</a></p>
+
+<h1>📱 Aparatos compartidos</h1>
+<p class="sub">Desde qué teléfono o computadora se movió cada cuenta en los
+  últimos {{ dias }} días. Aparecen solo los aparatos desde los que se movió más
+  de una cuenta: uno por persona es el caso de todo el mundo y no dice nada.</p>
+
+{# Esta pantalla es la que más fácil se lee mal, así que la advertencia va antes
+   que los datos y no debajo. Ver `servicios/rastros.py`. #}
+<div class="aviso info">
+  <span class="icono" aria-hidden="true">⚖️</span>
+  <div>
+    <strong>Esto no prueba nada, y conviene tenerlo claro antes de leer la lista.</strong>
+    <p>Dos hermanos con un solo celular en casa, la computadora del local
+      compartida un sábado a la tarde, un chico que se quedó sin datos y entregó
+      desde el teléfono de un amigo: los tres se ven exactamente igual que alguien
+      usando cuentas ajenas. La aplicación no puede distinguirlos y no lo intenta.
+      Lo que hace es mostrarte dónde mirar para que <strong>preguntes</strong>, no
+      para que concluyas.</p>
+  </div>
+</div>
+
+{% if not compartidos %}
+  <div class="vacio" style="margin-top:1rem">
+    <img src="/estaticos/img/vacio/carpa.svg" alt="">
+    <strong>Cada cuenta se movió desde su propio aparato</strong>
+    <p>No hay ningún teléfono ni computadora desde donde se hayan usado dos
+      cuentas distintas en los últimos {{ dias }} días.</p>
+  </div>
+{% else %}
+  <p class="meta" style="margin-top:1rem">{{ compartidos | length }}
+    aparato{{ 's' if compartidos | length != 1 }} con más de una cuenta.
+    Los de {{ desde_cuantas }} cuentas o más van primero y son los que hacen que
+    una entrega no se valide sola.</p>
+
+  {% for a in compartidos %}
+  <article class="tarjeta {{ 'acento' if a.llama_la_atencion }}">
+    <div class="encabezado-tarjeta">
+      <span class="burbuja" aria-hidden="true">{{ '🔎' if a.llama_la_atencion else '📱' }}</span>
+      <div>
+        <h3>{{ a.cuantos }} cuentas desde un mismo aparato</h3>
+        <p class="meta">
+          {% if a.ultimo %}<span>última vez: {{ a.ultimo | hora('%d/%m/%Y %H:%M') }}</span>{% endif %}
+          {# El número del aparato no se muestra entero. No le sirve a nadie y es
+             lo único de acá que se parece a un identificador de una persona; con
+             el final alcanza para distinguir dos aparatos en la misma pantalla. #}
+          <span>aparato …{{ a.aparato[-6:] }}</span>
+        </p>
+      </div>
+      {% if a.llama_la_atencion %}
+        <span class="etiqueta alerta">Para preguntar</span>
+      {% endif %}
+    </div>
+
+    <p class="chips">
+      {% for u in a.todos %}
+        <span class="chip">
+          <span class="avatar chico" style="--color: {{ color_de(u.nombre) }}" aria-hidden="true">{{ iniciales(u.nombre) }}</span>
+          {{ u.nombre }}{% if u.patrulla %} · {{ u.patrulla.nombre }}{% endif %}
+        </span>
+      {% endfor %}
+    </p>
+
+    {# Entregar y entrar no son lo mismo y la diferencia importa: alguien puede
+       haber entrado a una cuenta ajena sin dejar ninguna entrega —a mirarla, a
+       cambiarle algo— y eso no aparecería en ninguna otra pantalla. #}
+    <p class="meta">
+      {% if a.entregaron %}
+        <span>📝 entregaron: {{ a.entregaron | map(attribute='nombre') | join(', ') }}</span>
+      {% endif %}
+      {% if a.entraron %}
+        <span>🔑 entraron: {{ a.entraron | map(attribute='nombre') | join(', ') }}</span>
+      {% endif %}
+    </p>
+
+    {% if a.llama_la_atencion %}
+      <p class="meta">Mientras esto siga así, las entregas que salgan de este
+        aparato no se validan solas: quedan esperándote en
+        <a href="/validaciones?estado=requiere_revision">Entregas</a>. Si es una
+        casa donde comparten el teléfono, dalas por buenas y listo —no hace falta
+        que nadie haga nada distinto—.</p>
+    {% endif %}
+  </article>
+  {% endfor %}
+{% endif %}
+
+<div class="aviso" style="margin-top:1.4rem">
+  <span class="icono" aria-hidden="true">🔑</span>
+  <div>
+    <strong>Si una cuenta la estuvo usando otro, lo que corresponde es blanquearla.</strong>
+    <p>Se hace desde <a href="/jovenes">Jóvenes</a>, con «blanquear contraseña»:
+      sale una provisoria nueva para leerle en voz alta a su dueño, y hasta que
+      él ponga la suya la cuenta no abre ninguna otra página. Cambiar la
+      contraseña es lo único que de verdad cierra la puerta; esta pantalla solo
+      te avisa que había que mirarla.</p>
+  </div>
+</div>
+{% endblock %}

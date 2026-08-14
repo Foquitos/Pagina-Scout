@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
 
+from app import aparatos
 from app.config import (
     CLAVE_SECRETA,
     COOKIES_SEGURAS,
@@ -60,6 +61,25 @@ async def _cuerpo_acotado(request: Request, call_next):
             status_code=413,
         )
     return await call_next(request)
+
+
+@app.middleware("http")
+async def _de_que_aparato(request: Request, call_next):
+    """Le pone —o le renueva— a este navegador su número de aparato.
+
+    Acá y no en el ingreso porque la cookie tiene que estar puesta **antes** de
+    que alguien entre: si se sellara recién al ingresar, el primer ingreso de un
+    teléfono nunca quedaría atado a él, que es justo el que interesa cuando
+    aparece una cuenta prestada.
+
+    Se vuelve a mandar en cada respuesta y eso corre el vencimiento: dos años
+    desde la última vez que se usó, no desde que se creó. Un chico que entra todos
+    los sábados nunca la pierde. Por qué existe todo esto: `app/aparatos.py`.
+    """
+    request.state.aparato = request.cookies.get(aparatos.NOMBRE) or aparatos.nuevo()
+    respuesta = await call_next(request)
+    aparatos.sellar(respuesta, request.state.aparato)
+    return respuesta
 
 
 @app.get("/fotos/{nombre}")

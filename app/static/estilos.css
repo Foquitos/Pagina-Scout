@@ -511,6 +511,13 @@ a.chip:hover { border-color: var(--verde); color: var(--verde-oscuro); }
 .chip.especialidad { border-color: #bdd0de; background: #eef4f9; color: #2f5570; }
 .chip.activo { background: var(--verde); border-color: var(--verde); color: #fff; }
 
+/* Lo que se vio de una entrega: de qué aparato salió, si el texto se pegó, qué
+   traía la foto. En gris, que es lo que son: datos. La fuerte —la que hizo que
+   la entrega espere a una persona— se distingue, pero en el tono de «mirá esto»
+   y no en rojo: ninguna de estas dos cosas acusa a nadie. */
+.chip.senal { border-color: var(--borde); background: #f6f5f2; color: #6a655c; font-weight: 500; white-space: normal; }
+.chip.senal.fuerte { border-color: #e6cdb6; background: #fbf1e8; color: var(--alerta); font-weight: 600; }
+
 /* --- Avance -------------------------------------------------- */
 
 .barra-avance {

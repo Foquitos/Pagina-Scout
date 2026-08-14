@@ -104,8 +104,13 @@
 {% endif %}
 
 {% if not entrega or entrega.estado != 'aprobada' %}
+{# `data-medir` prende el conteo de tecleo y pegue de `app.js`, que también manda
+   la cabecera del original de la foto. Todo lo que mide se cuenta acá abajo,
+   antes de que nadie escriba una palabra: medir en silencio para después
+   sorprender a alguien con la prueba sería, además de feo, la peor manera de
+   enseñar algo. Ver `servicios/rastros.py`. #}
 <form method="post" action="/reto/{{ asignacion.id }}" enctype="multipart/form-data" class="tarjeta"
-      data-sin-recarga="Entrega enviada.">
+      data-sin-recarga="Entrega enviada." data-medir>
   <h3>{% if entrega %}✏️ Corregir mi entrega{% else %}📝 Contá qué hiciste{% endif %}</h3>
 
   {% if asignacion.reto.pide_texto %}
@@ -114,6 +119,11 @@
             required>{{ entrega.texto if entrega else '' }}</textarea>
   {% endif %}
 
+  {# Sin `capture`: en iOS ese atributo abre la cámara y **no ofrece el álbum**,
+     y la foto de lo que hiciste el sábado a la mañana se sube el sábado a la
+     noche. Cerrarle esa puerta a todos para complicársela a uno sería cambiar un
+     problema real por otro peor. Que la foto venga o no de una cámara se sabe
+     igual, por lo que trae adentro: `servicios/medios.py`. #}
   <label for="foto">📷 Foto {% if not asignacion.reto.pide_foto %}(opcional){% endif %}</label>
   <input type="file" id="foto" name="foto" accept="image/*"
          {% if asignacion.reto.pide_foto and not (entrega and entrega.archivo_foto) %}required{% endif %}>
@@ -125,6 +135,15 @@
         enganchen. Se publica recién cuando quede validado, y lo podés sacar
         cuando quieras.</span></span>
   </label>
+
+  {# Se dice antes de escribir y no después de entregar. Un chico tiene derecho a
+     saber qué se guarda de lo que hace acá adentro, y además así funciona: lo que
+     frena a alguien que estaba por copiar y pegar es enterarse ahora, no que lo
+     descubran el sábado. #}
+  <p class="meta" style="margin-top:.9rem">🔎 Esto se registra: de qué aparato
+    entregás y si el relato lo escribiste o lo pegaste. Lo mira el equipo de
+    educadores. <strong>Escribilo con tus palabras</strong> —aunque te salga
+    torcido—: de lo que copiaste no aprendés vos, y de esto se trata.</p>
 
   <p style="margin-top:1.2rem"><button type="submit" class="grande bloque">Enviar mi entrega ✅</button></p>
 </form>
